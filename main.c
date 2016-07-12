@@ -1,12 +1,17 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <inttypes.h>
+#include <assert.h>
 
 #define ROWS 8
 #define COLS 8
 #define MASK(x) ((uint64_t)1 << (x))
 #define SQUARE(col, row) ((row)*ROWS + (col))
 #define PLACE(brd, sqr) (brd) |= MASK(sqr)
+#define CLEAR(brd, sqr) (brd) &= ~MASK(sqr)
+#define TRUE 1
+#define FALSE 0
 
 enum {
     PAWN = 0,
@@ -28,10 +33,25 @@ struct board {
     uint64_t black[NUM_PIECES];
 } __attribute__((packed));
 
-int board_init(struct board *brd) {
+int board_init(struct board * restrict brd) {
     memset(&brd->white[0], 0, sizeof(brd->white[0]) * NUM_PIECES * 2);
     return 0;
 }
+
+struct move {
+    uint8_t r1;
+    uint8_t c1;
+    uint8_t r2;
+    uint8_t c2;
+    int piece;
+    int side;
+
+    // TODO: capture
+    //int is_capture;
+    //int captured_piece_type;
+    //int captured_row;
+    //int captured_col;
+};
 
 void print_board(FILE* fp, const struct board * restrict brd) {
     int square;
@@ -76,8 +96,35 @@ void print_board(FILE* fp, const struct board * restrict brd) {
     }
 }
 
+int get_move(
+        struct board * restrict board,
+        struct move * restrict move,
+        FILE * restrict input,
+        FILE * restrict output) {
+    return 0;
+}
+
+int valid_move(
+        const struct board * restrict board,
+        const struct move * restrict move,
+        int wtm
+        ) {
+    return 0;
+}
+
+int place_move(
+        struct board * restrict board,
+        const struct move * restrict move
+        ) {
+    // TODO: captures
+    uint64_t *pos = move->side == WHITE ? &board->white[move->piece] : &board->black[move->piece];
+    CLEAR(*pos, SQUARE(move->c1, move->r1));
+    PLACE(*pos, SQUARE(move->c2, move->r2));
+    return 0;
+}
 
 int main(int argc, char **argv) {
+    struct move move;
     struct board board;
     board_init(&board);
 
@@ -117,6 +164,22 @@ int main(int argc, char **argv) {
     PLACE(board.black[PAWN], SQUARE(6, 6));
     PLACE(board.black[PAWN], SQUARE(7, 6));
 
+    int wtm = WHITE;
+    if (get_move(&board, &move, stdin, stdout) != 0) {
+        fputs("Unable to get move!", stderr);
+        exit(EXIT_FAILURE);
+    }
+    if (valid_move(&board, &move, wtm) != 0) {
+        fputs("Invalid move!", stderr);
+        exit(EXIT_FAILURE);
+    }
+    if (place_move(&board, &move) != 0) {
+        assert(0); // should always pass if valid_move() was true
+        fputs("Unable to place piece!", stderr);
+        exit(EXIT_FAILURE);
+    }
+    wtm ^= TRUE;
     print_board(stdout, &board);
+
     return 0;
 }
