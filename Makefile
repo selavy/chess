@@ -1,7 +1,7 @@
 CC=gcc
 DEBUG=-O0 -g
 RELEASE=-O2 -fstrict-aliasing -ffast-math -lto
-CFLAGS=$(DEBUG) -Wall -Werror -pedantic
+CFLAGS=$(DEBUG) -Wall -Werror -pedantic -std=c99
 OBJS=main.o
 TARGET=chess
 
