@@ -1,42 +1,8 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include <inttypes.h>
 #include <assert.h>
-
-#define ROWS 8
-#define COLS 8
-#define MASK(x) ((uint64_t)1 << (x))
-#define SQUARE(col, row) ((row)*ROWS + (col))
-#define PLACE(brd, sqr) (brd) |= MASK(sqr)
-#define CLEAR(brd, sqr) (brd) &= ~MASK(sqr)
-#define TRUE 1
-#define FALSE 0
-
-enum {
-    PAWN = 0,
-    KNIGHT,
-    BISHOP,
-    ROOK,
-    QUEEN,
-    KING,
-    NUM_PIECES
-};
-
-enum {
-    WHITE = 0,
-    BLACK = 1
-};
-
-struct board {
-    uint64_t white[NUM_PIECES];
-    uint64_t black[NUM_PIECES];
-} __attribute__((packed));
-
-int board_init(struct board * restrict brd) {
-    memset(&brd->white[0], 0, sizeof(brd->white[0]) * NUM_PIECES * 2);
-    return 0;
-}
+#include "types.h"
+#include "fen_reader.h"
 
 struct move {
     uint8_t r1;
@@ -117,14 +83,18 @@ int place_move(
         const struct move * restrict move
         ) {
     // TODO: captures
-    uint64_t *pos = move->side == WHITE ? &board->white[move->piece] : &board->black[move->piece];
-    CLEAR(*pos, SQUARE(move->c1, move->r1));
-    PLACE(*pos, SQUARE(move->c2, move->r2));
+    /* uint64_t *pos = move->side == WHITE */
+    /*     ? &board->white[move->piece] */
+    /*     : &board->black[move->piece]; */
+    /* CLEAR(*pos, SQUARE(move->c1, move->r1)); */
+    /* PLACE(*pos, SQUARE(move->c2, move->r2)); */
     return 0;
 }
 
 int main(int argc, char **argv) {
+    #if 0
     struct move move;
+    #endif
     struct board board;
     board_init(&board);
 
@@ -165,6 +135,7 @@ int main(int argc, char **argv) {
     PLACE(board.black[PAWN], SQUARE(7, 6));
 
     int wtm = WHITE;
+    #if 0
     if (get_move(&board, &move, stdin, stdout) != 0) {
         fputs("Unable to get move!", stderr);
         exit(EXIT_FAILURE);
@@ -178,8 +149,24 @@ int main(int argc, char **argv) {
         fputs("Unable to place piece!", stderr);
         exit(EXIT_FAILURE);
     }
+    #endif
     wtm ^= TRUE;
     print_board(stdout, &board);
 
+    const char * fen = "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2";
+    struct fen_position pos;
+    memset(&pos, 0, sizeof(pos));
+    if (fen_reader(&pos, fen) != 0) {
+        fputs("FEN reader failed", stderr);
+    } else {
+        printf("\n---------------------------------\n|");
+        for (int row = 7; row >= 0; --row) {
+            for (int col = 0; col < 8; ++col) {
+                printf(" %c |", pos.board[SQUARE(col, row)]);
+            }
+            printf("\n---------------------------------\n|");
+        }
+    }
+    
     return 0;
 }
