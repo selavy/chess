@@ -75,6 +75,11 @@ typedef uint32_t move;
 #define PIECE(m) (((m) >> 12) & 0xf)
 #define PROMOTE(m) (((m) >> 16) & 0x7)
 #define CAPTURE(m) (((m) >> 19) & 0xf)
+void move_print(move m) {
+    printf("MOVE(%d, %d, %s, %d, %d)\n",
+           FROM(m), TO(m), piecestr(PIECE(m)),
+           PROMOTE(m), CAPTURE(m));
+}
 #define NO_PROMOTION 0
 #define NO_CAPTURE EMPTY
 enum {
@@ -167,7 +172,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     if (promotion == NO_PROMOTION) {
         *pcs |= to;
     } else {
-        pcs = &PIECES(*p, side, promotion);
+        pcs = &PIECES(*p, side, promotion-1);
     }
     if (capture != NO_CAPTURE) {
         if (pc == PC(side, PAWN) && p->sqtopc[tosq] == EMPTY) { // e.p.
@@ -210,15 +215,6 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
          
 
 }
-/* struct position { */
-/*     uint64_t brd[NPIECES*2];  // 8 * 12 = 96B */
-/*     uint8_t  sqtopc[SQUARES]; // 1 * 64 = 64B */
-/*     uint16_t nmoves;          // 2 *  1 =  2B */
-/*     uint8_t  wtm;             // 1 *  1 =  1B */
-/*     uint8_t  halfmoves;       // 1 *  1 =  1B */
-/*     uint8_t  castle;          // 1 *  1 =  1B */
-/*     uint8_t  enpassant;       // 1 *  1 =  1B */
-/* };                            // Total:  164B */
 void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
     // TODO: undo castling
     // TODO: undo enpassant
@@ -350,18 +346,123 @@ int validate_position(const struct position * restrict p) {
     }
     return 0;
 }
+
+uint8_t int_to_piece(int c) {
+    switch (c) {
+    case 'P': return PC(WHITE,PAWN);
+    case 'N': return PC(WHITE,KNIGHT);
+    case 'B': return PC(WHITE,BISHOP);
+    case 'R': return PC(WHITE,ROOK);
+    case 'Q': return PC(WHITE,QUEEN);
+    case 'K': return PC(WHITE,KING);
+    case 'p': return PC(BLACK,PAWN);
+    case 'n': return PC(BLACK,KNIGHT);
+    case 'b': return PC(BLACK,BISHOP);
+    case 'r': return PC(BLACK,ROOK);
+    case 'q': return PC(BLACK,QUEEN);
+    case 'k': return PC(BLACK,KING);
+    case ' ': return EMPTY;
+    case '_': return EMPTY;
+    default:
+        assert(0);
+        return EMPTY;
+    }
+}
+void read_position_from_file(FILE* fp, struct position * restrict p, move * restrict m) {
+    int i, j, sq;
+    for (i = 0; i < NPIECES*2; ++i) {
+        p->brd[i] = 0ULL;
+    }
+    for (i = 0; i < 8; ++i) {
+        assert(fscanf(fp, "---------------------------------\n") == 0);
+        for (j = 0; j < 8; ++j) {
+            assert(fgetc(fp) == '|');
+            assert(fgetc(fp) == ' ');
+            sq = i*8+j;
+            p->sqtopc[sq] = int_to_piece(fgetc(fp));
+            if (p->sqtopc[sq] != EMPTY) {
+                p->brd[p->sqtopc[sq]] |= MASK(sq);
+            }
+            assert(fgetc(fp) == ' ');
+        }
+        assert(fgetc(fp) == '|');
+        assert(fgetc(fp) == '\n');
+    }
+    assert(fscanf(fp, "---------------------------------\n") == 0);
+
+    char wtm;
+    int hf, cstl, ep;
+    assert(fscanf(fp, "%c %d %d %d\n", &wtm, &hf, &cstl, &ep) == 4);
+
+    p->wtm = wtm == 'W' ? WHITE : BLACK;
+    p->halfmoves = (uint8_t)hf;
+    p->castle = cstl;
+    p->enpassant = ep;
+    p->nmoves = 0; // TODO: fix me
+
+    char pc, c1, c2, cap, prm;
+    int r1, r2;
+    assert(fscanf(fp, "%c %c%d %c%d %c %c\n",
+                  &pc, &c1, &r1, &c2, &r2, &cap, &prm) == 7);
+    int from = (r1 - 1) * 8 + (c1 - 'A');
+    int to = (r2 - 1) * 8 + (c2 - 'A');
+    if (prm == '_') {
+        prm = NO_PROMOTION;
+    } else if (prm == 'P' || prm == 'p') {
+        prm = PAWN;
+    } else if (prm == 'N' || prm == 'n') {
+        prm = KNIGHT;
+    } else if (prm == 'B' || prm == 'b') {
+        prm = BISHOP;
+    } else if (prm == 'Q' || prm == 'q') {
+        prm = QUEEN;
+    } else if (prm == 'K' || prm == 'k') {
+        prm = KING;
+    } else {
+        assert(0);
+    }
+    *m = MOVE(to, from, int_to_piece(pc), int_to_piece(cap), prm);
+}
+
 int main(int argc, char **argv) {
     static struct position pos;
     static struct position tmp;
     static struct savepos sp;
-    move m;
+    move m;    
+
+/* #if 0 */
+    FILE *fp = fopen("test_cases.txt", "r");
+    if (!fp) {
+        fputs("Unable to open \"test_cases.txt\"\n", stderr);
+        exit(1);
+    }
     
+    read_position_from_file(fp, &pos, &m);
+    position_print(&pos.sqtopc[0]);
+    assert(validate_position(&pos) == 0);
+    memcpy(&tmp, &pos, sizeof(tmp));
+
+    move_print(m);
+    make_move(&pos, m, &sp);
+    position_print(&pos.sqtopc[0]);
+    assert(validate_position(&pos) == 0);
+
+    undo_move(&pos, m, &sp);
+    position_print(&pos.sqtopc[0]);
+    assert(validate_position(&pos) == 0);
+    assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
+    
+    fclose(0);
+/* #endif */
+    
+#if 0
     set_initial_position(&pos);
     position_print(&pos.sqtopc[0]);
     assert(validate_position(&pos) == 0);
     memcpy(&tmp, &pos, sizeof(tmp));
     
     m = MOVE(SQ(4,3), SQ(4,1), PC(WHITE,PAWN), NO_CAPTURE, NO_PROMOTION);
+    move_print(m);
     make_move(&pos, m, &sp);
     position_print(&pos.sqtopc[0]);
     assert(validate_position(&pos) == 0);
@@ -370,6 +471,7 @@ int main(int argc, char **argv) {
     position_print(&pos.sqtopc[0]);
     assert(validate_position(&pos) == 0);
     assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
+#endif
     
     return 0;
 }
