@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <assert.h>
 
+#define FLIP(side) ((side)^1)
 #define COLS 8
 #define RANKS 8
 #define SQUARES 64
@@ -38,6 +40,24 @@ const char *sq_to_str[64] = {
     "A7", "B7", "C7", "D7", "E7", "F7", "G7", "H7",
     "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8"
 };
+// to   [0..63]   6 bits
+// from [0..63]   6 bits
+// piece [0..5*2] 4 bits
+// capture [0..1] 1 bit
+// promote [0..5] 3 bit
+typedef uint32_t move;
+#define MOVE(to, from, pc, cap, prm)            \
+    (((from) & 0x3f)         |                  \
+     (((to ) & 0x3f) << 6)   |                  \
+     (((pc ) & 0x0f) << 12)  |                  \
+     (((prm) & 0x07) << 16)  |                  \
+     (((cap) & 0x01) << 19))
+#define FROM(m) ((m) & 0x3f)
+#define TO(m) (((m) >> 6) & 0x3f)
+#define PIECE(m) (((m) >> 12) & 0xf)
+#define PROMOTE(m) (((m) >> 16) & 0x7)
+#define CAPTURE(m) (((m) >> 19) & 0x1)
+#define NO_PROMOTION 0
 enum {
     WKINGSD  = (1<<0), WQUEENSD = (1<<1),
     BKINGSD  = (1<<2), BQUEENSD = (1<<3),
@@ -51,6 +71,55 @@ struct position {
     uint8_t  castle;          // 1 *  1 =  1B
     uint8_t  enpassant;       // 1 *  1 =  1B
 };                            // Total:  164B
+struct savepos {
+    uint8_t halfmoves;
+    uint8_t enpassant;
+};
+void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
+    uint32_t pc = PIECE(m);
+    uint32_t fromsq = FROM(m);
+    uint32_t tosq = TO(m);
+    uint32_t capture = CAPTURE(m);
+    uint32_t promotion = PROMOTE(m);
+    uint8_t side = p->wtm;
+    uint64_t from = MASK(fromsq);
+    uint64_t to = MASK(tosq);
+    uint64_t * restrict pcs = &p->brd[pc];        
+    sp->halfmoves = p->halfmoves;
+    sp->enpassant = p->enpassant;
+
+    *pcs &= ~from;
+    if (promotion == NO_PROMOTION) {
+        *pcs |= to;
+    } else {
+        pcs = &PIECES(*p, side, promotion);
+    }
+    if (capture != 0) {
+        assert(p->sqtopc[tosq] != EMPTY);
+        assert((p->brd[p->sqtopc[tosq]] & to) != 0);
+        p->brd[p->sqtopc[tosq]] &= ~to;
+    }
+    p->sqtopc[fromsq] = EMPTY;
+    p->sqtopc[tosq] = pc;
+    p->wtm = FLIP(p->wtm);
+    p->halfmoves = pc == PC(side,PAWN) ? 0 : ++p->halfmoves;
+    ++p->nmoves;
+}
+#if 0
+void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
+    uint32_t pc = PIECE(m);
+    uint32_t fromsq = FROM(m);
+    uint32_t tosq = TO(m);
+    uint32_t capture = CAPTURE(m);
+    uint32_t promotion = PROMOTE(m);
+    uint8_t side = FLIP(p->wtm);
+    uint64_t from = MASK(fromsq);
+    uint64_t to = MASK(tosq);
+    p->halfmoves = sp->halfmoves;
+    p->enpassant = sp->enpassant;
+    
+}
+#endif
 void position_print(const uint8_t * const restrict sqtopc) {
     char v;
     int sq, r, c;
@@ -103,7 +172,13 @@ void set_initial_position(struct position * restrict pos) {
 }
 int main(int argc, char **argv) {
     static struct position pos;
+    static struct savepos sp;
+    move m;
+    
     set_initial_position(&pos);
+    position_print(&pos.sqtopc[0]);
+    m = MOVE(SQ(4,3), SQ(4,1), PC(WHITE,PAWN), 0, NO_PROMOTION);
+    make_move(&pos, m, &sp);
     position_print(&pos.sqtopc[0]);
     return 0;
 }
