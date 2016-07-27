@@ -158,7 +158,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->brd[PC(WHITE,ROOK)] &= ~MASK(H1);
         p->sqtopc[E1] = EMPTY;
         p->sqtopc[H1] = EMPTY;
-        p->sqtopc[H1] = PC(WHITE,KING);
+        p->sqtopc[G1] = PC(WHITE,KING);
         p->sqtopc[F1] = PC(WHITE,ROOK);
         return;
     } else if (pc == PC(BLACK,KING) && tosq == C8) {
@@ -180,7 +180,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->brd[PC(BLACK,ROOK)] &= ~MASK(H8);
         p->sqtopc[E8] = EMPTY;
         p->sqtopc[H8] = EMPTY;
-        p->sqtopc[H8] = PC(BLACK,KING);
+        p->sqtopc[G8] = PC(BLACK,KING);
         p->sqtopc[F8] = PC(BLACK,ROOK);
         return;
     }
