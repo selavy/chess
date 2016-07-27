@@ -278,42 +278,42 @@ void position_print(const uint8_t * const restrict sqtopc) {
         fputs("|\n---------------------------------\n", stdout);
     }    
 }
-void set_initial_position(struct position * restrict pos) {
+void set_initial_position(struct position * restrict p) {
     int i;
-    pos->wtm = WHITE;
-    pos->nmoves = 0;
-    pos->halfmoves = 0;
-    PIECES(*pos, WHITE, PAWN  ) = 0x0000ff00ULL;
-    for (i = A2; i <= H2; ++i) pos->sqtopc[i] = PC(WHITE, PAWN);
-    PIECES(*pos, WHITE, KNIGHT) = 0x00000042ULL;
-    pos->sqtopc[B1] = PC(WHITE, KNIGHT);
-    pos->sqtopc[G1] = PC(WHITE, KNIGHT);
-    PIECES(*pos, WHITE, BISHOP) = 0x00000024ULL;
-    pos->sqtopc[C1] = PC(WHITE, BISHOP);
-    pos->sqtopc[F1] = PC(WHITE, BISHOP);
-    PIECES(*pos, WHITE, ROOK  ) = 0x00000081ULL;
-    pos->sqtopc[A1] = PC(WHITE, ROOK);
-    pos->sqtopc[H1] = PC(WHITE, ROOK);    
-    PIECES(*pos, WHITE, QUEEN ) = 0x00000008ULL;
-    pos->sqtopc[D1] = PC(WHITE, QUEEN);
-    PIECES(*pos, WHITE, KING  ) = 0x00000010ULL;
-    pos->sqtopc[E1] = PC(WHITE, KING);
-    PIECES(*pos, BLACK, PAWN  ) = 0xff000000000000ULL;
-    for (i = A7; i <= H7; ++i) pos->sqtopc[i] = PC(BLACK, PAWN);
-    PIECES(*pos, BLACK, KNIGHT) = 0x4200000000000000ULL;
-    pos->sqtopc[B8] = PC(BLACK, KNIGHT);
-    pos->sqtopc[G8] = PC(BLACK, KNIGHT);
-    PIECES(*pos, BLACK, BISHOP) = 0x2400000000000000ULL;
-    pos->sqtopc[C8] = PC(BLACK, BISHOP);
-    pos->sqtopc[F8] = PC(BLACK, BISHOP);    
-    PIECES(*pos, BLACK, ROOK  ) = 0x8100000000000000ULL;
-    pos->sqtopc[A8] = PC(BLACK, ROOK);
-    pos->sqtopc[H8] = PC(BLACK, ROOK);
-    PIECES(*pos, BLACK, QUEEN ) = 0x800000000000000ULL;
-    pos->sqtopc[D8] = PC(BLACK, QUEEN);
-    PIECES(*pos, BLACK, KING  ) = 0x1000000000000000ULL;
-    pos->sqtopc[E8] = PC(BLACK, KING);
-    for (i = A3; i < A7; ++i) pos->sqtopc[i] = EMPTY;
+    p->wtm = WHITE;
+    p->nmoves = 0;
+    p->halfmoves = 0;
+    PIECES(*p, WHITE, PAWN  ) = 0x0000ff00ULL;
+    for (i = A2; i <= H2; ++i) p->sqtopc[i] = PC(WHITE, PAWN);
+    PIECES(*p, WHITE, KNIGHT) = 0x00000042ULL;
+    p->sqtopc[B1] = PC(WHITE, KNIGHT);
+    p->sqtopc[G1] = PC(WHITE, KNIGHT);
+    PIECES(*p, WHITE, BISHOP) = 0x00000024ULL;
+    p->sqtopc[C1] = PC(WHITE, BISHOP);
+    p->sqtopc[F1] = PC(WHITE, BISHOP);
+    PIECES(*p, WHITE, ROOK  ) = 0x00000081ULL;
+    p->sqtopc[A1] = PC(WHITE, ROOK);
+    p->sqtopc[H1] = PC(WHITE, ROOK);    
+    PIECES(*p, WHITE, QUEEN ) = 0x00000008ULL;
+    p->sqtopc[D1] = PC(WHITE, QUEEN);
+    PIECES(*p, WHITE, KING  ) = 0x00000010ULL;
+    p->sqtopc[E1] = PC(WHITE, KING);
+    PIECES(*p, BLACK, PAWN  ) = 0xff000000000000ULL;
+    for (i = A7; i <= H7; ++i) p->sqtopc[i] = PC(BLACK, PAWN);
+    PIECES(*p, BLACK, KNIGHT) = 0x4200000000000000ULL;
+    p->sqtopc[B8] = PC(BLACK, KNIGHT);
+    p->sqtopc[G8] = PC(BLACK, KNIGHT);
+    PIECES(*p, BLACK, BISHOP) = 0x2400000000000000ULL;
+    p->sqtopc[C8] = PC(BLACK, BISHOP);
+    p->sqtopc[F8] = PC(BLACK, BISHOP);    
+    PIECES(*p, BLACK, ROOK  ) = 0x8100000000000000ULL;
+    p->sqtopc[A8] = PC(BLACK, ROOK);
+    p->sqtopc[H8] = PC(BLACK, ROOK);
+    PIECES(*p, BLACK, QUEEN ) = 0x800000000000000ULL;
+    p->sqtopc[D8] = PC(BLACK, QUEEN);
+    PIECES(*p, BLACK, KING  ) = 0x1000000000000000ULL;
+    p->sqtopc[E8] = PC(BLACK, KING);
+    for (i = A3; i < A7; ++i) p->sqtopc[i] = EMPTY;
 }
 int validate_position(const struct position * restrict p) {
     int i;
