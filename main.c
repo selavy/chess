@@ -458,20 +458,25 @@ int main(int argc, char **argv) {
         fputs("Unable to open \"test_cases.txt\"\n", stderr);
         exit(1);
     }
-    
-    read_position_from_file(fp, &pos, &m);
-    position_print(&pos.sqtopc[0]);
-    assert(validate_position(&pos) == 0);
-    memcpy(&tmp, &pos, sizeof(tmp));
 
-    make_move(&pos, m, &sp);
-    position_print(&pos.sqtopc[0]);
-    assert(validate_position(&pos) == 0);
+    int c;
+    while ((c = fgetc(fp)) != EOF) {
+        ungetc(c, fp);
+        
+        read_position_from_file(fp, &pos, &m);
+        position_print(&pos.sqtopc[0]);
+        assert(validate_position(&pos) == 0);
+        memcpy(&tmp, &pos, sizeof(tmp));
 
-    undo_move(&pos, m, &sp);
-    position_print(&pos.sqtopc[0]);
-    assert(validate_position(&pos) == 0);
-    assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
+        make_move(&pos, m, &sp);
+        position_print(&pos.sqtopc[0]);
+        assert(validate_position(&pos) == 0);
+
+        undo_move(&pos, m, &sp);
+        position_print(&pos.sqtopc[0]);
+        assert(validate_position(&pos) == 0);
+        assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
+    }
     
     fclose(fp);
     //#endif 
