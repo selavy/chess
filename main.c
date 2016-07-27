@@ -194,7 +194,6 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         // TODO: implement
     }
     if (capture != NO_CAPTURE) {
-        assert(0);
         if (pc == PC(side, PAWN) && p->sqtopc[tosq] == EMPTY) { // e.p.
             sp->was_ep = 1;
             if (side == WHITE) {
@@ -470,7 +469,7 @@ int main(int argc, char **argv) {
 
         make_move(&pos, m, &sp);
         position_print(&pos.sqtopc[0]);
-        move_print(m);        
+        move_print(m);                        
         assert(validate_position(&pos) == 0);
 
         undo_move(&pos, m, &sp);
