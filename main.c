@@ -40,6 +40,24 @@ const char *sq_to_str[64] = {
     "A7", "B7", "C7", "D7", "E7", "F7", "G7", "H7",
     "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8"
 };
+const char *piecestr(uint32_t piece) {
+    switch (piece) {
+    case PAWN             : return "WHITE PAWN";
+    case KNIGHT           : return "WHITE KNIGHT";
+    case BISHOP           : return "WHITE BISHOP";
+    case ROOK             : return "WHITE ROOK";
+    case QUEEN            : return "WHITE QUEEN";
+    case KING             : return "WHITE KING";
+    case PC(BLACK,PAWN)   : return "BLACK PAWN";
+    case PC(BLACK,KNIGHT) : return "BLACK KNIGHT";
+    case PC(BLACK,BISHOP) : return "BLACK BISHOP";
+    case PC(BLACK,ROOK)   : return "BLACK ROOK";
+    case PC(BLACK,QUEEN)  : return "BLACK QUEEN";
+    case PC(BLACK,KING)   : return "BLACK KING";
+    case EMPTY            : return "EMPTY";
+    default               : return "UNKNOWN";
+    }
+}
 // to   [0..63]   6 bits
 // from [0..63]   6 bits
 // piece [0..5*2] 4 bits
@@ -170,6 +188,33 @@ void set_initial_position(struct position * restrict pos) {
     pos->sqtopc[E8] = PC(BLACK, KING);
     for (i = A3; i < A7; ++i) pos->sqtopc[i] = EMPTY;
 }
+int validate_position(const struct position * restrict p) {
+    int i;
+    int pc;
+    uint64_t msk;
+    // white king present
+    if (p->brd[PC(WHITE,KING)] == 0) {
+        fputs("No white king present", stderr);
+        return 1;
+    }
+    // black king present
+    if (p->brd[PC(BLACK,KING)] == 0) {
+        fputs("No black king present", stderr);        
+        return 2;
+    }
+    for (i = 0; i < SQUARES; ++i) {
+        msk = MASK(i);
+        for (pc = PC(WHITE,PAWN); pc <= PC(BLACK,KING); ++pc) {
+            if ((p->brd[pc] & msk) != 0 && p->sqtopc[i] != pc) {
+                fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s\n",
+                        piecestr(pc), i, piecestr(p->sqtopc[i]));
+                        
+                return 3;
+            }
+        }
+    }
+    return 0;
+}
 int main(int argc, char **argv) {
     static struct position pos;
     static struct savepos sp;
@@ -177,8 +222,10 @@ int main(int argc, char **argv) {
     
     set_initial_position(&pos);
     position_print(&pos.sqtopc[0]);
+    assert(validate_position(&pos) == 0);
     m = MOVE(SQ(4,3), SQ(4,1), PC(WHITE,PAWN), 0, NO_PROMOTION);
     make_move(&pos, m, &sp);
+    assert(validate_position(&pos) == 0);
     position_print(&pos.sqtopc[0]);
     return 0;
 }
