@@ -192,6 +192,7 @@ int validate_position(const struct position * restrict p) {
     int i;
     int pc;
     uint64_t msk;
+    uint8_t found;
     // white king present
     if (p->brd[PC(WHITE,KING)] == 0) {
         fputs("No white king present", stderr);
@@ -204,13 +205,20 @@ int validate_position(const struct position * restrict p) {
     }
     for (i = 0; i < SQUARES; ++i) {
         msk = MASK(i);
+        found = 0;
         for (pc = PC(WHITE,PAWN); pc <= PC(BLACK,KING); ++pc) {
-            if ((p->brd[pc] & msk) != 0 && p->sqtopc[i] != pc) {
-                fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s\n",
-                        piecestr(pc), i, piecestr(p->sqtopc[i]));
+            if ((p->brd[pc] & msk) != 0) {
+                found = 1;
+                if (p->sqtopc[i] != pc) {
+                    fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s\n",
+                            piecestr(pc), i, piecestr(p->sqtopc[i]));
                         
-                return 3;
+                    return 3;
+                }
             }
+        }
+        if (found == 0 && p->sqtopc[i] != EMPTY) {
+            return 4;
         }
     }
     return 0;
