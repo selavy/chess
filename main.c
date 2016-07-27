@@ -77,9 +77,9 @@ typedef uint32_t move;
 #define PROMOTE(m) (((m) >> 16) & 0x7)
 #define CAPTURE(m) (((m) >> 19) & 0xf)
 void move_print(move m) {
-    printf("MOVE(%d, %d, %s, %d, %d)\n",
-           FROM(m), TO(m), piecestr(PIECE(m)),
-           PROMOTE(m), CAPTURE(m));
+    printf("MOVE(%s, %s, %s, %d, %d)\n",
+           sq_to_str[FROM(m)], sq_to_str[TO(m)],
+           piecestr(PIECE(m)), PROMOTE(m), CAPTURE(m));
 }
 #define NO_PROMOTION 0
 #define NO_CAPTURE EMPTY
@@ -464,16 +464,17 @@ int main(int argc, char **argv) {
         ungetc(c, fp);
         
         read_position_from_file(fp, &pos, &m);
-        position_print(&pos.sqtopc[0]);
+        //position_print(&pos.sqtopc[0]);
         assert(validate_position(&pos) == 0);
         memcpy(&tmp, &pos, sizeof(tmp));
 
         make_move(&pos, m, &sp);
         position_print(&pos.sqtopc[0]);
+        move_print(m);        
         assert(validate_position(&pos) == 0);
 
         undo_move(&pos, m, &sp);
-        position_print(&pos.sqtopc[0]);
+        //position_print(&pos.sqtopc[0]);
         assert(validate_position(&pos) == 0);
         assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
     }
