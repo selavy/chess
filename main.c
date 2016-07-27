@@ -94,8 +94,10 @@ struct savepos {
     uint8_t halfmoves;
     uint8_t enpassant;
     uint8_t castle;
+    uint8_t was_ep;
 };
 void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
+    // TODO: castling
     uint32_t pc = PIECE(m);
     uint32_t fromsq = FROM(m);
     uint32_t tosq = TO(m);
@@ -108,6 +110,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     sp->halfmoves = p->halfmoves;
     sp->enpassant = p->enpassant;
     sp->castle = p->castle;
+    sp->was_ep = 0;
 
     *pcs &= ~from;
     if (promotion == NO_PROMOTION) {
@@ -117,6 +120,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     }
     if (capture != NO_CAPTURE) {
         if (pc == PC(side, PAWN) && p->sqtopc[tosq] == EMPTY) { // e.p.
+            sp->was_ep = 1;
             if (side == WHITE) {
                 assert(tosq >= A6 && tosq <= H6);
                 int sq = tosq << 8;
@@ -167,6 +171,8 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
 /*     uint8_t  enpassant;       // 1 *  1 =  1B */
 /* };                            // Total:  164B */
 void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
+    // TODO: undo castling
+    // TODO: undo enpassant
     uint32_t pc = PIECE(m);
     uint32_t fromsq = FROM(m);
     uint32_t tosq = TO(m);
@@ -185,14 +191,29 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     
     p->sqtopc[fromsq] = pc;
     p->sqtopc[tosq] = capture;
-    if (promotion == NO_PROMOTION) {
-        *pcs &= ~to;
-        *pcs |= from;        
+    *pcs |= from;
+    *pcs &= ~to;    
+    if (sp->was_ep != 0) { // e.p.
+        if (side == WHITE) {
+            assert(capture == PC(BLACK,PAWN));
+            int sq = tosq << 8;
+            p->sqtopc[sq] = PC(BLACK,PAWN);
+            p->brd[PC(BLACK,PAWN)] |= MASK(sq);
+        } else {
+            assert(capture == PC(WHITE,PAWN));
+            int sq = tosq >> 8;
+            p->sqtopc[sq] = PC(WHITE,PAWN);
+            p->brd[PC(WHITE,PAWN)] |= MASK(sq);            
+        }
+    } else {
+        // if a capture, place captured piece back on bit boards
         if (capture != NO_CAPTURE) {
             p->brd[capture] |= to;
         }
-    } else {
-        assert(0); // TODO
+        // if a promotion, remove placed piece from bit boards
+        if (promotion != NO_PROMOTION) {
+            p->brd[PC(side,promotion)] &= ~to;
+        }
     }
 }
 void position_print(const uint8_t * const restrict sqtopc) {
