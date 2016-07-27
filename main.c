@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <assert.h>
 
 #define FLIP(side) ((side)^1)
@@ -95,6 +96,18 @@ struct position {
     uint8_t  castle;          // 1 *  1 =  1B
     uint8_t  enpassant;       // 1 *  1 =  1B
 };                            // Total:  164B
+void debug_position_print(struct position * restrict p) {
+    int i;
+    printf("BitBoards:\n");
+    for (i = 0; i < NPIECES*2; ++i) {
+        printf("%" PRIu64 "\n", p->brd[i]);
+    }
+    printf("nmoves = %u\n", p->nmoves);
+    printf("wtm = %u\n", p->wtm);
+    printf("halfmoves = %u\n", p->halfmoves);
+    printf("castle = %u\n", p->castle);
+    printf("enpassant = %u\n", p->enpassant);
+}
 struct savepos {
     uint8_t halfmoves;
     uint8_t enpassant;
@@ -118,7 +131,11 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     sp->was_ep = 0;
     
     p->wtm = FLIP(p->wtm);
-    p->halfmoves = pc == PC(side,PAWN) ? 0 : ++p->halfmoves;
+    if (pc == PC(side,PAWN)) {
+        p->halfmoves = 0;
+    } else {
+        ++p->halfmoves;
+    }
     ++p->nmoves;
     
     // TODO: improve
@@ -383,7 +400,7 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
         for (j = 0; j < 8; ++j) {
             assert(fgetc(fp) == '|');
             assert(fgetc(fp) == ' ');
-            sq = i*8+j;
+            sq = (7-i)*8+j;
             p->sqtopc[sq] = int_to_piece(fgetc(fp));
             if (p->sqtopc[sq] != EMPTY) {
                 p->brd[p->sqtopc[sq]] |= MASK(sq);
@@ -435,7 +452,7 @@ int main(int argc, char **argv) {
     static struct savepos sp;
     move m;    
 
-/* #if 0 */
+    //#if 0 
     FILE *fp = fopen("test_cases.txt", "r");
     if (!fp) {
         fputs("Unable to open \"test_cases.txt\"\n", stderr);
@@ -447,7 +464,6 @@ int main(int argc, char **argv) {
     assert(validate_position(&pos) == 0);
     memcpy(&tmp, &pos, sizeof(tmp));
 
-    move_print(m);
     make_move(&pos, m, &sp);
     position_print(&pos.sqtopc[0]);
     assert(validate_position(&pos) == 0);
@@ -457,17 +473,16 @@ int main(int argc, char **argv) {
     assert(validate_position(&pos) == 0);
     assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
     
-    fclose(0);
-/* #endif */
-    
-#if 0
+    fclose(fp);
+    //#endif 
+
+    #if 0
     set_initial_position(&pos);
     position_print(&pos.sqtopc[0]);
     assert(validate_position(&pos) == 0);
     memcpy(&tmp, &pos, sizeof(tmp));
     
     m = MOVE(SQ(4,3), SQ(4,1), PC(WHITE,PAWN), NO_CAPTURE, NO_PROMOTION);
-    move_print(m);
     make_move(&pos, m, &sp);
     position_print(&pos.sqtopc[0]);
     assert(validate_position(&pos) == 0);
@@ -476,7 +491,7 @@ int main(int argc, char **argv) {
     position_print(&pos.sqtopc[0]);
     assert(validate_position(&pos) == 0);
     assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
-#endif
+    #endif
     
     return 0;
 }
