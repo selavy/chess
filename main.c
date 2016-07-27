@@ -172,9 +172,12 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     if (promotion == NO_PROMOTION) {
         *pcs |= to;
     } else {
+        assert(0);
         pcs = &PIECES(*p, side, promotion-1);
+        // TODO: implement
     }
     if (capture != NO_CAPTURE) {
+        assert(0);
         if (pc == PC(side, PAWN) && p->sqtopc[tosq] == EMPTY) { // e.p.
             sp->was_ep = 1;
             if (side == WHITE) {
@@ -198,22 +201,24 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     }
     p->sqtopc[fromsq] = EMPTY;
     p->sqtopc[tosq] = pc;
+    
     // REVISIT: improve
-    if (pc == PC(WHITE,ROOK) && fromsq == A1) {
-        p->castle &= ~WQUEENSD;
-    } else if (pc == PC(WHITE,ROOK) && fromsq == H1) {
-        p->castle &= ~WKINGSD;
-    } else if (pc == PC(BLACK,ROOK) && fromsq == A8) {
-        p->castle &= ~BQUEENSD;
-    } else if (pc == PC(BLACK,ROOK) && fromsq == H8) {
-        p->castle &= ~BKINGSD;
-    } else if (pc == PC(WHITE,KING)) {
-        p->castle &= ~(WQUEENSD | WKINGSD);
-    } else if (pc == PC(BLACK,KING)) {
-        p->castle &= ~(BQUEENSD | BKINGSD);
+    // update castling flags if needed
+    if (p->castle != 0) {
+        if (pc == PC(WHITE,ROOK) && fromsq == A1) {
+            p->castle &= ~WQUEENSD;
+        } else if (pc == PC(WHITE,ROOK) && fromsq == H1) {
+            p->castle &= ~WKINGSD;
+        } else if (pc == PC(BLACK,ROOK) && fromsq == A8) {
+            p->castle &= ~BQUEENSD;
+        } else if (pc == PC(BLACK,ROOK) && fromsq == H8) {
+            p->castle &= ~BKINGSD;
+        } else if (pc == PC(WHITE,KING)) {
+            p->castle &= ~(WQUEENSD | WKINGSD);
+        } else if (pc == PC(BLACK,KING)) {
+            p->castle &= ~(BQUEENSD | BKINGSD);
+        }
     }
-         
-
 }
 void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
     // TODO: undo castling
@@ -331,13 +336,13 @@ int validate_position(const struct position * restrict p) {
         found = 0;
         for (pc = PC(WHITE,PAWN); pc <= PC(BLACK,KING); ++pc) {
             if ((p->brd[pc] & msk) != 0) {
-                found = 1;
                 if (p->sqtopc[i] != pc) {
-                    fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s\n",
-                            piecestr(pc), i, piecestr(p->sqtopc[i]));
+                    fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s, found = %d\n",
+                            piecestr(pc), i, piecestr(p->sqtopc[i]), found);
                         
                     return 3;
                 }
+                found = 1;                
             }
         }
         if (found == 0 && p->sqtopc[i] != EMPTY) {
