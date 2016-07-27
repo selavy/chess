@@ -111,6 +111,57 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     sp->enpassant = p->enpassant;
     sp->castle = p->castle;
     sp->was_ep = 0;
+    
+    p->wtm = FLIP(p->wtm);
+    p->halfmoves = pc == PC(side,PAWN) ? 0 : ++p->halfmoves;
+    ++p->nmoves;
+    
+    // TODO: improve
+    if (pc == PC(WHITE,KING) && tosq == C1) {
+        p->castle &= ~(WQUEENSD|WKINGSD);
+        p->brd[PC(WHITE,KING)] |= MASK(C1);
+        p->brd[PC(WHITE,KING)] &= ~MASK(E1);
+        p->brd[PC(WHITE,ROOK)] |= MASK(D1);
+        p->brd[PC(WHITE,ROOK)] &= ~MASK(H1);
+        p->sqtopc[E1] = EMPTY;
+        p->sqtopc[A1] = EMPTY;
+        p->sqtopc[C1] = PC(WHITE,KING);
+        p->sqtopc[D1] = PC(WHITE,ROOK);
+        return;
+    } else if (pc == PC(WHITE,KING) && tosq == G1) {
+        p->castle &= ~(WQUEENSD|WKINGSD);
+        p->brd[PC(WHITE,KING)] |= MASK(G1);
+        p->brd[PC(WHITE,KING)] &= ~MASK(E1);
+        p->brd[PC(WHITE,ROOK)] |= MASK(F1);
+        p->brd[PC(WHITE,ROOK)] &= ~MASK(H1);
+        p->sqtopc[E1] = EMPTY;
+        p->sqtopc[H1] = EMPTY;
+        p->sqtopc[H1] = PC(WHITE,KING);
+        p->sqtopc[F1] = PC(WHITE,ROOK);
+        return;
+    } else if (pc == PC(BLACK,KING) && tosq == C8) {
+        p->castle &= ~(BQUEENSD|BKINGSD);
+        p->brd[PC(BLACK,KING)] |= MASK(C8);
+        p->brd[PC(BLACK,KING)] &= ~MASK(E8);
+        p->brd[PC(BLACK,ROOK)] |= MASK(D8);
+        p->brd[PC(BLACK,ROOK)] &= ~MASK(H8);
+        p->sqtopc[E8] = EMPTY;
+        p->sqtopc[A8] = EMPTY;
+        p->sqtopc[C8] = PC(BLACK,KING);
+        p->sqtopc[D8] = PC(BLACK,ROOK);
+        return;
+    } else if (pc == PC(BLACK,KING) && tosq == G8) {
+        p->castle &= ~(BQUEENSD|BKINGSD);
+        p->brd[PC(BLACK,KING)] |= MASK(G8);
+        p->brd[PC(BLACK,KING)] &= ~MASK(E8);
+        p->brd[PC(BLACK,ROOK)] |= MASK(F8);
+        p->brd[PC(BLACK,ROOK)] &= ~MASK(H8);
+        p->sqtopc[E8] = EMPTY;
+        p->sqtopc[H8] = EMPTY;
+        p->sqtopc[H8] = PC(BLACK,KING);
+        p->sqtopc[F8] = PC(BLACK,ROOK);
+        return;
+    }
 
     *pcs &= ~from;
     if (promotion == NO_PROMOTION) {
@@ -157,9 +208,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->castle &= ~(BQUEENSD | BKINGSD);
     }
          
-    p->wtm = FLIP(p->wtm);
-    p->halfmoves = pc == PC(side,PAWN) ? 0 : ++p->halfmoves;
-    ++p->nmoves;
+
 }
 /* struct position { */
 /*     uint64_t brd[NPIECES*2];  // 8 * 12 = 96B */
