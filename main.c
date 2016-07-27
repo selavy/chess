@@ -116,9 +116,25 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         pcs = &PIECES(*p, side, promotion);
     }
     if (capture != NO_CAPTURE) {
-        assert(p->sqtopc[tosq] != EMPTY);
-        assert((p->brd[p->sqtopc[tosq]] & to) != 0);
-        p->brd[p->sqtopc[tosq]] &= ~to;
+        if (pc == PC(side, PAWN) && p->sqtopc[tosq] == EMPTY) { // e.p.
+            if (side == WHITE) {
+                assert(tosq >= A6 && tosq <= H6);
+                int sq = tosq << 8;
+                assert(p->sqtopc[sq] == PC(BLACK,PAWN));
+                p->sqtopc[sq] = EMPTY;
+                p->brd[PC(BLACK,PAWN)] &= ~MASK(sq);
+            } else {
+                assert(tosq >= A3 && tosq <= H3);
+                int sq = tosq >> 8;
+                assert(p->sqtopc[sq] == PC(WHITE,PAWN));
+                p->sqtopc[sq] = EMPTY;
+                p->brd[PC(WHITE,PAWN)] &= ~MASK(sq);
+            }
+        } else {
+            assert(p->sqtopc[tosq] != EMPTY);
+            assert((p->brd[p->sqtopc[tosq]] & to) != 0);
+            p->brd[p->sqtopc[tosq]] &= ~to;
+        }
     }
     p->sqtopc[fromsq] = EMPTY;
     p->sqtopc[tosq] = pc;
