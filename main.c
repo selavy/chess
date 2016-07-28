@@ -140,17 +140,22 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     
     // TODO: improve
     if (pc == PC(WHITE,KING) && tosq == C1) {
+        assert(p->sqtopc[B1] == EMPTY);
+        assert(p->sqtopc[C1] == EMPTY);
+        assert(p->sqtopc[D1] == EMPTY);        
         p->castle &= ~(WQUEENSD|WKINGSD);
         p->brd[PC(WHITE,KING)] |= MASK(C1);
         p->brd[PC(WHITE,KING)] &= ~MASK(E1);
         p->brd[PC(WHITE,ROOK)] |= MASK(D1);
-        p->brd[PC(WHITE,ROOK)] &= ~MASK(H1);
+        p->brd[PC(WHITE,ROOK)] &= ~MASK(A1);
         p->sqtopc[E1] = EMPTY;
         p->sqtopc[A1] = EMPTY;
         p->sqtopc[C1] = PC(WHITE,KING);
         p->sqtopc[D1] = PC(WHITE,ROOK);
         return;
     } else if (pc == PC(WHITE,KING) && tosq == G1) {
+        assert(p->sqtopc[F1] == EMPTY);
+        assert(p->sqtopc[G1] == EMPTY);        
         p->castle &= ~(WQUEENSD|WKINGSD);
         p->brd[PC(WHITE,KING)] |= MASK(G1);
         p->brd[PC(WHITE,KING)] &= ~MASK(E1);
@@ -162,17 +167,22 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[F1] = PC(WHITE,ROOK);
         return;
     } else if (pc == PC(BLACK,KING) && tosq == C8) {
+        assert(p->sqtopc[B8] == EMPTY);
+        assert(p->sqtopc[C8] == EMPTY);
+        assert(p->sqtopc[D8] == EMPTY);                
         p->castle &= ~(BQUEENSD|BKINGSD);
         p->brd[PC(BLACK,KING)] |= MASK(C8);
         p->brd[PC(BLACK,KING)] &= ~MASK(E8);
         p->brd[PC(BLACK,ROOK)] |= MASK(D8);
-        p->brd[PC(BLACK,ROOK)] &= ~MASK(H8);
+        p->brd[PC(BLACK,ROOK)] &= ~MASK(A8);
         p->sqtopc[E8] = EMPTY;
         p->sqtopc[A8] = EMPTY;
         p->sqtopc[C8] = PC(BLACK,KING);
         p->sqtopc[D8] = PC(BLACK,ROOK);
         return;
     } else if (pc == PC(BLACK,KING) && tosq == G8) {
+        assert(p->sqtopc[F8] == EMPTY);
+        assert(p->sqtopc[G8] == EMPTY);                
         p->castle &= ~(BQUEENSD|BKINGSD);
         p->brd[PC(BLACK,KING)] |= MASK(G8);
         p->brd[PC(BLACK,KING)] &= ~MASK(E8);
@@ -217,7 +227,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     }
     p->sqtopc[fromsq] = EMPTY;
     p->sqtopc[tosq] = pc;
-    
+
     // REVISIT: improve
     // update castling flags if needed
     if (p->castle != 0) {
@@ -254,6 +264,68 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     p->castle = sp->castle;
     p->wtm = side;
     --p->nmoves;
+
+    if (pc == PC(WHITE,KING) && fromsq == E1 && tosq == C1) {
+        assert(p->sqtopc[A1] == EMPTY);
+        assert(p->sqtopc[B1] == EMPTY);
+        assert(p->sqtopc[C1] == PC(WHITE,KING));
+        assert(p->sqtopc[D1] == PC(WHITE,ROOK));
+        assert(p->sqtopc[E1] == EMPTY);
+        p->sqtopc[A1] = PC(WHITE,ROOK);
+        p->sqtopc[B1] = EMPTY;        
+        p->sqtopc[C1] = EMPTY;
+        p->sqtopc[D1] = EMPTY;
+        p->sqtopc[E1] = PC(WHITE,KING);
+        p->brd[PC(WHITE,ROOK)] &= ~MASK(D1);
+        p->brd[PC(WHITE,ROOK)] |= MASK(A1);
+        p->brd[PC(WHITE,KING)] &= ~MASK(C1);
+        p->brd[PC(WHITE,KING)] |= MASK(E1);
+        return;
+    } else if (pc == PC(WHITE,KING) && fromsq == E1 && tosq == G1) {
+        assert(p->sqtopc[E1] == EMPTY);
+        assert(p->sqtopc[F1] == PC(WHITE,ROOK));
+        assert(p->sqtopc[G1] == PC(WHITE,KING));
+        assert(p->sqtopc[H1] == EMPTY);
+        p->sqtopc[E1] = PC(WHITE,KING);
+        p->sqtopc[F1] = EMPTY;
+        p->sqtopc[G1] = EMPTY;
+        p->sqtopc[H1] = PC(WHITE,ROOK);
+        p->brd[PC(WHITE,KING)] &= ~MASK(G1);
+        p->brd[PC(WHITE,KING)] |= MASK(E1);
+        p->brd[PC(WHITE,ROOK)] &= ~MASK(F1);
+        p->brd[PC(WHITE,ROOK)] |= MASK(H1);
+        return;
+    } else if (pc == PC(BLACK,KING) && fromsq == E8 && tosq == C8) {
+        assert(p->sqtopc[A8] == EMPTY);
+        assert(p->sqtopc[B8] == EMPTY);
+        assert(p->sqtopc[C8] == PC(BLACK,KING));
+        assert(p->sqtopc[D8] == PC(BLACK,ROOK));
+        assert(p->sqtopc[E8] == EMPTY);
+        p->sqtopc[A8] = PC(BLACK,ROOK);
+        p->sqtopc[B8] = EMPTY;        
+        p->sqtopc[C8] = EMPTY;
+        p->sqtopc[D8] = EMPTY;
+        p->sqtopc[E8] = PC(BLACK,KING);
+        p->brd[PC(BLACK,ROOK)] &= ~MASK(D8);
+        p->brd[PC(BLACK,ROOK)] |= MASK(A8);
+        p->brd[PC(BLACK,KING)] &= ~MASK(C8);
+        p->brd[PC(BLACK,KING)] |= MASK(E8);
+        return;
+    } else if (pc == PC(BLACK,KING) && fromsq == E8 && tosq == G8) {
+        assert(p->sqtopc[E8] == EMPTY);
+        assert(p->sqtopc[F8] == PC(BLACK,ROOK));
+        assert(p->sqtopc[G8] == PC(BLACK,KING));
+        assert(p->sqtopc[H8] == EMPTY);
+        p->sqtopc[E8] = PC(BLACK,KING);
+        p->sqtopc[F8] = EMPTY;
+        p->sqtopc[G8] = EMPTY;
+        p->sqtopc[H8] = PC(BLACK,ROOK);
+        p->brd[PC(BLACK,KING)] &= ~MASK(G8);
+        p->brd[PC(BLACK,KING)] |= MASK(E8);
+        p->brd[PC(BLACK,ROOK)] &= ~MASK(F8);
+        p->brd[PC(BLACK,ROOK)] |= MASK(H8);
+        return;
+    }
     
     p->sqtopc[fromsq] = pc;
     p->sqtopc[tosq] = capture;
@@ -473,7 +545,7 @@ int main(int argc, char **argv) {
         assert(validate_position(&pos) == 0);
 
         undo_move(&pos, m, &sp);
-        //position_print(&pos.sqtopc[0]);
+        position_print(&pos.sqtopc[0]);
         assert(validate_position(&pos) == 0);
         assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
     }
