@@ -80,9 +80,9 @@ typedef uint32_t move;
 #define PROMOTE(m) (((m) >> 16) & 0x7)
 #define CAPTURE(m) (((m) >> 19) & 0xf)
 void move_print(move m) {
-    printf("MOVE(%s, %s, %s, %d, %d)\n",
+    printf("MOVE(from=%s, to=%s, pc=%s, prm=%d, cap=%s)\n",
            sq_to_str[FROM(m)], sq_to_str[TO(m)],
-           piecestr(PIECE(m)), PROMOTE(m), CAPTURE(m));
+           piecestr(PIECE(m)), PROMOTE(m), piecestr(CAPTURE(m)));
 }
 #define NO_PROMOTION 0
 #define NO_CAPTURE EMPTY
@@ -99,6 +99,7 @@ struct position {
     uint8_t  castle;          // 1 *  1 =  1B
     uint8_t  enpassant;       // 1 *  1 =  1B
 };                            // Total:  164B
+#define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING])
 void debug_position_print(struct position * restrict p) {
     int i;
     printf("BitBoards:\n");
@@ -368,6 +369,38 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
         }
     }
 }
+uint32_t generate_moves(const struct position * const restrict pos, move * restrict moves) {
+    uint32_t i;    
+    uint32_t pc;
+    uint64_t pcs;
+    uint64_t msk;
+    uint64_t posmoves;
+    uint64_t sq;
+    uint32_t nmove = 0;
+    uint8_t side = pos->wtm;
+    uint64_t same = FULLSIDE(*pos, side);
+
+    pcs = PIECES(*pos, side, KNIGHT);
+    if (pcs) {
+        pc = PC(side, KNIGHT);
+        for (i = 0; i < 64; ++i) {
+            msk = MASK(i);
+            if ((pcs & msk) != 0) {
+                posmoves = knight_attacks[i] & ~same;
+                if (posmoves != 0) {
+                    for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+                        if (posmoves & 0x1) {
+                            moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+                        }
+                    }
+                }
+                pcs &= ~msk;
+            }
+        }
+    }
+    
+    return nmove;
+}
 void position_print(const uint8_t * const restrict sqtopc) {
     char v;
     int sq, r, c;
@@ -535,9 +568,10 @@ int main(int argc, char **argv) {
     static struct position pos;
     static struct position tmp;
     static struct savepos sp;
-    move m;    
+    move m;
+    static move ms[MAX_MOVES];
+    uint32_t nmoves;
 
-    //#if 0 
     FILE *fp = fopen("test_cases.txt", "r");
     if (!fp) {
         fputs("Unable to open \"test_cases.txt\"\n", stderr);
@@ -565,24 +599,21 @@ int main(int argc, char **argv) {
     }
     
     fclose(fp);
-    //#endif 
 
-    #if 0
+    printf("\nGenerating all moves from starting position...\n");
     set_initial_position(&pos);
     position_print(&pos.sqtopc[0]);
-    assert(validate_position(&pos) == 0);
-    memcpy(&tmp, &pos, sizeof(tmp));
-    
-    m = MOVE(SQ(4,3), SQ(4,1), PC(WHITE,PAWN), NO_CAPTURE, NO_PROMOTION);
-    make_move(&pos, m, &sp);
-    position_print(&pos.sqtopc[0]);
-    assert(validate_position(&pos) == 0);
-    
-    undo_move(&pos, m, &sp);
-    position_print(&pos.sqtopc[0]);
-    assert(validate_position(&pos) == 0);
-    assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
-    #endif
+    nmoves = generate_moves(&pos, &ms[0]);
+    printf("moves: %u\n", nmoves);
+
+    for (uint32_t i = 0; i < nmoves; ++i) {
+        move_print(ms[i]);
+        assert(validate_position(&pos) == 0);
+        make_move(&pos, ms[i], &sp);
+        position_print(&pos.sqtopc[0]);
+        assert(validate_position(&pos) == 0);
+        undo_move(&pos, ms[i], &sp);
+    }
     
     return 0;
 }
