@@ -379,6 +379,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     uint32_t nmove = 0;
     uint8_t side = pos->wtm;
     uint64_t same = FULLSIDE(*pos, side);
+    uint64_t contra = FULLSIDE(*pos, FLIP(side));
+    uint64_t occupied = same | contra;
 
     // knight moves
     pcs = PIECES(*pos, side, KNIGHT);
@@ -414,6 +416,57 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         }
         pcs &= ~msk;
     }
+
+    // bishop moves
+    pcs = PIECES(*pos, side, BISHOP);
+    if (pcs != 0) {
+        pc = PC(side, BISHOP);
+        for (i = 0; i < 64 && pcs; ++i, pcs >>= 1) {
+            if ((pcs & 0x01) != 0) {
+                posmoves = bishop_attacks(i, occupied);
+                for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+                    msk = MASK(sq);
+                    if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
+                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+                    }
+                }
+            }
+        }
+    }
+    
+    // rook moves
+    pcs = PIECES(*pos, side, ROOK);
+    if (pcs != 0) {
+        pc = PC(side, ROOK);
+        for (i = 0; i < 64 && pcs; ++i, pcs >>= 1) {
+            if ((pcs & 0x01) != 0) {
+                posmoves = rook_attacks(i, occupied);
+                for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+                    msk = MASK(sq);
+                    if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
+                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+                    }
+                }
+            }
+        }
+    }
+
+    // queen moves
+    pcs = PIECES(*pos, side, QUEEN);
+    if (pcs != 0) {
+        pc = PC(side, QUEEN);
+        for (i = 0; i < 64 && pcs; ++i, pcs >>= 1) {
+            if ((pcs & 0x01) != 0) {
+                posmoves = queen_attacks(i, occupied);
+                for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+                    msk = MASK(sq);
+                    if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
+                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+                    }
+                }
+            }
+        }
+    }
     
     return nmove;
 }
@@ -437,6 +490,16 @@ void set_initial_position(struct position * restrict p) {
     p->halfmoves = 0;
     PIECES(*p, WHITE, PAWN  ) = 0x0000ff00ULL;
     for (i = A2; i <= H2; ++i) p->sqtopc[i] = PC(WHITE, PAWN);
+
+    //DEBUG
+    /* PIECES(*p, WHITE, PAWN) &= ~(1 << E2); */
+    /* p->sqtopc[E2] = EMPTY;     */
+    /* PIECES(*p, WHITE, PAWN) &= ~(1 << H2); */
+    /* p->sqtopc[H2] = EMPTY; */
+    /* PIECES(*p, WHITE, PAWN) &= ~(1 << A2); */
+    /* p->sqtopc[A2] = EMPTY; */
+    //GUBED
+    
     PIECES(*p, WHITE, KNIGHT) = 0x00000042ULL;
     p->sqtopc[B1] = PC(WHITE, KNIGHT);
     p->sqtopc[G1] = PC(WHITE, KNIGHT);
@@ -630,6 +693,8 @@ int main(int argc, char **argv) {
         assert(validate_position(&pos) == 0);
         undo_move(&pos, ms[i], &sp);
     }
+
+    printf("moves: %u\n", nmoves);
     
     return 0;
 }
