@@ -21,6 +21,8 @@ static char vpcs[] = {
 };
 #define PC(side, type) (((side)*NPIECES)+(type))
 #define PIECES(p, side, type) (p).brd[PC(side, type)]
+#define WHITE_ENPASSANT_SQUARES 0x00000000ff000000
+#define BLACK_ENPASSANT_SQUARES 0x000000ff00000000
 enum {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -115,7 +117,6 @@ struct savepos {
     uint8_t was_ep;
 };
 void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
-    // TODO: castling
     uint32_t pc = PIECE(m);
     uint32_t fromsq = FROM(m);
     uint32_t tosq = TO(m);
@@ -198,7 +199,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     *pcs &= ~from;
     if (promotion == NO_PROMOTION) {
         *pcs |= to;
-    } else {
+    } else { // TODO: promotions
         assert(0);
         pcs = &PIECES(*p, side, promotion-1);
         // TODO: implement
@@ -208,13 +209,17 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
             sp->was_ep = 1;
             if (side == WHITE) {
                 assert(tosq >= A6 && tosq <= H6);
-                int sq = tosq << 8;
+                int sq = tosq - 8;
+                assert(p->enpassant != 0);
+                assert(sq == 24 + p->enpassant);
                 assert(p->sqtopc[sq] == PC(BLACK,PAWN));
                 p->sqtopc[sq] = EMPTY;
                 p->brd[PC(BLACK,PAWN)] &= ~MASK(sq);
             } else {
                 assert(tosq >= A3 && tosq <= H3);
-                int sq = tosq >> 8;
+                int sq = tosq + 8;
+                assert(p->enpassant != 0);
+                assert(sq == 24 + p->enpassant);
                 assert(p->sqtopc[sq] == PC(WHITE,PAWN));
                 p->sqtopc[sq] = EMPTY;
                 p->brd[PC(WHITE,PAWN)] &= ~MASK(sq);
@@ -245,10 +250,17 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
             p->castle &= ~(BQUEENSD | BKINGSD);
         }
     }
+
+    p->enpassant = 0;    
+    if (capture == NO_CAPTURE) {
+        if (pc == PC(WHITE,PAWN) && (to & WHITE_ENPASSANT_SQUARES) != 0) {
+            p->enpassant = tosq - 24;
+        } else if (pc == PC(BLACK,PAWN) && (to & BLACK_ENPASSANT_SQUARES) != 0) {
+            p->enpassant = tosq - 24;            
+        }
+    }
 }
 void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
-    // TODO: undo castling
-    // TODO: undo enpassant
     uint32_t pc = PIECE(m);
     uint32_t fromsq = FROM(m);
     uint32_t tosq = TO(m);
@@ -328,22 +340,23 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     }
     
     p->sqtopc[fromsq] = pc;
-    p->sqtopc[tosq] = capture;
     *pcs |= from;
     *pcs &= ~to;    
     if (sp->was_ep != 0) { // e.p.
+        p->sqtopc[tosq] = EMPTY;
         if (side == WHITE) {
             assert(capture == PC(BLACK,PAWN));
-            int sq = tosq << 8;
+            int sq = tosq - 8;
             p->sqtopc[sq] = PC(BLACK,PAWN);
             p->brd[PC(BLACK,PAWN)] |= MASK(sq);
         } else {
             assert(capture == PC(WHITE,PAWN));
-            int sq = tosq >> 8;
+            int sq = tosq + 8;
             p->sqtopc[sq] = PC(WHITE,PAWN);
             p->brd[PC(WHITE,PAWN)] |= MASK(sq);            
         }
     } else {
+        p->sqtopc[tosq] = capture;
         // if a capture, place captured piece back on bit boards
         if (capture != NO_CAPTURE) {
             p->brd[capture] |= to;
