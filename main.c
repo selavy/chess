@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <assert.h>
+#include "magic_tables.h"
 
 #define FLIP(side) ((side)^1)
 #define COLS 8

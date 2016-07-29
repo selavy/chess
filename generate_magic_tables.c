@@ -295,7 +295,7 @@ uint64_t InitializeMagicBishop(int square, uint64_t occupied) {
 
 // taken from crafty, `init.c` and `data.c`
 void InitializeMagic(void) {
-  int i, j, m;
+    int i;//, j, m;
   int initmagicmoves_bitpos64_database[64] = {
     63, 0, 58, 1, 59, 47, 53, 2,
     60, 39, 48, 27, 54, 33, 42, 3,
