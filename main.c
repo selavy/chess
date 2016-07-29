@@ -380,6 +380,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     uint8_t side = pos->wtm;
     uint64_t same = FULLSIDE(*pos, side);
 
+    // knight moves
     pcs = PIECES(*pos, side, KNIGHT);
     if (pcs) {
         pc = PC(side, KNIGHT);
@@ -397,6 +398,21 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
                 pcs &= ~msk;
             }
         }
+    }
+
+    // king moves
+    pcs = PIECES(*pos, side, KING);
+    pc = PC(side, KING);
+    for (i = 0; i < 64 && (pcs & 0x01) == 0; ++i, pcs >>= 1);
+    assert(i < 64 && i >= 0);
+    posmoves = king_attacks[i] & ~same;
+    if (posmoves != 0) {
+        for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+            if (posmoves & 0x1) {
+                moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+            }
+        }
+        pcs &= ~msk;
     }
     
     return nmove;
