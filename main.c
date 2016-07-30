@@ -32,6 +32,9 @@ static char vpcs[] = {
 #define A_FILE 0x101010101010101ULL
 #define H_FILE   0x8080808080808080ULL
 #define RANK2(side) ((side) == WHITE ? SECOND_RANK : SEVENTH_RANK)
+#define THIRD_RANK 0xff0000ULL
+#define SIXTH_RANK 0xff0000000000ULL
+#define RANK3(side) ((side) == WHITE ? THIRD_RANK : SIXTH_RANK)
 enum {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -557,6 +560,10 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 16 : sq + 16;
+            // TODO: can i do this with the bitmasks?
+            if (pos->sqtopc[side == WHITE ? sq - 8 : sq + 8] != EMPTY) {
+                continue;
+            }
             moves[nmove++] = MOVE(sq, fromsq, pc, EMPTY, 0);
         }
     }
@@ -816,12 +823,10 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
     move moves[MAX_MOVES];
     struct savepos sp;
 
-    // if the other side is already in check, then this
-    // is an illegal position
     if (in_check(pos, pos->wtm)) {
-        //printf("in check!\n");
-        //position_print(&pos->sqtopc[0]);
         ++checkcnt;
+    }
+    if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
     }
     
@@ -841,6 +846,14 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
     } else {
 #endif
         nodes = 0;
+
+        //#define SIMPLE_PERFT_PRINT
+#ifdef SIMPLE_PERFT_PRINT
+        if (depth == 1) {
+            position_print(&pos->sqtopc[0]);
+        }
+#endif
+        
         for (i = 0; i < nmoves; ++i) {
             #if 0
             make_move(pos, moves[i], &sp);
@@ -849,26 +862,32 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
             #endif
 
             memcpy(&tmp, pos, sizeof(tmp));
+
 #ifdef PRINT_PERFT
-            printf("premove\n");
-            position_print(&pos->sqtopc[0]);
-            move_print(moves[i]);
+            if (depth == 1) {
+                printf("premove\n");
+                position_print(&pos->sqtopc[0]);
+                move_print(moves[i]);
+            }
 #endif
+            
+#ifdef SIMPLE_PERFT_PRINT
+            if (depth == 1) {
+                move_print(moves[i]);
+            }
+#endif
+            
             make_move(pos, moves[i], &sp);
 
 #ifdef PRINT_PERFT
-            position_print(&pos->sqtopc[0]);
+            if (depth == 1) {
+                position_print(&pos->sqtopc[0]);
+            }
 #endif
             assert(validate_position(pos) == 0);
             nodes += perft_ex(depth - 1, pos);
             
             undo_move(pos, moves[i], &sp);
-#ifdef PRINT_PERFT
-            printf("postmove:\n");
-            position_print(&pos->sqtopc[0]);
-            position_print(&tmp.sqtopc[0]);
-            printf("\\postmove\n");
-#endif
             assert(validate_position(pos) == 0);
 
 #ifdef DEBUG_COMPARE
@@ -953,7 +972,7 @@ int main(int argc, char **argv) {
 #endif
 
     uint64_t res;
-    for (int ply = 3; ply < 4; ++ply) {
+    for (int ply = 0; ply < 4; ++ply) {
         checkcnt = 0;
         res = perft(ply);
         printf("Perft(%u) = %" PRIu64 ", Check Count = %" PRIu64 ", Capture Count = %" PRIu64 "\n", ply, res, checkcnt, capturecnt);
