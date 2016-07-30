@@ -472,9 +472,13 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     }
 
     // pawn moves
+    // TODO: en passant
+    // TODO: promotion
     uint32_t tosq;
     pc = PC(side, PAWN);
     pcs = PIECES(*pos, side, PAWN);
+
+    // forward 1 square
     posmoves = side == WHITE ? pcs << 8 : pcs >> 8;
     posmoves &= ~occupied;
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
@@ -484,7 +488,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             moves[nmove++] = MOVE(sq, tosq, pc, EMPTY, 0);
         }
     }
-    
+
+    // forward 2 squares
     posmoves = pcs & STARTINGPAWNRANK(side);
     posmoves = side == WHITE ? posmoves << 16 : posmoves >> 16;
     posmoves &= ~occupied;
@@ -495,6 +500,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         }
     }
 
+    // capture left
     posmoves = pcs & ~A_FILE;
     posmoves = side == WHITE ? posmoves << 7 : posmoves >> 9;
     posmoves &= contra;
@@ -505,6 +511,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         }
     }
 
+    // capture right
     posmoves = pcs & ~H_FILE;
     posmoves = side == WHITE ? posmoves << 9 : posmoves >> 7;
     posmoves &= contra;
@@ -514,6 +521,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             moves[nmove++] = MOVE(sq, tosq, pc, pos->sqtopc[tosq], 0);
         }
     }
+
+    // TODO: castling
     
     return nmove;
 }
