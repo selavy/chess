@@ -692,30 +692,47 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
     *m = MOVE(to, from, int_to_piece(pc), int_to_piece(cap), prm);
 }
 uint64_t perft_ex(int depth, struct position * const restrict pos) {
-    static struct position tmp;
+    struct position tmp;
     uint32_t i;    
     uint32_t nmoves;
     uint64_t nodes;
+    move moves[MAX_MOVES];
     struct savepos sp;
-    move *moves;
     
     if (depth == 0) return 1;
-    moves = malloc(sizeof(*moves) * MAX_MOVES);
+    
     nmoves = generate_moves(pos, &moves[0]);
     if (depth == 1) {
         nodes = nmoves;
     } else {
         nodes = 0;
         for (i = 0; i < nmoves; ++i) {
-            memcpy(&tmp, pos, sizeof(tmp));
+            #if 0
             make_move(pos, moves[i], &sp);
-            assert(validate_position(pos) == 0);
             nodes += perft_ex(depth - 1, pos);
             undo_move(pos, moves[i], &sp);
+            #endif
+
+            memcpy(&tmp, pos, sizeof(tmp));
+            /* printf("premove\n"); */
+            /* position_print(&pos->sqtopc[0]); */
+            /* move_print(moves[i]); */
+            make_move(pos, moves[i], &sp);
+            
+            /* position_print(&pos->sqtopc[0]); */
+            assert(validate_position(pos) == 0);
+            nodes += perft_ex(depth - 1, pos);
+            
+            undo_move(pos, moves[i], &sp);
+            /* printf("postmove:\n"); */
+            /* position_print(&pos->sqtopc[0]); */
+            /* position_print(&tmp.sqtopc[0]); */
+            /* printf("\\postmove\n"); */
             assert(validate_position(pos) == 0);
             assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
         }
     }
+    
     return nodes;
 }
 uint64_t perft(int depth) {
@@ -777,7 +794,7 @@ int main(int argc, char **argv) {
     printf("moves: %u\n", nmoves);
 
     uint64_t res;
-    for (int ply = 1; ply < 3; ++ply) {
+    for (int ply = 1; ply < 4; ++ply) {
         res = perft(ply);
         printf("Perft(%u) = %" PRIu64 "\n", ply, res);
     }

@@ -1,7 +1,7 @@
 CC=gcc
-DEBUG=-O0 -g
+DEBUG=-O0 -g -fno-omit-frame-pointer
 RELEASE=-O2 -fstrict-aliasing -ffast-math -lto
-CFLAGS=$(DEBUG) -Wall -Werror -pedantic -std=c99
+CFLAGS=$(DEBUG) -Wall -Werror -pedantic -std=c99 -fsanitize=address
 GENERATED=magic_tables.o
 OBJS=$(GENERATED) main.o
 TARGET=chess
