@@ -43,7 +43,7 @@ enum {
     A5, B5, C5, D5, E5, F5, G5, H5,
     A6, B6, C6, D6, E6, F6, G6, H6,
     A7, B7, C7, D7, E7, F7, G7, H7,
-    A8, B8, C8, D8, E8, F8, G8, H8, 
+    A8, B8, C8, D8, E8, F8, G8, H8,
 };
 const char *sq_to_str[64] = {
     "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1",
@@ -138,12 +138,12 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     uint8_t side = p->wtm;
     uint64_t from = MASK(fromsq);
     uint64_t to = MASK(tosq);
-    uint64_t * restrict pcs = &p->brd[pc];        
+    uint64_t * restrict pcs = &p->brd[pc];
     sp->halfmoves = p->halfmoves;
     sp->enpassant = p->enpassant;
     sp->castle = p->castle;
     sp->was_ep = 0;
-    
+
     p->wtm = FLIP(p->wtm);
     if (pc == PC(side,PAWN)) {
         p->halfmoves = 0;
@@ -151,12 +151,12 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         ++p->halfmoves;
     }
     ++p->nmoves;
-    
+
     // TODO: improve
     if (pc == PC(WHITE,KING) && tosq == C1) {
         assert(p->sqtopc[B1] == EMPTY);
         assert(p->sqtopc[C1] == EMPTY);
-        assert(p->sqtopc[D1] == EMPTY);        
+        assert(p->sqtopc[D1] == EMPTY);
         p->castle &= ~(WQUEENSD|WKINGSD);
         p->brd[PC(WHITE,KING)] |= MASK(C1);
         p->brd[PC(WHITE,KING)] &= ~MASK(E1);
@@ -169,7 +169,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         return;
     } else if (pc == PC(WHITE,KING) && tosq == G1) {
         assert(p->sqtopc[F1] == EMPTY);
-        assert(p->sqtopc[G1] == EMPTY);        
+        assert(p->sqtopc[G1] == EMPTY);
         p->castle &= ~(WQUEENSD|WKINGSD);
         p->brd[PC(WHITE,KING)] |= MASK(G1);
         p->brd[PC(WHITE,KING)] &= ~MASK(E1);
@@ -183,7 +183,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     } else if (pc == PC(BLACK,KING) && tosq == C8) {
         assert(p->sqtopc[B8] == EMPTY);
         assert(p->sqtopc[C8] == EMPTY);
-        assert(p->sqtopc[D8] == EMPTY);                
+        assert(p->sqtopc[D8] == EMPTY);
         p->castle &= ~(BQUEENSD|BKINGSD);
         p->brd[PC(BLACK,KING)] |= MASK(C8);
         p->brd[PC(BLACK,KING)] &= ~MASK(E8);
@@ -196,7 +196,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         return;
     } else if (pc == PC(BLACK,KING) && tosq == G8) {
         assert(p->sqtopc[F8] == EMPTY);
-        assert(p->sqtopc[G8] == EMPTY);                
+        assert(p->sqtopc[G8] == EMPTY);
         p->castle &= ~(BQUEENSD|BKINGSD);
         p->brd[PC(BLACK,KING)] |= MASK(G8);
         p->brd[PC(BLACK,KING)] &= ~MASK(E8);
@@ -264,12 +264,12 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         }
     }
 
-    p->enpassant = 0;    
+    p->enpassant = 0;
     if (capture == NO_CAPTURE) {
         if (pc == PC(WHITE,PAWN) && (to & WHITE_ENPASSANT_SQUARES) != 0) {
             p->enpassant = tosq - 24;
         } else if (pc == PC(BLACK,PAWN) && (to & BLACK_ENPASSANT_SQUARES) != 0) {
-            p->enpassant = tosq - 24;            
+            p->enpassant = tosq - 24;
         }
     }
 }
@@ -283,7 +283,7 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     uint64_t from = MASK(fromsq);
     uint64_t to = MASK(tosq);
     uint64_t * restrict pcs = &p->brd[pc];
-    
+
     p->halfmoves = sp->halfmoves;
     p->enpassant = sp->enpassant;
     p->castle = sp->castle;
@@ -297,7 +297,7 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
         assert(p->sqtopc[D1] == PC(WHITE,ROOK));
         assert(p->sqtopc[E1] == EMPTY);
         p->sqtopc[A1] = PC(WHITE,ROOK);
-        p->sqtopc[B1] = EMPTY;        
+        p->sqtopc[B1] = EMPTY;
         p->sqtopc[C1] = EMPTY;
         p->sqtopc[D1] = EMPTY;
         p->sqtopc[E1] = PC(WHITE,KING);
@@ -327,7 +327,7 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
         assert(p->sqtopc[D8] == PC(BLACK,ROOK));
         assert(p->sqtopc[E8] == EMPTY);
         p->sqtopc[A8] = PC(BLACK,ROOK);
-        p->sqtopc[B8] = EMPTY;        
+        p->sqtopc[B8] = EMPTY;
         p->sqtopc[C8] = EMPTY;
         p->sqtopc[D8] = EMPTY;
         p->sqtopc[E8] = PC(BLACK,KING);
@@ -351,10 +351,10 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
         p->brd[PC(BLACK,ROOK)] |= MASK(H8);
         return;
     }
-    
+
     p->sqtopc[fromsq] = pc;
     *pcs |= from;
-    *pcs &= ~to;    
+    *pcs &= ~to;
     if (sp->was_ep != 0) { // e.p.
         p->sqtopc[tosq] = EMPTY;
         if (side == WHITE) {
@@ -366,7 +366,7 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
             assert(capture == PC(WHITE,PAWN));
             int sq = tosq + 8;
             p->sqtopc[sq] = PC(WHITE,PAWN);
-            p->brd[PC(WHITE,PAWN)] |= MASK(sq);            
+            p->brd[PC(WHITE,PAWN)] |= MASK(sq);
         }
     } else {
         p->sqtopc[tosq] = capture;
@@ -388,7 +388,7 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     uint64_t pcs;
     uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
 
-    pcs = pos->brd[PC(side,ROOK)] | pos->brd[PC(side,QUEEN)];    
+    pcs = pos->brd[PC(side,ROOK)] | pos->brd[PC(side,QUEEN)];
     if ((rook_attacks(square, occupied) & pcs) != 0) {
         return 1;
     }
@@ -440,7 +440,7 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
 }
 
 uint32_t generate_moves(const struct position * const restrict pos, move * restrict moves) {
-    uint32_t i;    
+    uint32_t i;
     uint32_t pc;
     uint64_t pcs;
     uint64_t msk;
@@ -451,7 +451,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     uint64_t same = FULLSIDE(*pos, side);
     uint64_t contra = FULLSIDE(*pos, FLIP(side));
     uint64_t occupied = same | contra;
-    
+
     // knight moves
     pcs = PIECES(*pos, side, KNIGHT);
     if (pcs != 0) {
@@ -500,7 +500,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             }
         }
     }
-    
+
     // rook moves
     pcs = PIECES(*pos, side, ROOK);
     if (pcs != 0) {
@@ -591,21 +591,21 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     }
 
     // TODO: castling
-    
+
     return nmove;
 }
 void position_print(const uint8_t * const restrict sqtopc) {
     char v;
     int sq, r, c;
-    fputs("---------------------------------\n", stdout);    
+    fputs("---------------------------------\n", stdout);
     for (r = (RANKS - 1); r >= 0; --r) {
         for (c = 0; c < COLS; ++c) {
             sq = SQ(c, r);
             v = vpcs[sqtopc[sq]];
-            fprintf(stdout, "| %c ", v);            
+            fprintf(stdout, "| %c ", v);
         }
         fputs("|\n---------------------------------\n", stdout);
-    }    
+    }
 }
 void set_initial_position(struct position * restrict p) {
     int i;
@@ -614,7 +614,7 @@ void set_initial_position(struct position * restrict p) {
     p->halfmoves = 0;
     PIECES(*p, WHITE, PAWN  ) = 0x0000ff00ULL;
     for (i = A2; i <= H2; ++i) p->sqtopc[i] = PC(WHITE, PAWN);
-    
+
     PIECES(*p, WHITE, KNIGHT) = 0x00000042ULL;
     p->sqtopc[B1] = PC(WHITE, KNIGHT);
     p->sqtopc[G1] = PC(WHITE, KNIGHT);
@@ -623,7 +623,7 @@ void set_initial_position(struct position * restrict p) {
     p->sqtopc[F1] = PC(WHITE, BISHOP);
     PIECES(*p, WHITE, ROOK  ) = 0x00000081ULL;
     p->sqtopc[A1] = PC(WHITE, ROOK);
-    p->sqtopc[H1] = PC(WHITE, ROOK);    
+    p->sqtopc[H1] = PC(WHITE, ROOK);
     PIECES(*p, WHITE, QUEEN ) = 0x00000008ULL;
     p->sqtopc[D1] = PC(WHITE, QUEEN);
     PIECES(*p, WHITE, KING  ) = 0x00000010ULL;
@@ -635,7 +635,7 @@ void set_initial_position(struct position * restrict p) {
     p->sqtopc[G8] = PC(BLACK, KNIGHT);
     PIECES(*p, BLACK, BISHOP) = 0x2400000000000000ULL;
     p->sqtopc[C8] = PC(BLACK, BISHOP);
-    p->sqtopc[F8] = PC(BLACK, BISHOP);    
+    p->sqtopc[F8] = PC(BLACK, BISHOP);
     PIECES(*p, BLACK, ROOK  ) = 0x8100000000000000ULL;
     p->sqtopc[A8] = PC(BLACK, ROOK);
     p->sqtopc[H8] = PC(BLACK, ROOK);
@@ -657,7 +657,7 @@ int validate_position(const struct position * const restrict p) {
     }
     // black king present
     if (p->brd[PC(BLACK,KING)] == 0) {
-        fputs("No black king present", stderr);        
+        fputs("No black king present", stderr);
         return 2;
     }
     for (i = 0; i < SQUARES; ++i) {
@@ -668,10 +668,10 @@ int validate_position(const struct position * const restrict p) {
                 if (p->sqtopc[i] != pc) {
                     fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s, found = %d\n",
                             piecestr(pc), i, piecestr(p->sqtopc[i]), found);
-                        
+
                     return 3;
                 }
-                found = 1;                
+                found = 1;
             }
         }
         if (found == 0 && p->sqtopc[i] != EMPTY) {
@@ -817,28 +817,21 @@ static uint64_t checkcnt = 0;
 static uint64_t capturecnt = 0;
 uint64_t perft_ex(int depth, struct position * const restrict pos) {
     struct position tmp;
-    uint32_t i;    
+    uint32_t i;
     uint32_t nmoves;
     uint64_t nodes;
     move moves[MAX_MOVES];
     struct savepos sp;
 
-    if (in_check(pos, pos->wtm)) {
-        ++checkcnt;
-    }
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
     }
-    
-    if (depth == 0) return 1;
-    
-    nmoves = generate_moves(pos, &moves[0]);
-    #define COUNT_CAPTURES
-    #ifdef COUNT_CAPTURES
-    for (i = 0; i < nmoves; ++i) {
-        if (CAPTURE(moves[i]) != NO_CAPTURE) ++capturecnt;
+    if (in_check(pos, pos->wtm)) {
+        ++checkcnt;
     }
-    #endif
+    if (depth == 0) return 1;
+
+    nmoves = generate_moves(pos, &moves[0]);
 
 #ifdef BULK_COUNT
     if (depth == 1) {
@@ -853,7 +846,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
             position_print(&pos->sqtopc[0]);
         }
 #endif
-        
+
         for (i = 0; i < nmoves; ++i) {
             #if 0
             make_move(pos, moves[i], &sp);
@@ -870,13 +863,13 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
                 move_print(moves[i]);
             }
 #endif
-            
+
 #ifdef SIMPLE_PERFT_PRINT
             if (depth == 1) {
                 move_print(moves[i]);
             }
 #endif
-            
+
             make_move(pos, moves[i], &sp);
 
 #ifdef PRINT_PERFT
@@ -886,9 +879,16 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
 #endif
             assert(validate_position(pos) == 0);
             nodes += perft_ex(depth - 1, pos);
-            
+
             undo_move(pos, moves[i], &sp);
             assert(validate_position(pos) == 0);
+
+            if (nodes != 0 && CAPTURE(moves[i]) != NO_CAPTURE) {
+                ++capturecnt;
+                printf("Capture\n");
+                position_print(&pos->sqtopc[0]);
+                move_print(moves[i]);
+            }
 
 #ifdef DEBUG_COMPARE
             if (compare_positions(pos, &tmp) != 0) {
@@ -912,7 +912,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
 #ifdef BULK_COUNT
     }
 #endif
-    
+
     return nodes;
 }
 uint64_t perft(int depth) {
@@ -935,7 +935,7 @@ int main(int argc, char **argv) {
     int c;
     while ((c = fgetc(fp)) != EOF) {
         ungetc(c, fp);
-        
+
         read_position_from_file(fp, &pos, &m);
         //position_print(&pos.sqtopc[0]);
         assert(validate_position(&pos) == 0);
@@ -952,7 +952,7 @@ int main(int argc, char **argv) {
         assert(validate_position(&pos) == 0);
         assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
     }
-    
+
     fclose(fp);
 
 #if 0
@@ -972,11 +972,11 @@ int main(int argc, char **argv) {
 #endif
 
     uint64_t res;
-    for (int ply = 0; ply < 4; ++ply) {
+    for (int ply = 0; ply < 5; ++ply) {
         checkcnt = 0;
         res = perft(ply);
         printf("Perft(%u) = %" PRIu64 ", Check Count = %" PRIu64 ", Capture Count = %" PRIu64 "\n", ply, res, checkcnt, capturecnt);
     }
-    
+
     return 0;
 }
