@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <inttypes.h>
 
 uint64_t clear_mask[65];
@@ -397,7 +398,11 @@ int main(int argc, char **argv) {
     fputs("extern const uint64_t magic_rook_mask[64];\n", hdr);
     fputs("extern const unsigned magic_rook_shift[64];\n", hdr);
     fputs("extern const uint64_t magic_rook_table[102400];\n", hdr);
-    fputs("extern const uint64_t *magic_rook_indices[64];\n", hdr);    
+    fputs("extern const uint64_t *magic_rook_indices[64];\n", hdr);
+    fputs("extern const uint64_t slide_attacks[64];\n", hdr);
+    fputs("extern const uint64_t diagl_attacks[64];\n", hdr);
+    fputs("extern const uint64_t wpawn_attacks[64];\n", hdr);
+    fputs("extern const uint64_t bpawn_attacks[64];\n", hdr);        
     fputs("\n", hdr);
     fputs("#define bishop_attacks(square, occ)                                     \\\n"
           "    *(magic_bishop_indices[square] +                                    \\\n"
@@ -656,6 +661,98 @@ int main(int argc, char **argv) {
     }
     fprintf(fp, "    magic_rook_table + 0x%08X, magic_rook_table + 0x%08X\n};\n",
             mri[62], mri[63]);
+
+
+    uint64_t slide_attacks[64];
+    uint64_t diagl_attacks[64];
+    uint64_t wpawn_attacks[64];
+    uint64_t bpawn_attacks[64];
+    memset(&slide_attacks[0], 0, sizeof(slide_attacks[0]) * 64);
+    memset(&diagl_attacks[0], 0, sizeof(diagl_attacks[0]) * 64);
+    memset(&wpawn_attacks[0], 0, sizeof(wpawn_attacks[0]) * 64);
+    memset(&bpawn_attacks[0], 0, sizeof(bpawn_attacks[0]) * 64);    
+
+    int boff_r[4] = { -1, -1,  1,  1 };
+    int boff_c[4] = { -1,  1, -1,  1 };
+    int roff_r[4] = { -1,  1,  0,  0 };
+    int roff_c[4] = {  0,  0, -1,  1 };
+
+    int rank;
+    int col;
+    int sq;
+    for (int r = 0; r < 8; ++r) {
+        for (int c = 0; c < 8; ++c) {
+            sq = r * 8 + c;
+            for (int i = 1; i < 8; ++i) {
+                for (int o = 0; o < 4; ++o) {
+                    rank = r + boff_r[o]*i;
+                    col  = c + boff_c[o]*i; 
+                    if (rank >= 0 && rank <= 7 && col >= 0 && col <= 7) {
+                        diagl_attacks[sq] |= ((uint64_t)1 << ((rank * 8) + col));
+                    }
+                    rank = r + roff_r[o]*i;
+                    col  = c + roff_c[o]*i;
+                    if (rank >= 0 && rank <= 7 && col >= 0 && col <= 7) {
+                        slide_attacks[sq] |= ((uint64_t)1 << ((rank * 8) + col));
+                    }
+                }
+            }
+
+            // pawn attacks
+            if (r != 0 && r != 7) { // 1st and 8th rank can't capture anything
+                // capture left
+                if (c != 0) { // not left column
+                    wpawn_attacks[sq] |= (uint64_t)1 << (sq + 7);
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq + 7);
+                }
+                // capture right
+                if (c != 7) { // not right column
+                    wpawn_attacks[sq] |= (uint64_t)1 << (sq + 9);
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq + 9);
+                }
+            }
+        }
+    }
+    
+    fputs("const uint64_t slide_attacks[64] = {\n", fp);
+    for (int i = 0; i < 60; i += 4) {
+        fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX,\n",
+                slide_attacks[i], slide_attacks[i+1],
+                slide_attacks[i+2], slide_attacks[i+3]);
+    }
+    fprintf(fp, "    0x%08llX, 0x%016llX, 0x%016llX, 0x%016llX\n};\n",
+            slide_attacks[60], slide_attacks[61],
+            slide_attacks[62], slide_attacks[63]);
+    
+    fputs("const uint64_t diagl_attacks[64] = {\n", fp);
+    for (int i = 0; i < 60; i += 4) {
+        fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX,\n",
+                diagl_attacks[i], diagl_attacks[i+1],
+                diagl_attacks[i+2], diagl_attacks[i+3]);
+    }
+    fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX\n};\n",
+            diagl_attacks[60], diagl_attacks[61],
+            diagl_attacks[62], diagl_attacks[63]);
+    fputs("const uint64_t wpawn_attacks[64] = {\n", fp);
+    for (int i = 0; i < 60; i += 4) {
+        fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX,\n",
+                wpawn_attacks[i], wpawn_attacks[i+1],
+                wpawn_attacks[i+2], wpawn_attacks[i+3]);
+    }
+    fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX\n};\n",
+            wpawn_attacks[60], wpawn_attacks[61],
+            wpawn_attacks[62], wpawn_attacks[63]);
+    fputs("const uint64_t bpawn_attacks[64] = {\n", fp);
+    for (int i = 0; i < 60; i += 4) {
+        fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX,\n",
+                bpawn_attacks[i], bpawn_attacks[i+1],
+                bpawn_attacks[i+2], bpawn_attacks[i+3]);
+    }
+    fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX\n};\n",
+            bpawn_attacks[60], bpawn_attacks[61],
+            bpawn_attacks[62], bpawn_attacks[63]);    
+    
+    
     
     fputs("\n\n", hdr);
     fclose(hdr);

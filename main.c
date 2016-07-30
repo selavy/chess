@@ -6,6 +6,7 @@
 #include <assert.h>
 #include "magic_tables.h"
 
+#define BOOLSTR(x) ((x)?"TRUE":"FALSE")
 #define FLIP(side) ((side)^1)
 #define COLS 8
 #define RANKS 8
@@ -14,6 +15,7 @@
 #define MASK(x) ((uint64_t)1 << x)
 #define SQ(c,r) ((r)*COLS+(c))
 enum { WHITE=0, BLACK };
+#define pawn_attacks(side, sq) ((side) == WHITE ? wpawn_attacks[sq] : bpawn_attacks[sq])
 enum { PAWN=0, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2) };
 static char vpcs[] = {
     'P', 'N', 'B', 'R', 'Q', 'K',
@@ -26,10 +28,10 @@ static char vpcs[] = {
 #define BLACK_ENPASSANT_SQUARES 0x000000ff00000000
 #define SECOND_RANK 0xff00ull
 #define SEVENTH_RANK 0xff000000000000ull
-#define LASTRANK(side) ((side) == WHITE ? SEVENTH_RANK : SECOND_RANK)
+#define RANK7(side) ((side) == WHITE ? SEVENTH_RANK : SECOND_RANK)
 #define A_FILE 0x1010101010100ull
 #define H_FILE 0x80808080808000ull
-#define STARTINGPAWNRANK(side) ((side) == WHITE ? SECOND_RANK : SEVENTH_RANK)
+#define RANK2(side) ((side) == WHITE ? SECOND_RANK : SEVENTH_RANK)
 enum {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -375,6 +377,65 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
         }
     }
 }
+
+// returns 1 if a piece from `side` attacks `square`
+int attacks(const struct position * const restrict pos, uint8_t side, int square) {
+    // TODO: implement
+    // TODO: generate attack square data
+    uint64_t pcs;
+    uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
+
+    pcs = pos->brd[PC(side,ROOK)] | pos->brd[PC(side,QUEEN)];    
+    if ((rook_attacks(square, occupied) & pcs) != 0) {
+        return 1;
+    }
+    pcs = pos->brd[PC(side,BISHOP)] | pos->brd[PC(side,QUEEN)];
+    if ((bishop_attacks(square, occupied) & pcs) != 0) {
+        //printf("diag attack\n");
+        return 1;
+    }
+    pcs = pos->brd[PC(side,KNIGHT)];
+    if ((knight_attacks[square] & pcs) != 0) {
+        //printf("knight attack\n");
+        return 1;
+    }
+    pcs = pos->brd[PC(side,PAWN)];
+    if ((pawn_attacks(side, square) & pcs) != 0) {
+        //printf("pawn attack\n");
+        return 1;
+    }
+
+    #if 0
+    if ((rook_attacks[square] & (Rooks(side) | Queens(side)))
+        && (RookAttacks(square,
+                        OccupiedSquares) & (Rooks(side) | Queens(side))))
+        return 1;
+    if ((bishop_attacks[square] & (Bishops(side) | Queens(side)))
+        && (BishopAttacks(square,
+                          OccupiedSquares) & (Bishops(side) | Queens(side))))
+        return 1;
+    if (KnightAttacks(square) & Knights(side))
+        return 1;
+    if (PawnAttacks(Flip(side), square) & Pawns(side))
+        return 1;
+    if (KingAttacks(square) & Kings(side))
+        return 1;
+    return 0;
+    #endif
+    return 0;
+}
+
+// return 1 if `side`s king is attacked
+int in_check(const struct position * const restrict pos, uint8_t side) {
+    // find `side`'s king
+    uint64_t kings = pos->brd[PC(side,KING)];
+    int kingloc = 0;
+    assert(kings != 0); // there should be a king...
+    for (; (kings & ((uint64_t)1 << kingloc)) == 0; ++kingloc);
+    // check if the other side attacks the king location
+    return attacks(pos, FLIP(side), kingloc);
+}
+
 uint32_t generate_moves(const struct position * const restrict pos, move * restrict moves) {
     uint32_t i;    
     uint32_t pc;
@@ -490,7 +551,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     }
 
     // forward 2 squares
-    posmoves = pcs & STARTINGPAWNRANK(side);
+    posmoves = pcs & RANK2(side);
     posmoves = side == WHITE ? posmoves << 16 : posmoves >> 16;
     posmoves &= ~occupied;
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
@@ -700,6 +761,8 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
     }
     *m = MOVE(to, from, int_to_piece(pc), int_to_piece(cap), prm);
 }
+static uint64_t checkcnt = 0;
+static uint64_t capturecnt = 0;
 uint64_t perft_ex(int depth, struct position * const restrict pos) {
     struct position tmp;
     uint32_t i;    
@@ -707,13 +770,29 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
     uint64_t nodes;
     move moves[MAX_MOVES];
     struct savepos sp;
+
+    // if the other side is already in check, then this
+    // is an illegal position
+    if (in_check(pos, pos->wtm)) {
+        printf("in check!\n");
+        position_print(&pos->sqtopc[0]);
+        ++checkcnt;
+        return 0;
+    }
     
     if (depth == 0) return 1;
     
     nmoves = generate_moves(pos, &moves[0]);
-    if (depth == 1) {
-        nodes = nmoves;
-    } else {
+    #define COUNT_CAPTURES
+    #ifdef COUNT_CAPTURES
+    for (i = 0; i < nmoves; ++i) {
+        if (CAPTURE(moves[i]) != NO_CAPTURE) ++capturecnt;
+    }
+    #endif
+    
+    /* if (depth == 1) { */
+    /*     nodes = nmoves; */
+    /* } else { */
         nodes = 0;
         for (i = 0; i < nmoves; ++i) {
             #if 0
@@ -727,6 +806,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
             /* position_print(&pos->sqtopc[0]); */
             /* move_print(moves[i]); */
             make_move(pos, moves[i], &sp);
+
             
             /* position_print(&pos->sqtopc[0]); */
             assert(validate_position(pos) == 0);
@@ -740,7 +820,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
             assert(validate_position(pos) == 0);
             assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
         }
-    }
+        //}
     
     return nodes;
 }
@@ -754,8 +834,10 @@ int main(int argc, char **argv) {
     static struct position tmp;
     static struct savepos sp;
     move m;
+    #if 0
     static move ms[MAX_MOVES];
     uint32_t nmoves;
+    #endif
 
     FILE *fp = fopen("test_cases.txt", "r");
     if (!fp) {
@@ -774,7 +856,8 @@ int main(int argc, char **argv) {
 
         make_move(&pos, m, &sp);
         position_print(&pos.sqtopc[0]);
-        move_print(m);                        
+        move_print(m);
+        printf("In check? %s\n", BOOLSTR(in_check(&pos, pos.wtm)));
         assert(validate_position(&pos) == 0);
 
         undo_move(&pos, m, &sp);
@@ -785,27 +868,27 @@ int main(int argc, char **argv) {
     
     fclose(fp);
 
+    #if 0
     printf("\nGenerating all moves from starting position...\n");
     set_initial_position(&pos);
     position_print(&pos.sqtopc[0]);
     nmoves = generate_moves(&pos, &ms[0]);
-    printf("moves: %u\n", nmoves);
-
     for (uint32_t i = 0; i < nmoves; ++i) {
-        move_print(ms[i]);
+        /* move_print(ms[i]); */
         assert(validate_position(&pos) == 0);
         make_move(&pos, ms[i], &sp);
-        position_print(&pos.sqtopc[0]);
+        /* position_print(&pos.sqtopc[0]); */
         assert(validate_position(&pos) == 0);
         undo_move(&pos, ms[i], &sp);
     }
-
     printf("moves: %u\n", nmoves);
+    #endif
 
     uint64_t res;
-    for (int ply = 1; ply < 4; ++ply) {
+    for (int ply = 0; ply < 4; ++ply) {
+        checkcnt = 0;
         res = perft(ply);
-        printf("Perft(%u) = %" PRIu64 "\n", ply, res);
+        printf("Perft(%u) = %" PRIu64 ", Check Count = %" PRIu64 ", Capture Count = %" PRIu64 "\n", ply, res, checkcnt, capturecnt);
     }
     
     return 0;
