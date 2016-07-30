@@ -24,6 +24,12 @@ static char vpcs[] = {
 #define PIECES(p, side, type) (p).brd[PC(side, type)]
 #define WHITE_ENPASSANT_SQUARES 0x00000000ff000000
 #define BLACK_ENPASSANT_SQUARES 0x000000ff00000000
+#define SECOND_RANK 0xff00ull
+#define SEVENTH_RANK 0xff000000000000ull
+#define LASTRANK(side) ((side) == WHITE ? SEVENTH_RANK : SECOND_RANK)
+#define A_FILE 0x1010101010100ull
+#define H_FILE 0x80808080808000ull
+#define STARTINGPAWNRANK(side) ((side) == WHITE ? SECOND_RANK : SEVENTH_RANK)
 enum {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -464,6 +470,50 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             }
         }
     }
+
+    // pawn moves
+    uint32_t tosq;
+    pc = PC(side, PAWN);
+    pcs = PIECES(*pos, side, PAWN);
+    posmoves = side == WHITE ? pcs << 8 : pcs >> 8;
+    posmoves &= ~occupied;
+    for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+        if ((posmoves & 0x01) != 0) {
+            tosq = side == WHITE ? sq - 8 : sq + 8;
+            // TODO: if on last rank, generate promotions
+            moves[nmove++] = MOVE(sq, tosq, pc, EMPTY, 0);
+        }
+    }
+    
+    posmoves = pcs & STARTINGPAWNRANK(side);
+    posmoves = side == WHITE ? posmoves << 16 : posmoves >> 16;
+    posmoves &= ~occupied;
+    for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+        if ((posmoves & 0x01) != 0) {
+            tosq = side == WHITE ? sq - 16 : sq + 16;
+            moves[nmove++] = MOVE(sq, tosq, pc, EMPTY, 0);
+        }
+    }
+
+    posmoves = pcs & ~A_FILE;
+    posmoves = side == WHITE ? posmoves << 7 : posmoves >> 9;
+    posmoves &= contra;
+    for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+        if ((posmoves & 0x01) != 0) {
+            tosq = side == WHITE ? sq - 7 : sq + 7;
+            moves[nmove++] = MOVE(sq, tosq, pc, pos->sqtopc[tosq], 0);
+        }
+    }
+
+    posmoves = pcs & ~H_FILE;
+    posmoves = side == WHITE ? posmoves << 9 : posmoves >> 7;
+    posmoves &= contra;
+    for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+        if ((posmoves & 0x01) != 0) {
+            tosq = side == WHITE ? sq - 9 : sq + 9;
+            moves[nmove++] = MOVE(sq, tosq, pc, pos->sqtopc[tosq], 0);
+        }
+    }
     
     return nmove;
 }
@@ -641,7 +691,35 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
     }
     *m = MOVE(to, from, int_to_piece(pc), int_to_piece(cap), prm);
 }
-
+uint64_t perft_ex(int depth, struct position * const restrict pos) {
+    uint32_t i;    
+    uint32_t nmoves;
+    uint64_t nodes;
+    struct savepos sp;
+    move *moves;
+    
+    if (depth == 0) return 1;
+    moves = malloc(sizeof(*moves) * MAX_MOVES);
+    nmoves = generate_moves(pos, &moves[0]);
+    if (depth == 1) {
+        nodes = nmoves;
+    } else {
+        nodes = 0;
+        for (i = 0; i < nmoves; ++i) {
+            make_move(pos, moves[i], &sp);
+            assert(validate_position(pos) == 0);
+            nodes += perft_ex(depth - 1, pos);
+            undo_move(pos, moves[i], &sp);
+            assert(validate_position(pos) == 0);
+        }
+    }
+    return nodes;
+}
+uint64_t perft(int depth) {
+    static struct position pos;
+    set_initial_position(&pos);
+    return perft_ex(depth, &pos);
+}
 int main(int argc, char **argv) {
     static struct position pos;
     static struct position tmp;
@@ -694,6 +772,12 @@ int main(int argc, char **argv) {
     }
 
     printf("moves: %u\n", nmoves);
+
+    uint64_t res;
+    for (int ply = 1; ply < 3; ++ply) {
+        res = perft(ply);
+        printf("Perft(%u) = %" PRIu64 "\n", ply, res);
+    }
     
     return 0;
 }
