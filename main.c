@@ -649,7 +649,7 @@ void set_initial_position(struct position * restrict p) {
     p->sqtopc[E8] = PC(BLACK, KING);
     for (i = A3; i < A7; ++i) p->sqtopc[i] = EMPTY;
 }
-int validate_position(const struct position * restrict p) {
+int validate_position(const struct position * const restrict p) {
     int i;
     int pc;
     uint64_t msk;
@@ -684,7 +684,63 @@ int validate_position(const struct position * restrict p) {
     }
     return 0;
 }
+int compare_positions(const struct position * const restrict p1,
+                      const struct position * const restrict p2) {
+    // check sqtopc
+    int i;
+    for (i = 0; i < 64; ++i) {
+        if (p1->sqtopc[i] != p2->sqtopc[i]) {
+            fprintf(stderr, "[sqtopc] %s != %s on %s\n",
+                    piecestr(p1->sqtopc[i]), piecestr(p2->sqtopc[i]),
+                    sq_to_str[i]);
+            goto failure;
+        }
+    }
 
+    // check brd
+    for (i = PC(WHITE,PAWN); i <= PC(BLACK,KING); ++i) {
+        if (p1->brd[i] != p2->brd[i]) {
+            fprintf(stderr, "[brd] 0x%016llX != 0x%016llX for %s\n",
+                    p1->brd[i], p2->brd[i], piecestr(i));
+            goto failure;
+        }
+    }
+
+    if (p1->nmoves != p2->nmoves) {
+        fprintf(stderr, "[nomves] %u != %u\n", p1->nmoves, p2->nmoves);
+        goto failure;
+    }
+
+    if (p1->wtm != p2->wtm) {
+        fprintf(stderr, "[wtm] %u != %u\n", p1->wtm, p2->wtm);
+        goto failure;
+    }
+
+    if (p1->halfmoves != p2->halfmoves) {
+        fprintf(stderr, "[halfmoves] %u != %u\n",
+                p1->halfmoves, p2->halfmoves);
+        goto failure;
+    }
+
+    if (p1->castle != p2->castle) {
+        fprintf(stderr, "[castle] %u != %u\n",
+                p1->castle, p2->castle);
+        goto failure;
+    }
+
+    if (p1->enpassant != p2->enpassant) {
+        fprintf(stderr, "[enpassant[ %u != %u\n",
+                p1->enpassant, p2->enpassant);
+        goto failure;
+    }
+
+    return 0;
+
+ failure:
+    position_print(&p1->sqtopc[0]);
+    position_print(&p2->sqtopc[0]);
+    return 1;
+}
 uint8_t int_to_piece(int c) {
     switch (c) {
     case 'P': return PC(WHITE,PAWN);
@@ -818,7 +874,8 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
             /* position_print(&tmp.sqtopc[0]); */
             /* printf("\\postmove\n"); */
             assert(validate_position(pos) == 0);
-            assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
+            //assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
+            assert(compare_positions(pos, &tmp) == 0);
         }
         //}
     
