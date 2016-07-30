@@ -692,6 +692,7 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
     *m = MOVE(to, from, int_to_piece(pc), int_to_piece(cap), prm);
 }
 uint64_t perft_ex(int depth, struct position * const restrict pos) {
+    static struct position tmp;
     uint32_t i;    
     uint32_t nmoves;
     uint64_t nodes;
@@ -706,11 +707,13 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
     } else {
         nodes = 0;
         for (i = 0; i < nmoves; ++i) {
+            memcpy(&tmp, pos, sizeof(tmp));
             make_move(pos, moves[i], &sp);
             assert(validate_position(pos) == 0);
             nodes += perft_ex(depth - 1, pos);
             undo_move(pos, moves[i], &sp);
             assert(validate_position(pos) == 0);
+            assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
         }
     }
     return nodes;
