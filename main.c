@@ -834,10 +834,12 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
         if (CAPTURE(moves[i]) != NO_CAPTURE) ++capturecnt;
     }
     #endif
-    
-    /* if (depth == 1) { */
-    /*     nodes = nmoves; */
-    /* } else { */
+
+#ifdef BULK_COUNT
+    if (depth == 1) {
+        nodes = nmoves;
+    } else {
+#endif
         nodes = 0;
         for (i = 0; i < nmoves; ++i) {
             #if 0
@@ -847,30 +849,29 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
             #endif
 
             memcpy(&tmp, pos, sizeof(tmp));
-            /* printf("premove\n"); */
-            /* position_print(&pos->sqtopc[0]); */
-            /* move_print(moves[i]); */
+#ifdef PRINT_PERFT
+            printf("premove\n");
+            position_print(&pos->sqtopc[0]);
+            move_print(moves[i]);
+#endif
             make_move(pos, moves[i], &sp);
-            /* if (in_check(pos, FLIP(pos->wtm))) { */
-            /*     printf("in_check after making move!\n"); */
-            /*     //assert(0); */
-            /*     nodes -= 1; */
-            /*     undo_move(pos, moves[i], &sp); */
-            /*     continue; */
-            /* } */
-            
-            /* position_print(&pos->sqtopc[0]); */
+
+#ifdef PRINT_PERFT
+            position_print(&pos->sqtopc[0]);
+#endif
             assert(validate_position(pos) == 0);
             nodes += perft_ex(depth - 1, pos);
             
             undo_move(pos, moves[i], &sp);
-            /* printf("postmove:\n"); */
-            /* position_print(&pos->sqtopc[0]); */
-            /* position_print(&tmp.sqtopc[0]); */
-            /* printf("\\postmove\n"); */
+#ifdef PRINT_PERFT
+            printf("postmove:\n");
+            position_print(&pos->sqtopc[0]);
+            position_print(&tmp.sqtopc[0]);
+            printf("\\postmove\n");
+#endif
             assert(validate_position(pos) == 0);
-            //assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
-            //assert(compare_positions(pos, &tmp) == 0);
+
+#ifdef DEBUG_COMPARE
             if (compare_positions(pos, &tmp) != 0) {
                 printf("FAIL FAIL\n");
                 printf("To move: %s\n", tmp.wtm ? "WHITE":"BLACK");
@@ -885,8 +886,13 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
                 position_print(&tmp.sqtopc[0]);
                 assert(0);
             }
+#else
+            assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
+#endif
         }
-        //}
+#ifdef BULK_COUNT
+    }
+#endif
     
     return nodes;
 }
@@ -900,10 +906,6 @@ int main(int argc, char **argv) {
     static struct position tmp;
     static struct savepos sp;
     move m;
-    #if 0
-    static move ms[MAX_MOVES];
-    uint32_t nmoves;
-    #endif
 
     FILE *fp = fopen("test_cases.txt", "r");
     if (!fp) {
@@ -921,37 +923,37 @@ int main(int argc, char **argv) {
         memcpy(&tmp, &pos, sizeof(tmp));
 
         make_move(&pos, m, &sp);
-        position_print(&pos.sqtopc[0]);
-        move_print(m);
-        printf("In check? %s\n", BOOLSTR(in_check(&pos, pos.wtm)));
+        //position_print(&pos.sqtopc[0]);
+        //move_print(m);
+        //printf("In check? %s\n", BOOLSTR(in_check(&pos, pos.wtm)));
         assert(validate_position(&pos) == 0);
 
         undo_move(&pos, m, &sp);
-        position_print(&pos.sqtopc[0]);
+        //position_print(&pos.sqtopc[0]);
         assert(validate_position(&pos) == 0);
         assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
     }
     
     fclose(fp);
 
-    #if 0
+#if 0
+    static move ms[MAX_MOVES];
+    uint32_t nmoves;
     printf("\nGenerating all moves from starting position...\n");
     set_initial_position(&pos);
     position_print(&pos.sqtopc[0]);
     nmoves = generate_moves(&pos, &ms[0]);
     for (uint32_t i = 0; i < nmoves; ++i) {
-        /* move_print(ms[i]); */
         assert(validate_position(&pos) == 0);
         make_move(&pos, ms[i], &sp);
-        /* position_print(&pos.sqtopc[0]); */
         assert(validate_position(&pos) == 0);
         undo_move(&pos, ms[i], &sp);
     }
     printf("moves: %u\n", nmoves);
-    #endif
+#endif
 
     uint64_t res;
-    for (int ply = 0; ply < 4; ++ply) {
+    for (int ply = 3; ply < 4; ++ply) {
         checkcnt = 0;
         res = perft(ply);
         printf("Perft(%u) = %" PRIu64 ", Check Count = %" PRIu64 ", Capture Count = %" PRIu64 "\n", ply, res, checkcnt, capturecnt);
