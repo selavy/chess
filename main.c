@@ -535,7 +535,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     // pawn moves
     // TODO: en passant
     // TODO: promotion
-    uint32_t tosq;
+    uint32_t fromsq;
     pc = PC(side, PAWN);
     pcs = PIECES(*pos, side, PAWN);
 
@@ -544,9 +544,9 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     posmoves &= ~occupied;
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
-            tosq = side == WHITE ? sq - 8 : sq + 8;
+            fromsq = side == WHITE ? sq - 8 : sq + 8;
             // TODO: if on last rank, generate promotions
-            moves[nmove++] = MOVE(sq, tosq, pc, EMPTY, 0);
+            moves[nmove++] = MOVE(sq, fromsq, pc, EMPTY, 0);
         }
     }
 
@@ -556,8 +556,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     posmoves &= ~occupied;
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
-            tosq = side == WHITE ? sq - 16 : sq + 16;
-            moves[nmove++] = MOVE(sq, tosq, pc, EMPTY, 0);
+            fromsq = side == WHITE ? sq - 16 : sq + 16;
+            moves[nmove++] = MOVE(sq, fromsq, pc, EMPTY, 0);
         }
     }
 
@@ -567,8 +567,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     posmoves &= contra;
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
-            tosq = side == WHITE ? sq - 7 : sq + 7;
-            moves[nmove++] = MOVE(sq, tosq, pc, pos->sqtopc[tosq], 0);
+            fromsq = side == WHITE ? sq - 7 : sq + 7;
+            moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0);
         }
     }
 
@@ -578,8 +578,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     posmoves &= contra;
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
-            tosq = side == WHITE ? sq - 9 : sq + 9;
-            moves[nmove++] = MOVE(sq, tosq, pc, pos->sqtopc[tosq], 0);
+            fromsq = side == WHITE ? sq - 9 : sq + 9;
+            moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0);
         }
     }
 
@@ -829,12 +829,12 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
 
     // if the other side is already in check, then this
     // is an illegal position
-    if (in_check(pos, pos->wtm)) {
-        printf("in check!\n");
-        position_print(&pos->sqtopc[0]);
-        ++checkcnt;
-        return 0;
-    }
+    /* if (in_check(pos, pos->wtm)) { */
+    /*     printf("in check!\n"); */
+    /*     position_print(&pos->sqtopc[0]); */
+    /*     ++checkcnt; */
+    /*     return 0; */
+    /* } */
     
     if (depth == 0) return 1;
     
@@ -875,7 +875,18 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
             /* printf("\\postmove\n"); */
             assert(validate_position(pos) == 0);
             //assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
-            assert(compare_positions(pos, &tmp) == 0);
+            //assert(compare_positions(pos, &tmp) == 0);
+            if (compare_positions(pos, &tmp) != 0) {
+                printf("FAIL FAIL\n");
+                printf("To move: %s\n", tmp.wtm ? "WHITE":"BLACK");
+                printf("Original Position:\n");
+                position_print(&tmp.sqtopc[0]);
+                printf("New Position after undo-ing move:\n");
+                position_print(&pos->sqtopc[0]);
+                printf("Move:\n");
+                move_print(moves[i]);
+                assert(0);
+            }
         }
         //}
     
