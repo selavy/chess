@@ -29,8 +29,8 @@ static char vpcs[] = {
 #define SECOND_RANK 0xff00ull
 #define SEVENTH_RANK 0xff000000000000ull
 #define RANK7(side) ((side) == WHITE ? SEVENTH_RANK : SECOND_RANK)
-#define A_FILE 0x1010101010100ull
-#define H_FILE 0x80808080808000ull
+#define A_FILE 0x101010101010101ULL
+#define H_FILE   0x8080808080808080ULL
 #define RANK2(side) ((side) == WHITE ? SECOND_RANK : SEVENTH_RANK)
 enum {
     A1, B1, C1, D1, E1, F1, G1, H1,
@@ -567,7 +567,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     posmoves &= contra;
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
-            fromsq = side == WHITE ? sq - 7 : sq + 7;
+            fromsq = side == WHITE ? sq - 7 : sq + 9;
             moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0);
         }
     }
@@ -578,7 +578,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     posmoves &= contra;
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
-            fromsq = side == WHITE ? sq - 9 : sq + 9;
+            fromsq = side == WHITE ? sq - 9 : sq + 7;
             moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0);
         }
     }
@@ -607,17 +607,6 @@ void set_initial_position(struct position * restrict p) {
     p->halfmoves = 0;
     PIECES(*p, WHITE, PAWN  ) = 0x0000ff00ULL;
     for (i = A2; i <= H2; ++i) p->sqtopc[i] = PC(WHITE, PAWN);
-
-    //DEBUG
-    /* PIECES(*p, WHITE, PAWN) = 0ULL; */
-    /* for (i = A2; i <= H2; ++i) p->sqtopc[i] = EMPTY; */
-    /* PIECES(*p, WHITE, PAWN) &= ~(1 << E2); */
-    /* p->sqtopc[E2] = EMPTY;     */
-    /* PIECES(*p, WHITE, PAWN) &= ~(1 << H2); */
-    /* p->sqtopc[H2] = EMPTY; */
-    /* PIECES(*p, WHITE, PAWN) &= ~(1 << A2); */
-    /* p->sqtopc[A2] = EMPTY; */
-    //GUBED
     
     PIECES(*p, WHITE, KNIGHT) = 0x00000042ULL;
     p->sqtopc[B1] = PC(WHITE, KNIGHT);
@@ -829,12 +818,12 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
 
     // if the other side is already in check, then this
     // is an illegal position
-    /* if (in_check(pos, pos->wtm)) { */
-    /*     printf("in check!\n"); */
-    /*     position_print(&pos->sqtopc[0]); */
-    /*     ++checkcnt; */
-    /*     return 0; */
-    /* } */
+    if (in_check(pos, pos->wtm)) {
+        //printf("in check!\n");
+        //position_print(&pos->sqtopc[0]);
+        ++checkcnt;
+        return 0;
+    }
     
     if (depth == 0) return 1;
     
@@ -862,7 +851,13 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
             /* position_print(&pos->sqtopc[0]); */
             /* move_print(moves[i]); */
             make_move(pos, moves[i], &sp);
-
+            /* if (in_check(pos, FLIP(pos->wtm))) { */
+            /*     printf("in_check after making move!\n"); */
+            /*     //assert(0); */
+            /*     nodes -= 1; */
+            /*     undo_move(pos, moves[i], &sp); */
+            /*     continue; */
+            /* } */
             
             /* position_print(&pos->sqtopc[0]); */
             assert(validate_position(pos) == 0);
@@ -885,6 +880,9 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
                 position_print(&pos->sqtopc[0]);
                 printf("Move:\n");
                 move_print(moves[i]);
+                printf("Position after making move:\n");
+                make_move(&tmp, moves[i], &sp);
+                position_print(&tmp.sqtopc[0]);
                 assert(0);
             }
         }
