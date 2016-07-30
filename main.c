@@ -381,23 +381,20 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     uint64_t same = FULLSIDE(*pos, side);
     uint64_t contra = FULLSIDE(*pos, FLIP(side));
     uint64_t occupied = same | contra;
-
+    
     // knight moves
     pcs = PIECES(*pos, side, KNIGHT);
-    if (pcs) {
+    if (pcs != 0) {
         pc = PC(side, KNIGHT);
-        for (i = 0; i < 64; ++i) {
-            msk = MASK(i);
-            if ((pcs & msk) != 0) {
+        for (i = 0; i < 64 && pcs; ++i, pcs >>= 1) {
+            if ((pcs & 0x01) != 0) {
                 posmoves = knight_attacks[i] & ~same;
-                if (posmoves != 0) {
-                    for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
-                        if (posmoves & 0x1) {
-                            moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
-                        }
+                for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+                    msk = MASK(sq);
+                    if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
+                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
                     }
                 }
-                pcs &= ~msk;
             }
         }
     }
