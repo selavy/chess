@@ -492,6 +492,8 @@ void set_initial_position(struct position * restrict p) {
     for (i = A2; i <= H2; ++i) p->sqtopc[i] = PC(WHITE, PAWN);
 
     //DEBUG
+    /* PIECES(*p, WHITE, PAWN) = 0ULL; */
+    /* for (i = A2; i <= H2; ++i) p->sqtopc[i] = EMPTY; */
     /* PIECES(*p, WHITE, PAWN) &= ~(1 << E2); */
     /* p->sqtopc[E2] = EMPTY;     */
     /* PIECES(*p, WHITE, PAWN) &= ~(1 << H2); */

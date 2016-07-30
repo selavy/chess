@@ -35,3 +35,6 @@
 chess
 *.o
 *~
+
+generate_magic_tables
+magic_tables.*
