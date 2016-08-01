@@ -97,6 +97,7 @@ void move_print(move m) {
 }
 #define NO_PROMOTION 0
 #define NO_CAPTURE EMPTY
+#define NO_ENPASSANT 0
 enum {
     WKINGSD  = (1<<0), WQUEENSD = (1<<1),
     BKINGSD  = (1<<2), BQUEENSD = (1<<3),
@@ -223,16 +224,16 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
             if (side == WHITE) {
                 assert(tosq >= A6 && tosq <= H6);
                 int sq = tosq - 8;
-                assert(p->enpassant != 0);
-                assert(sq == 24 + p->enpassant);
+                assert(p->enpassant != NO_ENPASSANT);
+                assert(sq == 23 + p->enpassant);
                 assert(p->sqtopc[sq] == PC(BLACK,PAWN));
                 p->sqtopc[sq] = EMPTY;
                 p->brd[PC(BLACK,PAWN)] &= ~MASK(sq);
             } else {
                 assert(tosq >= A3 && tosq <= H3);
                 int sq = tosq + 8;
-                assert(p->enpassant != 0);
-                assert(sq == 24 + p->enpassant);
+                assert(p->enpassant != NO_ENPASSANT);
+                assert(sq == 23 + p->enpassant);
                 assert(p->sqtopc[sq] == PC(WHITE,PAWN));
                 p->sqtopc[sq] = EMPTY;
                 p->brd[PC(WHITE,PAWN)] &= ~MASK(sq);
@@ -264,12 +265,12 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         }
     }
 
-    p->enpassant = 0;
+    p->enpassant = NO_ENPASSANT;
     if (capture == NO_CAPTURE) {
         if (pc == PC(WHITE,PAWN) && (to & WHITE_ENPASSANT_SQUARES) != 0) {
-            p->enpassant = tosq - 24;
+            p->enpassant = tosq - 23;
         } else if (pc == PC(BLACK,PAWN) && (to & BLACK_ENPASSANT_SQUARES) != 0) {
-            p->enpassant = tosq - 24;
+            p->enpassant = tosq - 23;
         }
     }
 }
@@ -427,7 +428,6 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     #endif
     return 0;
 }
-
 // return 1 if `side`s king is attacked
 int in_check(const struct position * const restrict pos, uint8_t side) {
     // find `side`'s king
@@ -438,7 +438,19 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
     // check if the other side attacks the king location
     return attacks(pos, FLIP(side), kingloc);
 }
-
+void position_print(const uint8_t * const restrict sqtopc) {
+    char v;
+    int sq, r, c;
+    fputs("---------------------------------\n", stdout);
+    for (r = (RANKS - 1); r >= 0; --r) {
+        for (c = 0; c < COLS; ++c) {
+            sq = SQ(c, r);
+            v = vpcs[sqtopc[sq]];
+            fprintf(stdout, "| %c ", v);
+        }
+        fputs("|\n---------------------------------\n", stdout);
+    }
+}
 uint32_t generate_moves(const struct position * const restrict pos, move * restrict moves) {
     uint32_t i;
     uint32_t pc;
@@ -575,6 +587,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 7 : sq + 9;
+            // TODO: if on last rank, generate promotions
             moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0);
         }
     }
@@ -586,26 +599,53 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 9 : sq + 7;
+            // TODO: if on last rank, generate promotions
             moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0);
+        }
+    }
+
+    // en passant
+    // TODO: improve
+    if (pos->enpassant != NO_ENPASSANT) {
+        uint32_t epsq = pos->enpassant + 23;
+        if (epsq != 24 && epsq != 32) {
+            // try capture left
+            fromsq = epsq - 1;
+            if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
+                sq = side == WHITE ? fromsq - 7 : fromsq + 9;
+                if (pos->sqtopc[sq] == EMPTY) {
+                    position_print(&pos->sqtopc[0]);                    
+                    printf("en passant 1 possible\n");
+                    printf("enpassant = %u\n", pos->enpassant);
+                    printf("epsq = %u\n", epsq);
+                    printf("fromsq = %u\n", fromsq);
+                    printf("side = %u\n", side);
+                    assert(0);
+                }
+            }
+        }
+        if (epsq != 28 && epsq != 35) {
+            // try capture right
+            fromsq = epsq + 1;
+            if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
+                sq = side == WHITE ? fromsq - 9 : fromsq + 7;                
+
+                if (pos->sqtopc[sq] == EMPTY) {
+                    position_print(&pos->sqtopc[0]);
+                    printf("en passant 2 possible\n");
+                    printf("enpassant = %u\n", pos->enpassant);
+                    printf("epsq = %u\n", epsq);
+                    printf("fromsq = %u\n", fromsq);
+                    printf("side = %u\n", side);
+                    assert(0);
+                }
+            }
         }
     }
 
     // TODO: castling
 
     return nmove;
-}
-void position_print(const uint8_t * const restrict sqtopc) {
-    char v;
-    int sq, r, c;
-    fputs("---------------------------------\n", stdout);
-    for (r = (RANKS - 1); r >= 0; --r) {
-        for (c = 0; c < COLS; ++c) {
-            sq = SQ(c, r);
-            v = vpcs[sqtopc[sq]];
-            fprintf(stdout, "| %c ", v);
-        }
-        fputs("|\n---------------------------------\n", stdout);
-    }
 }
 void set_initial_position(struct position * restrict p) {
     int i;
@@ -885,9 +925,9 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
 
             if (nodes != 0 && CAPTURE(moves[i]) != NO_CAPTURE) {
                 ++capturecnt;
-                printf("Capture\n");
-                position_print(&pos->sqtopc[0]);
-                move_print(moves[i]);
+                //printf("Capture\n");
+                //position_print(&pos->sqtopc[0]);
+                //move_print(moves[i]);
             }
 
 #ifdef DEBUG_COMPARE
@@ -960,7 +1000,7 @@ int main(int argc, char **argv) {
     uint32_t nmoves;
     printf("\nGenerating all moves from starting position...\n");
     set_initial_position(&pos);
-    position_print(&pos.sqtopc[0]);
+    //position_print(&pos.sqtopc[0]);
     nmoves = generate_moves(&pos, &ms[0]);
     for (uint32_t i = 0; i < nmoves; ++i) {
         assert(validate_position(&pos) == 0);
@@ -972,10 +1012,13 @@ int main(int argc, char **argv) {
 #endif
 
     uint64_t res;
-    for (int ply = 0; ply < 5; ++ply) {
+    for (int ply = 3; ply < 6; ++ply) {
         checkcnt = 0;
         res = perft(ply);
-        printf("Perft(%u) = %" PRIu64 ", Check Count = %" PRIu64 ", Capture Count = %" PRIu64 "\n", ply, res, checkcnt, capturecnt);
+        printf("Perft(%u) = %" PRIu64 ", "
+               "Check Count = %" PRIu64 ", "
+               "Capture Count = %" PRIu64 "\n",
+               ply, res, checkcnt, capturecnt);
     }
 
     return 0;
