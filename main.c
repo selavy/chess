@@ -17,11 +17,7 @@
 enum { WHITE=0, BLACK };
 #define pawn_attacks(side, sq) ((side) == WHITE ? wpawn_attacks[sq] : bpawn_attacks[sq])
 enum { PAWN=0, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2) };
-static char vpcs[] = {
-    'P', 'N', 'B', 'R', 'Q', 'K',
-    'p', 'n', 'b', 'r', 'q', 'k',
-    ' '
-};
+static const char *vpcs = "PNBRQKpnbrqk ";
 #define PC(side, type) (((side)*NPIECES)+(type))
 #define PIECES(p, side, type) (p).brd[PC(side, type)]
 #define WHITE_ENPASSANT_SQUARES 0x00000000ff000000
@@ -384,7 +380,6 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
 
 // returns 1 if a piece from `side` attacks `square`
 int attacks(const struct position * const restrict pos, uint8_t side, int square) {
-    // TODO: implement
     // TODO: generate attack square data
     uint64_t pcs;
     uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
@@ -865,106 +860,30 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
 static uint64_t checkcnt = 0;
 static uint64_t capturecnt = 0;
 uint64_t perft_ex(int depth, struct position * const restrict pos) {
-    struct position tmp;
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes;
     move moves[MAX_MOVES];
     struct savepos sp;
-
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
     }
-
     if (depth == 0) {
         if (in_check(pos, pos->wtm)) {
             ++checkcnt;
         }
         return 1;
     }
-
     nmoves = generate_moves(pos, &moves[0]);
-
-#ifdef BULK_COUNT
-    if (depth == 1) {
-        nodes = nmoves;
-    } else {
-#endif
-        nodes = 0;
-
-        //#define SIMPLE_PERFT_PRINT
-#ifdef SIMPLE_PERFT_PRINT
-        if (depth == 1) {
-            position_print(&pos->sqtopc[0]);
+    nodes = 0;
+    for (i = 0; i < nmoves; ++i) {
+        make_move(pos, moves[i], &sp);
+        nodes += perft_ex(depth - 1, pos);
+        undo_move(pos, moves[i], &sp);
+        if (CAPTURE(moves[i]) != NO_CAPTURE) {
+            ++capturecnt;
         }
-#endif
-
-        for (i = 0; i < nmoves; ++i) {
-            #if 0
-            make_move(pos, moves[i], &sp);
-            nodes += perft_ex(depth - 1, pos);
-            undo_move(pos, moves[i], &sp);
-            #endif
-
-            memcpy(&tmp, pos, sizeof(tmp));
-
-#ifdef PRINT_PERFT
-            if (depth == 1) {
-                printf("premove\n");
-                position_print(&pos->sqtopc[0]);
-                move_print(moves[i]);
-            }
-#endif
-
-#ifdef SIMPLE_PERFT_PRINT
-            if (depth == 1) {
-                move_print(moves[i]);
-            }
-#endif
-
-            make_move(pos, moves[i], &sp);
-
-#ifdef PRINT_PERFT
-            if (depth == 1) {
-                position_print(&pos->sqtopc[0]);
-            }
-#endif
-            assert(validate_position(pos) == 0);
-            nodes += perft_ex(depth - 1, pos);
-
-            undo_move(pos, moves[i], &sp);
-            assert(validate_position(pos) == 0);
-
-            if (nodes != 0 && CAPTURE(moves[i]) != NO_CAPTURE) {
-                ++capturecnt;
-                //printf("Capture\n");
-                //position_print(&pos->sqtopc[0]);
-                //move_print(moves[i]);
-            }
-
-#ifdef DEBUG_COMPARE
-            if (compare_positions(pos, &tmp) != 0) {
-                printf("FAIL FAIL\n");
-                printf("To move: %s\n", tmp.wtm ? "WHITE":"BLACK");
-                printf("Original Position:\n");
-                position_print(&tmp.sqtopc[0]);
-                printf("New Position after undo-ing move:\n");
-                position_print(&pos->sqtopc[0]);
-                printf("Move:\n");
-                move_print(moves[i]);
-                printf("Position after making move:\n");
-                make_move(&tmp, moves[i], &sp);
-                position_print(&tmp.sqtopc[0]);
-                assert(0);
-            }
-#else
-            assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
-#endif
-        }
-#ifdef BULK_COUNT
     }
-#endif
-
     return nodes;
 }
 uint64_t perft(int depth) {
@@ -988,18 +907,13 @@ int main(int argc, char **argv) {
     int c;
     while ((c = fgetc(fp)) != EOF) {
         ungetc(c, fp);
-
         read_position_from_file(fp, &pos, &m);
-        //position_print(&pos.sqtopc[0]);
         assert(validate_position(&pos) == 0);
         memcpy(&tmp, &pos, sizeof(tmp));
-
+        
         make_move(&pos, m, &sp);
-        //position_print(&pos.sqtopc[0]);
-        //move_print(m);
-        //printf("In check? %s\n", BOOLSTR(in_check(&pos, pos.wtm)));
         assert(validate_position(&pos) == 0);
-
+        
         undo_move(&pos, m, &sp);
         //position_print(&pos.sqtopc[0]);
         assert(validate_position(&pos) == 0);
@@ -1009,22 +923,6 @@ int main(int argc, char **argv) {
     fclose(fp);
     printf("Successfully passed test cases\n");
 
-#if 0
-    static move ms[MAX_MOVES];
-    uint32_t nmoves;
-    printf("\nGenerating all moves from starting position...\n");
-    set_initial_position(&pos);
-    //position_print(&pos.sqtopc[0]);
-    nmoves = generate_moves(&pos, &ms[0]);
-    for (uint32_t i = 0; i < nmoves; ++i) {
-        assert(validate_position(&pos) == 0);
-        make_move(&pos, ms[i], &sp);
-        assert(validate_position(&pos) == 0);
-        undo_move(&pos, ms[i], &sp);
-    }
-    printf("moves: %u\n", nmoves);
-#endif
-
     printf("Perft:\n");
     uint64_t res;
     for (int ply = 5; ply < 6; ++ply) {
@@ -1032,8 +930,9 @@ int main(int argc, char **argv) {
         res = perft(ply);
         printf("Perft(%u) = %" PRIu64 ", "
                "Check Count = %" PRIu64 ", "
-               "Capture Count = %" PRIu64 "\n",
-               ply, res, checkcnt, capturecnt);
+               "Capture Count = %" PRIu64 "\n"
+               , ply, res, checkcnt, capturecnt);
+
     }
 
     return 0;
