@@ -75,9 +75,9 @@ const char *piecestr(uint32_t piece) {
 // capture [0..11] 4 bit
 // promote [0..5]  3 bit
 typedef uint32_t move;
-#define MOVE(to, from, pc, cap, prm)            \
-    (((from) & 0x3f)         |                  \
-     (((to ) & 0x3f) << 6)   |                  \
+#define MOVE(from, to, pc, cap, prm)            \
+    (((to) & 0x3f)           |                  \
+     (((from ) & 0x3f) << 6) |                  \
      (((pc ) & 0x0f) << 12)  |                  \
      (((prm) & 0x07) << 16)  |                  \
      (((cap) & 0x0f) << 19))
@@ -263,10 +263,12 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
 
     p->enpassant = NO_ENPASSANT;
     if (capture == NO_CAPTURE) {
-        if (pc == PC(WHITE,PAWN) && (to & WHITE_ENPASSANT_SQUARES) != 0) {
+        if (pc == PC(WHITE,PAWN) && (to & WHITE_ENPASSANT_SQUARES) != 0 && (from & RANK2(side)) != 0) {
             p->enpassant = tosq - 23;
-        } else if (pc == PC(BLACK,PAWN) && (to & BLACK_ENPASSANT_SQUARES) != 0) {
+            //printf("Setting enpassant to %d\n", p->enpassant);            
+        } else if (pc == PC(BLACK,PAWN) && (to & BLACK_ENPASSANT_SQUARES) != 0 && (from & RANK2(side)) != 0) {
             p->enpassant = tosq - 23;
+            //printf("Setting enpassant to %d\n", p->enpassant);            
         }
     }
 }
@@ -544,7 +546,6 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     }
 
     // pawn moves
-    // TODO: en passant
     // TODO: promotion
     uint32_t fromsq;
     pc = PC(side, PAWN);
@@ -859,7 +860,8 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
 }
 static uint64_t checkcnt = 0;
 static uint64_t capturecnt = 0;
-uint64_t perft_ex(int depth, struct position * const restrict pos) {
+static uint64_t enpassants = 0;
+uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove) {
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes;
@@ -878,7 +880,10 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
     nodes = 0;
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
-        nodes += perft_ex(depth - 1, pos);
+        if (sp.was_ep == 1) {
+            ++enpassants;
+        }        
+        nodes += perft_ex(depth - 1, pos, moves[i]);
         undo_move(pos, moves[i], &sp);
         if (CAPTURE(moves[i]) != NO_CAPTURE) {
             ++capturecnt;
@@ -889,9 +894,43 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
 uint64_t perft(int depth) {
     static struct position pos;
     set_initial_position(&pos);
-    return perft_ex(depth, &pos);
+    return perft_ex(depth, &pos, 0);
 }
 int main(int argc, char **argv) {
+#if 0
+    static struct position pos;
+    static struct savepos sp;
+    move moves[MAX_MOVES];
+    uint32_t nmoves;
+    int i;
+    move m;
+
+    set_initial_position(&pos);
+    position_print(&pos.sqtopc[0]);
+    m = MOVE(H4, H2, PC(WHITE,PAWN), NO_CAPTURE, NO_PROMOTION);
+    move_print(m);
+    make_move(&pos, m, &sp);
+    position_print(&pos.sqtopc[0]);
+    m = MOVE(F6, F7, PC(BLACK,PAWN), NO_CAPTURE, NO_PROMOTION);
+    move_print(m);
+    make_move(&pos, m, &sp);
+    position_print(&pos.sqtopc[0]);
+    m = MOVE(H5, H4, PC(WHITE,PAWN), NO_CAPTURE, NO_PROMOTION);
+    move_print(m);
+    make_move(&pos, m, &sp);
+    position_print(&pos.sqtopc[0]);
+    m = MOVE(G5, G7, PC(BLACK,PAWN), NO_CAPTURE, NO_PROMOTION);
+    move_print(m);
+    make_move(&pos, m, &sp);
+    position_print(&pos.sqtopc[0]);            
+    
+    nmoves = generate_moves(&pos, &moves[0]);
+    for (i = 0; i < nmoves; ++i) {
+        move_print(moves[i]);
+    }
+#endif
+    
+    //#if 0
     static struct position pos;
     static struct position tmp;
     static struct savepos sp;
@@ -930,10 +969,12 @@ int main(int argc, char **argv) {
         res = perft(ply);
         printf("Perft(%u) = %" PRIu64 ", "
                "Check Count = %" PRIu64 ", "
-               "Capture Count = %" PRIu64 "\n"
-               , ply, res, checkcnt, capturecnt);
+               "Capture Count = %" PRIu64 ", "
+               "Enpassant Count = %" PRIu64 "\n"
+               , ply, res, checkcnt, capturecnt, enpassants);
 
     }
+    //#endif
 
     return 0;
 }
