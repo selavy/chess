@@ -422,16 +422,16 @@ int main(int argc, char **argv) {
 
     fprintf(fp, "const uint64_t knight_attacks[64] = {\n");
     for (int i = 0; i < 62; i += 2) {
-        fprintf(fp, "    0x%016llxull, 0x%016llxull,\n", knight_attacks[i], knight_attacks[i+1]);
+        fprintf(fp, "    0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull,\n", knight_attacks[i], knight_attacks[i+1]);
     }
-    fprintf(fp, "    0x%016llxull, 0x%016llxull\n", knight_attacks[62], knight_attacks[63]);
+    fprintf(fp, "    0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull\n", knight_attacks[62], knight_attacks[63]);
     fprintf(fp, "};\n");
     
     fprintf(fp, "const uint64_t king_attacks[64] = {\n");
     for (int i = 0; i < 62; i += 2) {
-        fprintf(fp, "    0x%016llxull, 0x%016llxull,\n", king_attacks[i], king_attacks[i+1]);
+        fprintf(fp, "    0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull,\n", king_attacks[i], king_attacks[i+1]);
     }
-    fprintf(fp, "    0x%016llxull, 0x%016llxull\n", king_attacks[62], king_attacks[63]);
+    fprintf(fp, "    0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull\n", king_attacks[62], king_attacks[63]);
     fprintf(fp, "};\n");
     
     fprintf(fp, "const uint64_t magic_bishop[64] = {\n"
@@ -495,13 +495,13 @@ int main(int argc, char **argv) {
     
     fprintf(fp, "const uint64_t magic_bishop_table[5428] = {\n");
     for (int i = 0; i < (5248-2); i += 3) {
-        fprintf(fp, "    0x%016llXull, 0x%016llXull, 0x%016llXull,\n",
+        fprintf(fp, "    0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull,\n",
                magic_bishop_table[i],
                magic_bishop_table[i+1],
                magic_bishop_table[i+2]
                );
     }
-    fprintf(fp, "    0x%016llXull\n", magic_bishop_table[5247]);
+    fprintf(fp, "    0x%016" PRIX64 "ull\n", magic_bishop_table[5247]);
     fprintf(fp, "};\n");
     int mbi[64] = {
         4992, 2624,
@@ -607,13 +607,13 @@ int main(int argc, char **argv) {
 
     fprintf(fp, "const uint64_t magic_rook_table[102400] = {\n");
     for (int i = 0; i < (102400-4); i += 3) {
-        fprintf(fp, "    0x%016llXull, 0x%016llXull, 0x%016llXull,\n",
+        fprintf(fp, "    0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull,\n",
                magic_rook_table[i],
                magic_rook_table[i+1],
                magic_rook_table[i+2]
                );
     }
-    fprintf(fp, "    0x%016llXull, 0x%016llXull, 0x%016llXull\n",
+    fprintf(fp, "    0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull, 0x%016" PRIX64 "ull\n",
             magic_rook_table[102397],
             magic_rook_table[102398],
             magic_rook_table[102399]
@@ -716,39 +716,39 @@ int main(int argc, char **argv) {
     
     fputs("const uint64_t slide_attacks[64] = {\n", fp);
     for (int i = 0; i < 60; i += 4) {
-        fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX,\n",
+        fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ",\n",
                 slide_attacks[i], slide_attacks[i+1],
                 slide_attacks[i+2], slide_attacks[i+3]);
     }
-    fprintf(fp, "    0x%08llX, 0x%016llX, 0x%016llX, 0x%016llX\n};\n",
+    fprintf(fp, "    0x%08" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 "\n};\n",
             slide_attacks[60], slide_attacks[61],
             slide_attacks[62], slide_attacks[63]);
     
     fputs("const uint64_t diagl_attacks[64] = {\n", fp);
     for (int i = 0; i < 60; i += 4) {
-        fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX,\n",
+        fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ",\n",
                 diagl_attacks[i], diagl_attacks[i+1],
                 diagl_attacks[i+2], diagl_attacks[i+3]);
     }
-    fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX\n};\n",
+    fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 "\n};\n",
             diagl_attacks[60], diagl_attacks[61],
             diagl_attacks[62], diagl_attacks[63]);
     fputs("const uint64_t wpawn_attacks[64] = {\n", fp);
     for (int i = 0; i < 60; i += 4) {
-        fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX,\n",
+        fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ",\n",
                 wpawn_attacks[i], wpawn_attacks[i+1],
                 wpawn_attacks[i+2], wpawn_attacks[i+3]);
     }
-    fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX\n};\n",
+    fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 "\n};\n",
             wpawn_attacks[60], wpawn_attacks[61],
             wpawn_attacks[62], wpawn_attacks[63]);
     fputs("const uint64_t bpawn_attacks[64] = {\n", fp);
     for (int i = 0; i < 60; i += 4) {
-        fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX,\n",
+        fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ",\n",
                 bpawn_attacks[i], bpawn_attacks[i+1],
                 bpawn_attacks[i+2], bpawn_attacks[i+3]);
     }
-    fprintf(fp, "    0x%016llX, 0x%016llX, 0x%016llX, 0x%016llX\n};\n",
+    fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 "\n};\n",
             bpawn_attacks[60], bpawn_attacks[61],
             bpawn_attacks[62], bpawn_attacks[63]);    
     

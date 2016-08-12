@@ -460,6 +460,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     uint64_t sq;
     uint32_t nmove = 0;
     uint8_t side = pos->wtm;
+    uint8_t contraside = FLIP(pos->wtm);
     uint64_t same = FULLSIDE(*pos, side);
     uint64_t contra = FULLSIDE(*pos, FLIP(side));
     uint64_t occupied = same | contra;
@@ -608,29 +609,36 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     // TODO: improve
     if (pos->enpassant != NO_ENPASSANT) {
         uint32_t epsq = pos->enpassant + 23;
+        assert(pos->sqtopc[epsq] == PC(contraside, PAWN));
         if (epsq != 24 && epsq != 32) {
             // try capture left
             fromsq = epsq - 1;
             if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
-                sq = side == WHITE ? fromsq - 7 : fromsq + 9;
+                sq = side == WHITE ? fromsq + 9 : fromsq - 7;
                 if (pos->sqtopc[sq] == EMPTY) {
+                    moves[nmove++] = MOVE(sq, fromsq, pc, PC(contraside,PAWN), 0);
+                    #if 0                    
                     position_print(&pos->sqtopc[0]);                    
                     printf("en passant 1 possible\n");
                     printf("enpassant = %u\n", pos->enpassant);
                     printf("epsq = %u\n", epsq);
                     printf("fromsq = %u\n", fromsq);
                     printf("side = %u\n", side);
+                    printf("sq = %u\n", (unsigned)sq);
+                    printf("pos->sqtopc[epsq] == %s\n", piecestr(pos->sqtopc[epsq]));
                     assert(0);
+                    #endif
                 }
             }
         }
-        if (epsq != 28 && epsq != 35) {
+        if (epsq != 31 && epsq != 39) {
             // try capture right
             fromsq = epsq + 1;
             if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
-                sq = side == WHITE ? fromsq - 9 : fromsq + 7;                
-
+                sq = side == WHITE ? fromsq + 7 : fromsq - 9;                
                 if (pos->sqtopc[sq] == EMPTY) {
+                    moves[nmove++] = MOVE(sq, fromsq, pc, PC(contraside,PAWN), 0);
+                    #if 0
                     position_print(&pos->sqtopc[0]);
                     printf("en passant 2 possible\n");
                     printf("enpassant = %u\n", pos->enpassant);
@@ -638,6 +646,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
                     printf("fromsq = %u\n", fromsq);
                     printf("side = %u\n", side);
                     assert(0);
+                    #endif
                 }
             }
         }
@@ -736,7 +745,7 @@ int compare_positions(const struct position * const restrict p1,
     // check brd
     for (i = PC(WHITE,PAWN); i <= PC(BLACK,KING); ++i) {
         if (p1->brd[i] != p2->brd[i]) {
-            fprintf(stderr, "[brd] 0x%016llX != 0x%016llX for %s\n",
+            fprintf(stderr, "[brd] 0x%016" PRIx64 " != 0x%016" PRIx64 " for %s\n",
                     p1->brd[i], p2->brd[i], piecestr(i));
             goto failure;
         }
@@ -866,10 +875,13 @@ uint64_t perft_ex(int depth, struct position * const restrict pos) {
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
     }
-    if (in_check(pos, pos->wtm)) {
-        ++checkcnt;
+
+    if (depth == 0) {
+        if (in_check(pos, pos->wtm)) {
+            ++checkcnt;
+        }
+        return 1;
     }
-    if (depth == 0) return 1;
 
     nmoves = generate_moves(pos, &moves[0]);
 
@@ -971,6 +983,7 @@ int main(int argc, char **argv) {
         fputs("Unable to open \"test_cases.txt\"\n", stderr);
         exit(1);
     }
+    printf("Checking test cases...\n");
 
     int c;
     while ((c = fgetc(fp)) != EOF) {
@@ -994,6 +1007,7 @@ int main(int argc, char **argv) {
     }
 
     fclose(fp);
+    printf("Successfully passed test cases\n");
 
 #if 0
     static move ms[MAX_MOVES];
@@ -1011,8 +1025,9 @@ int main(int argc, char **argv) {
     printf("moves: %u\n", nmoves);
 #endif
 
+    printf("Perft:\n");
     uint64_t res;
-    for (int ply = 3; ply < 6; ++ply) {
+    for (int ply = 5; ply < 6; ++ply) {
         checkcnt = 0;
         res = perft(ply);
         printf("Perft(%u) = %" PRIu64 ", "
