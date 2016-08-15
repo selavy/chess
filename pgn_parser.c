@@ -24,6 +24,7 @@ const char *PIECESTR[] = {
 };
 enum { NO_CHECK, IS_CHECK };
 enum { NO_CAPTURE, IS_CAPTURE };
+#define NO_PROMOTION -1
 const char *CAPTURESTR[] = {
     "NO CAPTURE",
     "CAPTURE"
@@ -36,7 +37,19 @@ struct move_t {
     int fromrank;
     int fromcol;
     int check;
+    int promotion;
 };
+void raw_move_print(const struct move_t *m) {
+    printf("%d %d %d %d %d %d %d %d\n",
+           m->castle,
+           m->capture,
+           m->piece,
+           m->tosq,
+           m->fromrank,
+           m->fromcol,
+           m->check,
+           m->promotion);
+}
 #define NO_SQ -1
 const char *COLSTR[] = { "a", "b", "c", "d", "e", "f", "g", "h" };
 const char *RANKSTR[] = { "1", "2", "3", "4", "5", "6", "7", "8" };
@@ -94,6 +107,8 @@ enum state_t {
     MAYBE_FROM_COL,
     COLUMN,
     RANK,
+    MAYBE_PROMOTION,
+    PROMOTION,
     MAYBE_CHECK
 };
 const char *STATESTR[] = {
@@ -106,8 +121,11 @@ const char *STATESTR[] = {
     "MAYBE_FROM_COL",    
     "COLUMN",
     "RANK",
+    "MAYBE_PROMOTION",
+    "PROMOTION",
     "MAYBE_CHECK"
 };
+// TODO: promotions
 int parse(const char * const begin, const char * const end, struct move_t *m) {
     const char * cur = begin;
     int state = PC_OR_CSL;
@@ -118,6 +136,7 @@ int parse(const char * const begin, const char * const end, struct move_t *m) {
     int fromrank = -1;
     m->capture = NO_CAPTURE;
     m->check = NO_CHECK;
+    m->promotion = NO_PROMOTION;
 
     do {
         c = *cur;
@@ -215,11 +234,33 @@ int parse(const char * const begin, const char * const end, struct move_t *m) {
             if (c >= '1' && c <= '8') {
                 rank = c - '1';
                 ++cur;
-                state = MAYBE_CHECK;
+                if (m->piece == PAWN) {
+                    state = MAYBE_PROMOTION;
+                } else {
+                    state = MAYBE_CHECK;
+                }
             } else {
                 fprintf(stderr, "Invalid character for rank: %c\n", c);
                 return 1;
             }
+        } else if (state == MAYBE_PROMOTION) {
+            if (c == '=') {
+                ++cur;
+                state = PROMOTION;
+            } else {
+                state = MAYBE_CHECK;
+            }
+        } else if (state == PROMOTION) {
+            switch (c) {
+            case 'N': m->promotion = KNIGHT; break;
+            case 'B': m->promotion = BISHOP; break;
+            case 'R': m->promotion = ROOK  ; break;
+            case 'Q': m->promotion = QUEEN ; break;
+            default:
+                fprintf(stderr, "Invalid promotion type: %c\n", c);
+                return 1;
+            }
+            state = MAYBE_CHECK;
         } else if (state == MAYBE_CHECK) { // TERMINAL STATE
             if (c == '+') {
                 m->check = IS_CHECK;
@@ -289,7 +330,7 @@ int main(int argc, char **argv) {
         if (line[0] == '[') { // meta data
             continue;
         }
-        printf("Found line: %s", line);
+        //printf("Found line: %s", line);
         // assume that moves will never wrap across lines...
         if (*line == '\n') continue;
 
@@ -312,9 +353,10 @@ int main(int argc, char **argv) {
             if (*begin == '-') { // end of game
                 goto finished;
             }
-            printf("Found move: '%.*s'\n",(int) (end-begin), begin);
+            //printf("Found move: '%.*s'\n",(int) (end-begin), begin);
             parse(begin, end, &move);
-            move_print(&move);
+            //move_print(&move);
+            raw_move_print(&move);
             begin = end + 1;
         } while (*end != '\n');
     }

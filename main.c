@@ -6,9 +6,8 @@
 #include <inttypes.h>
 #include <assert.h>
 #include "magic_tables.h"
-#ifndef ssize_t
 #include <sys/types.h>
-#endif
+#include <unistd.h>
 
 #define BOOLSTR(x) ((x)?"TRUE":"FALSE")
 #define FLIP(side) ((side)^1)
@@ -980,5 +979,79 @@ int main(int argc, char **argv) {
     }
 #endif
 
+    FILE *fp;
+    char *line = 0;
+    int castle;
+    int capture;
+    int piece;
+    int tosq;
+    int fromrank;
+    int fromcol;
+    int check;
+    int wtm = WHITE;
+    move m;
+    int from;
+    int to;
+    int pc;
+    int cap;
+    int prm;
+    int promotion;
+    static struct position pos;
+    static struct savepos sp;
+    int nmoves;
+    move moves[MAX_MOVES];
+    int i;
+    int good;
+
+    set_initial_position(&pos);
+
+    fp = fdopen(STDIN_FILENO, "rb");
+    if (!fp) {
+        fputs("Could not open input stream!\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+    
+    while (fscanf(fp, "%d %d %d %d %d %d %d %d",
+                  &castle, &capture, &piece, &tosq,
+                  &fromrank, &fromcol, &check, &promotion) == 8) {
+        
+        // TODO: check for castle
+        piece = piece - 1;        
+        if (wtm == BLACK) {
+            piece += NPIECES;
+        }
+        if (promotion == -1) {
+            prm = NO_PROMOTION;
+        } else {
+            prm = promotion - 1;
+        }
+        printf("%d, %d, %s, %s, %d, %d, %d, %d\n",
+               castle, capture, piecestr(piece), sq_to_str[tosq],
+               fromrank, fromcol, check, promotion);
+
+        to = tosq;
+        from = 0; /* TODO */
+        pc = piece;
+        cap = 0; /* TODO */
+        m = MOVE(from, to, pc, cap, prm);
+
+        good = 0;
+        nmoves = generate_moves(&pos, &moves[0]);
+        for (i = 0; i < nmoves; ++i) {
+            if (moves[i] == m) {
+                good = 1;
+            }
+        }
+        if (!good) {
+            fputs("Did not generate move!!!!\n", stderr);
+            exit(EXIT_FAILURE);
+        }
+        wtm = FLIP(wtm);
+        make_move(&pos, moves[i], &sp);
+    }
+
+    printf("Success.\n");
+    fclose(fp);
+    free(line);
     return 0;
 }
