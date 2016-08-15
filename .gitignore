@@ -38,3 +38,4 @@ chess
 
 generate_magic_tables
 magic_tables.*
+pgn_parser

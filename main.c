@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +6,9 @@
 #include <inttypes.h>
 #include <assert.h>
 #include "magic_tables.h"
+#ifndef ssize_t
+#include <sys/types.h>
+#endif
 
 #define BOOLSTR(x) ((x)?"TRUE":"FALSE")
 #define FLIP(side) ((side)^1)
@@ -873,7 +877,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove) {
     if (depth == 0) {
         if (in_check(pos, pos->wtm)) {
             ++checkcnt;
-        }
+        }        
         return 1;
     }
     nmoves = generate_moves(pos, &moves[0]);
@@ -930,7 +934,7 @@ int main(int argc, char **argv) {
     }
 #endif
     
-    //#if 0
+#if 0
     static struct position pos;
     static struct position tmp;
     static struct savepos sp;
@@ -964,7 +968,7 @@ int main(int argc, char **argv) {
 
     printf("Perft:\n");
     uint64_t res;
-    for (int ply = 5; ply < 6; ++ply) {
+    for (int ply = 5; ply < 7; ++ply) {
         checkcnt = 0;
         res = perft(ply);
         printf("Perft(%u) = %" PRIu64 ", "
@@ -974,7 +978,7 @@ int main(int argc, char **argv) {
                , ply, res, checkcnt, capturecnt, enpassants);
 
     }
-    //#endif
+#endif
 
     return 0;
 }

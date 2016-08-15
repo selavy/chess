@@ -1,7 +1,7 @@
 CC=gcc
 DEBUG=-O0 -g -fno-omit-frame-pointer -fsanitize=address
 RELEASE=-O3 -fstrict-aliasing -ffast-math -flto
-CFLAGS=$(RELEASE) -Wall -Werror -pedantic -std=c99 
+CFLAGS=$(RELEASE) -Wall -Werror -pedantic -std=c11
 GENERATED=magic_tables.o
 OBJS=$(GENERATED) main.o
 TARGET=chess
@@ -17,6 +17,8 @@ $(GEN): $(GEN).c
 	$(CC) -o $@ $<
 main.o: main.c
 	$(CC) -o $@ $(CFLAGS) -c $<
+pgn_parser: pgn_parser.c
+	$(CC) -o $@ $(CFLAGS) $<
 .PHONY: clean
 clean:
 	rm -rf $(OBJS) $(TARGET) $(GEN) magic_tables.* *~
