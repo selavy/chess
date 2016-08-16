@@ -6,7 +6,6 @@ import pprint
 from collections import namedtuple
 
 Move = namedtuple('Move', ['pc', 'fromsq', 'tosq', 'cap', 'promo'])
-
 EMPTY = ' '
 WPAWN = 'P'
 WKNIGHT = 'N'
@@ -20,10 +19,12 @@ BBISHOP = 'b'
 BROOK = 'r'
 BQUEEN = 'q'
 BKING = 'k'
-
 WHITE_TO_MOVE = True
 BLACK_TO_MOVE = False
-
+WHITE_PIECES_PROMO = [WKNIGHT,WBISHOP,WROOK,WQUEEN]
+BLACK_PIECES_PROMO = [BKNIGHT,BBISHOP,BROOK,BQUEEN]
+def get_promo_piece(wtm):
+    return WHITE_PIECES_PROMO if wtm else BLACK_PIECES_PROMO
 SQ_TO_STR = [
     "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1",
     "A2", "B2", "C2", "D2", "E2", "F2", "G2", "H2",
@@ -34,7 +35,6 @@ SQ_TO_STR = [
     "A7", "B7", "C7", "D7", "E7", "F7", "G7", "H7",
     "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8"
 ]
-
 def is_white(p):
     return p in (WPAWN,WKNIGHT,WBISHOP,WQUEEN,WKING)
 def is_black(p):
@@ -117,6 +117,7 @@ def sq_to_rc(i):
     return (i / 8, i % 8)
     
 def generate_moves(board, wtm, ledger):
+    moves = []
     pawns = []
     knights = []
     bishops = []
@@ -137,9 +138,28 @@ def generate_moves(board, wtm, ledger):
                 queens.append(sq_to_rc(i))
             elif is_king(board[i], wtm):
                 kings.append(sq_to_rc(i))
+
+    def create_move(fromsq, tosq):
+        moves.append(Move(pc=board[fromsq],
+                          fromsq=fromsq,
+                          tosq=tosq,
+                          cap=board[tosq],
+                          promo=EMPTY))
+
+    def create_pawn_moves(fromsq, tosq, do_promos):
+        def add_move(promo):
+            moves.append(Move(pc=board[fromsq],
+                              fromsq=fromsq,
+                              tosq=tosq,
+                              cap=board[tosq],
+                              promo=promo))
+        if do_promos:
+            for p in get_promo_piece(wtm):
+                add_move(p)
+        else:
+            add_move(EMPTY)
         
     # knight moves
-    knight_moves = []
     KNIGHT_OFFS = [(-1,-2),(-2,-1),(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2)]
     for row, col in knights:
         fromsq = sq_to_num(col, row)        
@@ -150,15 +170,10 @@ def generate_moves(board, wtm, ledger):
                 continue
             tosq = sq_to_num(c, r)
             if board[tosq] == EMPTY or is_opponent(board[tosq], wtm):
-                knight_moves.append(Move(pc=board[fromsq],
-                                         fromsq=fromsq,
-                                         tosq=tosq,
-                                         cap=board[tosq],
-                                         promo=EMPTY))
-
+                create_move(fromsq, tosq)
+                
     # bishop moves
     BISHOP_OFFS = [(-1,-1),(-1,1),(1,-1),(1,1)]
-    bishop_moves = []
     for row, col in bishops:
         fromsq = sq_to_num(col, row)        
         for off in BISHOP_OFFS:
@@ -169,24 +184,15 @@ def generate_moves(board, wtm, ledger):
                     break
                 tosq = sq_to_num(c, r)
                 if board[tosq] == EMPTY:
-                    bishop_moves.append(Move(pc=board[fromsq],
-                                             fromsq=fromsq,
-                                             tosq=tosq,
-                                             cap=board[tosq],
-                                             promo=EMPTY))
+                    create_move(fromsq, tosq)
                 elif is_opponent(board[tosq], wtm):
-                    bishop_moves.append(Move(pc=board[fromsq],
-                                             fromsq=fromsq,
-                                             tosq=tosq,
-                                             cap=board[tosq],
-                                             promo=EMPTY))
+                    create_move(fromsq, tosq)
                     break
                 else: # own piece
                     break
 
     # rook moves
     ROOK_OFFS = [(1,0),(-1,0),(0,1),(0,-1)]
-    rook_moves = []
     for row, col in rooks:
         fromsq = sq_to_num(col, row)        
         for off in ROOK_OFFS:
@@ -197,17 +203,9 @@ def generate_moves(board, wtm, ledger):
                     break
                 tosq = sq_to_num(c, r)
                 if board[tosq] == EMPTY:
-                    rook_moves.append(Move(pc=board[fromsq],
-                                             fromsq=fromsq,
-                                             tosq=tosq,
-                                             cap=board[tosq],
-                                             promo=EMPTY))
+                    create_move(fromsq, tosq)
                 elif is_opponent(board[tosq], wtm):
-                    rook_moves.append(Move(pc=board[fromsq],
-                                             fromsq=fromsq,
-                                             tosq=tosq,
-                                             cap=board[tosq],
-                                             promo=EMPTY))
+                    create_move(fromsq, tosq)
                     break
                 else: # own piece
                     break
@@ -215,7 +213,6 @@ def generate_moves(board, wtm, ledger):
     # queen moves
     QUEEN_OFFS = [(1,0),(-1,0),(0,1),(0,-1),   # Rook offsets
                   (-1,-1),(-1,1),(1,-1),(1,1)] # Bishop offsets
-    queen_moves = []
     for row, col in queens:
         fromsq = sq_to_num(col, row)        
         for off in QUEEN_OFFS:
@@ -226,17 +223,9 @@ def generate_moves(board, wtm, ledger):
                     break
                 tosq = sq_to_num(c, r)
                 if board[tosq] == EMPTY:
-                    queen_moves.append(Move(pc=board[fromsq],
-                                            fromsq=fromsq,
-                                            tosq=tosq,
-                                            cap=board[tosq],
-                                            promo=EMPTY))
+                    create_move(fromsq, tosq)
                 elif is_opponent(board[tosq], wtm):
-                    queen_moves.append(Move(pc=board[fromsq],
-                                            fromsq=fromsq,
-                                            tosq=tosq,
-                                            cap=board[tosq],
-                                            promo=EMPTY))                    
+                    create_move(fromsq, tosq)
                     break
                 else: # own piece
                     break
@@ -244,7 +233,6 @@ def generate_moves(board, wtm, ledger):
     # king moves
     KING_OFFS = [(1,0),(-1,0),(0,1),(0,-1),
                  (-1,-1),(-1,1),(1,-1),(1,1)]
-    king_moves = []
     for row, col in kings:
         fromsq = sq_to_num(col, row)        
         for off in KING_OFFS:
@@ -254,67 +242,49 @@ def generate_moves(board, wtm, ledger):
                 continue
             tosq = sq_to_num(c, r)
             if board[tosq] == EMPTY:
-                king_moves.append(Move(pc=board[fromsq],
-                                       fromsq=fromsq,
-                                       tosq=tosq,
-                                       cap=board[tosq],
-                                       promo=EMPTY))                
+                create_move(fromsq, tosq)
             elif is_opponent(board[tosq], wtm):
-                king_moves.append(Move(pc=board[fromsq],
-                                       fromsq=fromsq,
-                                       tosq=tosq,
-                                       cap=board[tosq],
-                                       promo=EMPTY))                                
-
+                create_move(fromsq, tosq)                
+                
     # pawn moves
-    pawn_moves = []
     for row, col in pawns:
         sq = sq_to_num(col, row)
         if wtm:
-            if row == 1 and board[sq+8] == EMPTY and board[sq+16] == EMPTY:
-                #pawn_moves.append(sq+16)
-                pawn_moves.append(Move(pc=board[sq],
-                                       fromsq=sq,
-                                       tosq=sq+16,
-                                       cap=EMPTY,
-                                       promo=EMPTY))
-            if board[sq+8] == EMPTY:
-                pawn_moves.append(sq+8)
-            if col != 0 and is_opponent(board[sq+9], wtm):
-                pawn_moves.append(sq+9)
-            if col != 7 and is_opponent(board[sq+7], wtm):
-                pawn_moves.append(sq+7)
+            do_promotions = row == 6
+            if row == 1 and board[sq+8] == EMPTY and board[sq+16] == EMPTY: # forward two
+                create_pawn_moves(fromsq=sq, tosq=sq+16, do_promos=False)
+            if board[sq+8] == EMPTY: # forward one
+                create_pawn_moves(fromsq=sq, tosq=sq+8, do_promos=do_promotions)
+            if col != 0 and is_opponent(board[sq+9], wtm): # capture right
+                create_pawn_moves(fromsq=sq, tosq=sq+9, do_promos=do_promotions)
+            if col != 7 and is_opponent(board[sq+7], wtm): # capture left
+                create_pawn_moves(fromsq=sq, tosq=sq+7, do_promos=do_promotions)
         else:
-            if row == 6 and board[sq-8] == EMPTY and board[sq-16] == EMPTY:
-                pawn_moves.append(sq-16)
-            if board[sq-8] == EMPTY:
-                pawn_moves.append(sq-8)
-            if col != 0 and is_opponent(board[sq-9], wtm):
-                pawn_moves.append(sq+9)
-            if col != 7 and is_opponent(board[sq-7], wtm):
-                pawn_moves.append(sq+7)                
-
-    # sys.stdout.write("PAWN MOVES: ")
-    # print(','.join([SQ_TO_STR[sq] for sq in pawn_moves]))    
-    # sys.stdout.write("KNIGHT MOVES: ")
-    # print(','.join([SQ_TO_STR[sq] for sq in knight_moves]))
-    # sys.stdout.write("BISHOP MOVES: ")    
-    # print(','.join([SQ_TO_STR[sq] for sq in bishop_moves]))
-    # sys.stdout.write("ROOK MOVES: ")    
-    # print(','.join([SQ_TO_STR[sq] for sq in rook_moves]))
-    # sys.stdout.write("QUEEN MOVES: ")    
-    # print(','.join([SQ_TO_STR[sq] for sq in queen_moves]))
-    # sys.stdout.write("KING MOVES: ")    
-    # print(','.join([SQ_TO_STR[sq] for sq in king_moves]))
-
-    moves = []
-    moves.extend(pawn_moves)
-    moves.extend(knight_moves)
-    moves.extend(bishop_moves)
-    moves.extend(queen_moves)
-    moves.extend(king_moves)
+            do_promotions = row == 1
+            if row == 6 and board[sq-8] == EMPTY and board[sq-16] == EMPTY: # forward two
+                # pawn_moves.append(sq-16)
+                create_pawn_moves(fromsq=sq, tosq=sq-16, do_promos=False)
+            if board[sq-8] == EMPTY: # forward one
+                # pawn_moves.append(sq-8)
+                create_pawn_moves(fromsq=sq, tosq=sq-8, do_promos=do_promotions)
+            if col != 0 and is_opponent(board[sq-9], wtm): # capture left
+                create_pawn_moves(fromsq=sq, tosq=sq-9, do_promos=do_promotions)
+            if col != 7 and is_opponent(board[sq-7], wtm): # capture right
+                create_pawn_moves(fromsq=sq, tosq=sq-7, do_promos=do_promotions)
+                
     return moves
 
+def make_move(board, move):
+    board[move.fromsq] = EMPTY
+    if move.promo != EMPTY:
+        board[move.tosq] = move.pc
+    else:
+        board[move.tosq] = move.promo
+
+def undo_move(board, move):
+    board[move.tosq] = move.cap
+    board[move.fromsq] = move.pc
+        
 def perft(board, wtm, ledger, depth):
     if depth == 0:
         return 1
@@ -322,8 +292,21 @@ def perft(board, wtm, ledger, depth):
     if depth == 1:
         return len(moves)
 
+    nodes = 0
+    tmpledger = ledger[:] # deep copy
+    tmpboard = board[:] # deep copy    
+    wtm ^= True # flip whose move it is
+    for move in moves:
+        tmpledger.append(move)
+        make_move(tmpboard, move)
+        nodes += perft(tmpboard, wtm, tmpledger, depth - 1)
+        undo_move(tmpboard, move)
+        tmpledger.pop()
+
+    return nodes
+
 if __name__ == '__main__':
-    for i in range(2):
+    for i in range(4):
         board = [EMPTY]*64
         set_starting_position(board)
         wtm = True
