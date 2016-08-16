@@ -933,7 +933,7 @@ int main(int argc, char **argv) {
     }
 #endif
     
-#if 0
+#if 1
     static struct position pos;
     static struct position tmp;
     static struct savepos sp;
@@ -967,7 +967,7 @@ int main(int argc, char **argv) {
 
     printf("Perft:\n");
     uint64_t res;
-    for (int ply = 5; ply < 7; ++ply) {
+    for (int ply = 0; ply < 4; ++ply) {
         checkcnt = 0;
         res = perft(ply);
         printf("Perft(%u) = %" PRIu64 ", "
@@ -978,7 +978,7 @@ int main(int argc, char **argv) {
 
     }
 #endif
-
+#if 0
     FILE *fp;
     char *line = 0;
     int castle;
@@ -1054,4 +1054,5 @@ int main(int argc, char **argv) {
     fclose(fp);
     free(line);
     return 0;
+#endif
 }
