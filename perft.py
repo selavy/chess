@@ -132,7 +132,7 @@ def in_check(board, wtm):
                 if is_opponent(board[sq], wtm):
                     return True
 
-    def check_offset(offsets):
+    def check_offset(offsets, piece):
         for off in offsets:
             for i in range(1, 8):
                 r = king_row + i*off[0]
@@ -140,13 +140,17 @@ def in_check(board, wtm):
                 if r < 0 or r > 7 or c < 0 or c > 7:
                     break
                 tosq = sq_to_num(c, r)
-                if is_opponent(board[tosq], wtm):
+                if board[tosq] == piece:
                     return True
+                elif board[tosq] != EMPTY:
+                    break
         return False
 
-    # queen moves are combo of rook and bishop offsets so don't need
-    # to search that explicitly
-    return check_offset(BISHOP_OFFSETS) or check_offset(ROOK_OFFSETS)
+    bishop = BBISHOP if wtm else WBISHOP
+    rook = BROOK if wtm else WROOK
+    queen = BQUEEN if wtm else WQUEEN
+    return (check_offset(BISHOP_OFFSETS, bishop) or check_offset(ROOK_OFFSETS, rook) or
+            check_offset(QUEEN_OFFSETS, queen))
 
 def generate_moves(board, wtm, ledger):
     # TODO: castle
