@@ -23,6 +23,13 @@ WHITE_TO_MOVE = True
 BLACK_TO_MOVE = False
 WHITE_PIECES_PROMO = [WKNIGHT,WBISHOP,WROOK,WQUEEN]
 BLACK_PIECES_PROMO = [BKNIGHT,BBISHOP,BROOK,BQUEEN]
+KNIGHT_OFFSETS = [(-1,-2),(-2,-1),(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2)]
+BISHOP_OFFSETS = [(-1,-1),(-1,1),(1,-1),(1,1)]
+ROOK_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1)]
+QUEEN_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1),   # Rook offsets
+              (-1,-1),(-1,1),(1,-1),(1,1)] # Bishop offsets
+KING_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1),
+             (-1,-1),(-1,1),(1,-1),(1,1)]
 def get_promo_piece(wtm):
     return WHITE_PIECES_PROMO if wtm else BLACK_PIECES_PROMO
 SQ_TO_STR = [
@@ -33,64 +40,35 @@ SQ_TO_STR = [
     "A5", "B5", "C5", "D5", "E5", "F5", "G5", "H5",
     "A6", "B6", "C6", "D6", "E6", "F6", "G6", "H6",
     "A7", "B7", "C7", "D7", "E7", "F7", "G7", "H7",
-    "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8"
+    "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8",
 ]
-def is_white(p):
-    return p in (WPAWN,WKNIGHT,WBISHOP,WQUEEN,WKING)
-def is_black(p):
-    return p in (BPAWN,BKNIGHT,BBISHOP,BQUEEN,BKING)
-def is_pawn(p, wtm):
-    if wtm:
-        return p == WPAWN
-    else:
-        return p == BPAWN
-def is_knight(p, wtm):
-    if wtm:
-        return p == WKNIGHT
-    else:
-        return p == BKNIGHT
-def is_bishop(p, wtm):
-    if wtm:
-        return p == WBISHOP
-    else:
-        return p == BBISHOP
-def is_rook(p, wtm):
-    if wtm:
-        return p == WROOK
-    else:
-        return p == BROOK
-def is_queen(p, wtm):
-    if wtm:
-        return p == WQUEEN
-    else:
-        return p == BQUEEN
-def is_king(p, wtm):
-    if wtm:
-        return p == WKING
-    else:
-        return p == BKING
-def is_opponent(p, wtm):
-    if wtm:
-        return is_black(p)
-    else:
-        return is_white(p)
+def is_white(p): return p in set([WPAWN,WKNIGHT,WBISHOP,WQUEEN,WKING])
+def is_black(p): return p in set([BPAWN,BKNIGHT,BBISHOP,BQUEEN,BKING])
+def is_pawn(p, wtm): return p == WPAWN if wtm else p == BPAWN
+def is_knight(p, wtm): return p == WKNIGHT if wtm else p == BKNIGHT
+def is_bishop(p, wtm): return p == WBISHOP if wtm else p == BBISHOP
+def is_rook(p, wtm): return p == WROOK if wtm else p == BROOK
+def is_queen(p, wtm): return p == WQUEEN if wtm else p == BQUEEN
+def is_king(p, wtm): return p == WKING if wtm else p == BKING
+def is_opponent(p, wtm): return is_black(p) if wtm else is_white(p)
+def col_to_num(c): return ord(c) - ord('A')
+def row_to_num(r): return r - 1
+def sq_to_num(col, row): return row*8 + col
+def sq_to_rc(i): return (i / 8, i % 8)
+
 def is_second_rank(sq, wtm):
     if wtm:
         return sq >= 8 and sq <= 15
     else:
         return sq >= 48 and sq <= 55
-def col_to_num(c):
-    return ord(c) - ord('A')
-def row_to_num(r):
-    return r - 1
-def sq_to_num(col, row):
-    return row*8 + col
+    
 def print_board(f, board):
     f.write("---------------------------------\n") 
     for row in range(8):
         for col in range(8):
             f.write("| {} ".format(board[sq_to_num(col, 7 - row)]))
         f.write("|\n---------------------------------\n")
+        
 def set_starting_position(board):
     for i in range(8, 16):
         board[i] = WPAWN
@@ -112,11 +90,66 @@ def set_starting_position(board):
     board[61] = BBISHOP
     board[62] = BKNIGHT
     board[63] = BROOK
-
-def sq_to_rc(i):
-    return (i / 8, i % 8)
     
+def in_check(board, wtm):
+    king_pos = -1
+    for i in range(64):
+        if is_king(board[i], wtm):
+            king_pos = i
+            break
+    if king_pos == -1:
+        raise RuntimeError("unable to find king position!")
+    king_row, king_col = sq_to_rc(king_pos)
+    
+    for off in KNIGHT_OFFSETS:
+        r = king_row + off[0]
+        c = king_col + off[1]
+        if r < 0 or r > 7 or c < 0 or c > 7:
+            continue
+        tosq = sq_to_num(c, r)
+        if is_opponent(board[tosq], wtm):
+            return True
+
+    # pawn attacks
+    if wtm:
+        if king_row >= 6: # if on 7th or 8th rank, then black pawn can't attack king
+            if king_col != 0:
+                sq = sq_to_num(king_col-1, king_row+1)
+                if is_opponent(board[sq], wtm):
+                    return True
+            if king_col != 7:
+                sq = sq_to_num(king_col+1, king_row+1)
+                if is_opponent(board[sq], wtm):
+                    return True
+    else:
+        if king_row <= 1: # if on 2nd or 1st rank, then white pawn can't attack king
+            if king_col != 0:
+                sq = sq_to_num(king_col-1, king_row-1)
+                if is_opponent(board[sq], wtm):
+                    return True
+            if king_col != 7:
+                sq = sq_to_num(king_col+1, king_row-1)
+                if is_opponent(board[sq], wtm):
+                    return True
+
+    def check_offset(offsets):
+        for off in offsets:
+            for i in range(1, 8):
+                r = king_row + i*off[0]
+                c = king_col + i*off[1]
+                if r < 0 or r > 7 or c < 0 or c > 7:
+                    break
+                tosq = sq_to_num(c, r)
+                if is_opponent(board[tosq], wtm):
+                    return True
+        return False
+
+    # queen moves are combo of rook and bishop offsets so don't need
+    # to search that explicitly
+    return check_offset(BISHOP_OFFSETS) or check_offset(ROOK_OFFSETS)
+
 def generate_moves(board, wtm, ledger):
+    # TODO: castle
     moves = []
     pawns = []
     knights = []
@@ -158,12 +191,10 @@ def generate_moves(board, wtm, ledger):
                 add_move(p)
         else:
             add_move(EMPTY)
-        
     # knight moves
-    KNIGHT_OFFS = [(-1,-2),(-2,-1),(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2)]
     for row, col in knights:
         fromsq = sq_to_num(col, row)        
-        for off in KNIGHT_OFFS:
+        for off in KNIGHT_OFFSETS:
             r = row + off[0]
             c = col + off[1]
             if r < 0 or r > 7 or c < 0 or c > 7:
@@ -171,71 +202,36 @@ def generate_moves(board, wtm, ledger):
             tosq = sq_to_num(c, r)
             if board[tosq] == EMPTY or is_opponent(board[tosq], wtm):
                 create_move(fromsq, tosq)
-                
-    # bishop moves
-    BISHOP_OFFS = [(-1,-1),(-1,1),(1,-1),(1,1)]
-    for row, col in bishops:
-        fromsq = sq_to_num(col, row)        
-        for off in BISHOP_OFFS:
-            for i in range(1, 8):
-                r = row + i*off[0]
-                c = col + i*off[1]
-                if r < 0 or r > 7 or c < 0 or c > 7:
-                    break
-                tosq = sq_to_num(c, r)
-                if board[tosq] == EMPTY:
-                    create_move(fromsq, tosq)
-                elif is_opponent(board[tosq], wtm):
-                    create_move(fromsq, tosq)
-                    break
-                else: # own piece
-                    break
 
-    # rook moves
-    ROOK_OFFS = [(1,0),(-1,0),(0,1),(0,-1)]
-    for row, col in rooks:
-        fromsq = sq_to_num(col, row)        
-        for off in ROOK_OFFS:
-            for i in range(1, 8):
-                r = row + i*off[0]
-                c = col + i*off[1]
-                if r < 0 or r > 7 or c < 0 or c > 7:
-                    break
-                tosq = sq_to_num(c, r)
-                if board[tosq] == EMPTY:
-                    create_move(fromsq, tosq)
-                elif is_opponent(board[tosq], wtm):
-                    create_move(fromsq, tosq)
-                    break
-                else: # own piece
-                    break
-                    
-    # queen moves
-    QUEEN_OFFS = [(1,0),(-1,0),(0,1),(0,-1),   # Rook offsets
-                  (-1,-1),(-1,1),(1,-1),(1,1)] # Bishop offsets
-    for row, col in queens:
-        fromsq = sq_to_num(col, row)        
-        for off in QUEEN_OFFS:
-            for i in range(1, 8):
-                r = row + i*off[0]
-                c = col + i*off[1]
-                if r < 0 or r > 7 or c < 0 or c > 7:
-                    break
-                tosq = sq_to_num(c, r)
-                if board[tosq] == EMPTY:
-                    create_move(fromsq, tosq)
-                elif is_opponent(board[tosq], wtm):
-                    create_move(fromsq, tosq)
-                    break
-                else: # own piece
-                    break
+    def create_slider_moves(pieces, offsets):
+        for row, col in pieces:
+            fromsq = sq_to_num(col, row)
+            for off in offsets:
+                for i in range(1, 8):
+                    r = row + i*off[0]
+                    c = col + i*off[1]
+                    if r < 0 or r > 7 or c < 0 or c > 7:
+                        break
+                    tosq = sq_to_num(c, r)
+                    if board[tosq] == EMPTY:
+                        create_move(fromsq, tosq)
+                    elif is_opponent(board[tosq], wtm):
+                        create_move(fromsq, tosq)
+                        break
+                    else: # own piece
+                        break
 
+    # bishop
+    create_slider_moves(bishops, BISHOP_OFFSETS)
+    # rook
+    create_slider_moves(rooks, ROOK_OFFSETS)
+    # queen
+    create_slider_moves(queens, QUEEN_OFFSETS)
+    
     # king moves
-    KING_OFFS = [(1,0),(-1,0),(0,1),(0,-1),
-                 (-1,-1),(-1,1),(1,-1),(1,1)]
     for row, col in kings:
         fromsq = sq_to_num(col, row)        
-        for off in KING_OFFS:
+        for off in KING_OFFSETS:
             r = row + off[0]
             c = col + off[1]
             if r < 0 or r > 7 or c < 0 or c > 7:
@@ -245,7 +241,6 @@ def generate_moves(board, wtm, ledger):
                 create_move(fromsq, tosq)
             elif is_opponent(board[tosq], wtm):
                 create_move(fromsq, tosq)                
-                
     # pawn moves
     for row, col in pawns:
         sq = sq_to_num(col, row)
@@ -271,7 +266,6 @@ def generate_moves(board, wtm, ledger):
                 create_pawn_moves(fromsq=sq, tosq=sq-9, do_promos=do_promotions)
             if col != 7 and is_opponent(board[sq-7], wtm): # capture right
                 create_pawn_moves(fromsq=sq, tosq=sq-7, do_promos=do_promotions)
-                
     return moves
 
 def make_move(board, move):
@@ -299,10 +293,15 @@ def perft(board, wtm, ledger, depth):
     for move in moves:
         tmpledger.append(move)
         make_move(tmpboard, move)
-        nodes += perft(tmpboard, wtm, tmpledger, depth - 1)
+        if not in_check(tmpboard, wtm):
+            nodes += perft(tmpboard, wtm, tmpledger, depth - 1)
+        else:
+            print("Found check!")
+            print_board(sys.stdout, tmpboard)
+            sys.exit()
         undo_move(tmpboard, move)
         tmpledger.pop()
-
+        
     return nodes
 
 if __name__ == '__main__':
