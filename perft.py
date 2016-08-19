@@ -258,9 +258,9 @@ def generate_moves(board, wtm, ledger):
                 create_pawn_moves(fromsq=sq, tosq=sq+16, do_promos=False)
             if board[sq+8] == EMPTY: # forward one
                 create_pawn_moves(fromsq=sq, tosq=sq+8, do_promos=do_promotions)
-            if col != 0 and is_opponent(board[sq+9], wtm): # capture right
+            if col != 7 and is_opponent(board[sq+9], wtm): # capture right
                 create_pawn_moves(fromsq=sq, tosq=sq+9, do_promos=do_promotions)
-            if col != 7 and is_opponent(board[sq+7], wtm): # capture left
+            if col != 0 and is_opponent(board[sq+7], wtm): # capture left
                 create_pawn_moves(fromsq=sq, tosq=sq+7, do_promos=do_promotions)
         else:
             do_promotions = row == 1
@@ -283,13 +283,24 @@ def make_move(board, move, wtm):
     else:
         raise RuntimeError("Move had promotion??? {}".format(move))
         board[move.tosq] = move.promo
+
+def is_capture(board, move):
+    return board[move.tosq] != EMPTY
         
 def undo_move(board, move):
     board[move.tosq] = move.cap
     board[move.fromsq] = move.pc
-        
+
+CHECKS = 0
+CAPTURES = 0
+    
 def perft(board, wtm, ledger, depth):
+    global CHECKS
+    global CAPTURES
+    
     if depth == 0:
+        if in_check(board, wtm):
+            CHECKS += 1
         return 1
     moves = generate_moves(board, wtm, ledger)
     nodes = 0
@@ -298,6 +309,8 @@ def perft(board, wtm, ledger, depth):
     wtm ^= True # flip whose move it is
     for move in moves:
         tmpledger.append(move)
+        if depth == 1 and is_capture(board, move):
+            CAPTURES += 1
         make_move(tmpboard, move, wtm)
         nodes += perft(tmpboard, wtm, tmpledger, depth - 1)
         undo_move(tmpboard, move)
@@ -307,9 +320,11 @@ def perft(board, wtm, ledger, depth):
 
 if __name__ == '__main__':
     for i in range(4):
+        CHECKS = 0
+        CAPTURES = 0
         board = [EMPTY]*64
         set_starting_position(board)
         wtm = True
         ledger = []     
-        print("Perft #{}: {}".format(i, perft(board, wtm, ledger, i)))
+        print("Perft #{}: {}, Captures={}, Checks={}".format(i, perft(board, wtm, ledger, i), CAPTURES, CHECKS))
         
