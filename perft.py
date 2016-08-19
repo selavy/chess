@@ -28,8 +28,7 @@ BISHOP_OFFSETS = [(-1,-1),(-1,1),(1,-1),(1,1)]
 ROOK_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1)]
 QUEEN_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1),   # Rook offsets
               (-1,-1),(-1,1),(1,-1),(1,1)] # Bishop offsets
-KING_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1),
-             (-1,-1),(-1,1),(1,-1),(1,1)]
+KING_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1), (-1,-1),(-1,1),(1,-1),(1,1)]
 def get_promo_piece(wtm):
     return WHITE_PIECES_PROMO if wtm else BLACK_PIECES_PROMO
 SQ_TO_STR = [
@@ -90,15 +89,20 @@ def set_starting_position(board):
     board[61] = BBISHOP
     board[62] = BKNIGHT
     board[63] = BROOK
-    
-def in_check(board, wtm):
+
+def find_king(board, wtm):
     king_pos = -1
     for i in range(64):
         if is_king(board[i], wtm):
             king_pos = i
             break
     if king_pos == -1:
+        print_board(sys.stdout, board)
         raise RuntimeError("unable to find king position!")
+    return king_pos
+    
+def in_check(board, wtm):
+    king_pos = find_king(board, wtm)
     king_row, king_col = sq_to_rc(king_pos)
     
     for off in KNIGHT_OFFSETS:
@@ -272,13 +276,14 @@ def generate_moves(board, wtm, ledger):
                 create_pawn_moves(fromsq=sq, tosq=sq-7, do_promos=do_promotions)
     return moves
 
-def make_move(board, move):
+def make_move(board, move, wtm):
     board[move.fromsq] = EMPTY
-    if move.promo != EMPTY:
+    if move.promo == EMPTY:
         board[move.tosq] = move.pc
     else:
+        raise RuntimeError("Move had promotion??? {}".format(move))
         board[move.tosq] = move.promo
-
+        
 def undo_move(board, move):
     board[move.tosq] = move.cap
     board[move.fromsq] = move.pc
@@ -287,22 +292,14 @@ def perft(board, wtm, ledger, depth):
     if depth == 0:
         return 1
     moves = generate_moves(board, wtm, ledger)
-    if depth == 1:
-        return len(moves)
-
     nodes = 0
     tmpledger = ledger[:] # deep copy
     tmpboard = board[:] # deep copy    
     wtm ^= True # flip whose move it is
     for move in moves:
         tmpledger.append(move)
-        make_move(tmpboard, move)
-        if not in_check(tmpboard, wtm):
-            nodes += perft(tmpboard, wtm, tmpledger, depth - 1)
-        else:
-            print("Found check!")
-            print_board(sys.stdout, tmpboard)
-            sys.exit()
+        make_move(tmpboard, move, wtm)
+        nodes += perft(tmpboard, wtm, tmpledger, depth - 1)
         undo_move(tmpboard, move)
         tmpledger.pop()
         
