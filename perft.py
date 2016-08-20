@@ -5,7 +5,9 @@ import sys
 import pprint
 from collections import namedtuple
 
-Move = namedtuple('Move', ['pc', 'fromsq', 'tosq', 'cap', 'promo'])
+Move = namedtuple('Move', ['pc', 'fromsq', 'tosq', 'cap', 'promo', 'enpassant'])
+def print_move(m):
+    print("Move({pc},{fromsq},{tosq})".format(pc=m.pc,fromsq=m.fromsq,tosq=m.tosq))
 EMPTY = ' '
 WPAWN = 'P'
 WKNIGHT = 'N'
@@ -54,7 +56,6 @@ def col_to_num(c): return ord(c) - ord('A')
 def row_to_num(r): return r - 1
 def sq_to_num(col, row): return row*8 + col
 def sq_to_rc(i): return (i / 8, i % 8)
-
 def is_second_rank(sq, wtm):
     if wtm:
         return sq >= 8 and sq <= 15
@@ -67,6 +68,11 @@ def print_board(f, board):
         for col in range(8):
             f.write("| {} ".format(board[sq_to_num(col, 7 - row)]))
         f.write("|\n---------------------------------\n")
+        
+def print_fake_fen(f, board):
+    for sq in range(64):
+        f.write(board[sq])
+    f.write('|')
         
 def set_starting_position(board):
     for i in range(8, 16):
@@ -185,7 +191,8 @@ def generate_moves(board, wtm, ledger):
                           fromsq=fromsq,
                           tosq=tosq,
                           cap=board[tosq],
-                          promo=EMPTY))
+                          promo=EMPTY,
+                          enpassant=EMPTY))
 
     def create_pawn_moves(fromsq, tosq, do_promos):
         def add_move(promo):
@@ -193,12 +200,25 @@ def generate_moves(board, wtm, ledger):
                               fromsq=fromsq,
                               tosq=tosq,
                               cap=board[tosq],
-                              promo=promo))
+                              promo=promo,
+                              enpassant=EMPTY))
         if do_promos:
             for p in get_promo_piece(wtm):
                 add_move(p)
         else:
             add_move(EMPTY)
+
+    def create_enpassant_move(fromsq, tosq, epsq):
+        assert board[tosq] == EMPTY
+        assert ((board[fromsq] == WPAWN and board[epsq] == BPAWN) or
+                (board[fromsq] == BPAWN and board[epsq] == WPAWN))
+        moves.append(Move(pc=WPAWN if wtm else BPAWN,
+                          fromsq=fromsq,
+                          tosq=tosq,
+                          cap=BPAWN if wtm else WPAWN,
+                          promo=EMPTY,
+                          enpassant=epsq))
+        
     # knight moves
     for row, col in knights:
         fromsq = sq_to_num(col, row)        
@@ -274,15 +294,42 @@ def generate_moves(board, wtm, ledger):
                 create_pawn_moves(fromsq=sq, tosq=sq-9, do_promos=do_promotions)
             if col != 7 and is_opponent(board[sq-7], wtm): # capture right
                 create_pawn_moves(fromsq=sq, tosq=sq-7, do_promos=do_promotions)
+
+    # enpassant
+    if ledger:
+        mv = ledger[-1] # last move        
+        if wtm:
+            tosq = mv.tosq - 8 # square behind pawn
+            if mv.pc == BPAWN and mv.tosq >= 32 and mv.tosq <= 39 and mv.fromsq >= 48 and mv.fromsq <= 55 and board[tosq] == EMPTY: # last move was pawn from 7th rank up 2 squares and square behind is empty
+                for row, col in pawns:
+                    sq = sq_to_num(col, row)
+                    if sq >= 32 and sq <= 39 and (sq == (mv.tosq - 1) or sq == (mv.tosq + 1)):
+                        create_enpassant_move(fromsq=sq,
+                                              tosq=tosq,
+                                              epsq=mv.tosq)
+        else:
+            tosq = mv.tosq + 8 # square behind pawn
+            if mv.pc == WPAWN and mv.tosq >= 24 and mv.tosq <= 31 and mv.fromsq >= 8 and mv.fromsq <= 15 and board[tosq] == EMPTY:
+                for row, col in pawns:
+                    sq = sq_to_num(col, row)
+                    if sq >= 24 and sq <= 31 and (sq == (mv.tosq - 1) or sq == (mv.tosq + 1)):
+                        create_enpassant_move(fromsq=sq,
+                                              tosq=tosq,
+                                              epsq=mv.tosq)
+            
     return moves
 
 def make_move(board, move, wtm):
     board[move.fromsq] = EMPTY
-    if move.promo == EMPTY:
-        board[move.tosq] = move.pc
-    else:
-        raise RuntimeError("Move had promotion??? {}".format(move))
+    assert move.promo == EMPTY # TODO:
+    assert move.enpassant == EMPTY # TODO:
+    if move.promo != EMPTY:
+        assert move.enpassant == EMPTY
         board[move.tosq] = move.promo
+    elif move.enpassant != EMPTY:
+        raise RuntimeError("Enpassant move?? {}".format(move))
+    else:
+        board[move.tosq] = move.pc
 
 def is_capture(board, move):
     return board[move.tosq] != EMPTY
@@ -297,16 +344,22 @@ CAPTURES = 0
 def perft(board, wtm, ledger, depth):
     global CHECKS
     global CAPTURES
-    
+
+    if in_check(board, wtm ^ True):
+        # opponent made illegal move to get here because s/he is still in check
+        return 0
     if depth == 0:
-        if in_check(board, wtm):
+        if in_check(board, wtm): # count checks
             CHECKS += 1
+        print_fake_fen(sys.stdout, board)
+        print_move(ledger[-1])        
         return 1
+    
     moves = generate_moves(board, wtm, ledger)
     nodes = 0
     tmpledger = ledger[:] # deep copy
     tmpboard = board[:] # deep copy    
-    wtm ^= True # flip whose move it is
+    wtm = wtm ^ True # flip whose move it is
     for move in moves:
         tmpledger.append(move)
         if depth == 1 and is_capture(board, move):
@@ -319,12 +372,13 @@ def perft(board, wtm, ledger, depth):
     return nodes
 
 if __name__ == '__main__':
-    for i in range(4):
+    for i in range(4,5):
         CHECKS = 0
         CAPTURES = 0
         board = [EMPTY]*64
         set_starting_position(board)
         wtm = True
-        ledger = []     
-        print("Perft #{}: {}, Captures={}, Checks={}".format(i, perft(board, wtm, ledger, i), CAPTURES, CHECKS))
+        ledger = []
+        perft(board, wtm, ledger, i)
+        #print("Perft #{}: {}, Captures={}, Checks={}".format(i, perft(board, wtm, ledger, i), CAPTURES, CHECKS))
         

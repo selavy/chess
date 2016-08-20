@@ -94,6 +94,13 @@ void move_print(move m) {
            sq_to_str[FROM(m)], sq_to_str[TO(m)],
            piecestr(PIECE(m)), PROMOTE(m), piecestr(CAPTURE(m)));
 }
+void pymove_print(move m) { // matches output from python generator
+    char p = vpcs[PIECE(m)];
+    int from = FROM(m);
+    int to = TO(m);
+    printf("Move(%c,%d,%d)\n", p, from, to);
+}
+
 #define NO_PROMOTION 0
 #define NO_CAPTURE EMPTY
 #define NO_ENPASSANT 0
@@ -110,6 +117,12 @@ struct position {
     uint8_t  castle;          // 1 *  1 =  1B
     uint8_t  enpassant;       // 1 *  1 =  1B
 };                            // Total:  164B
+void pyprint_fake_fen(const struct position *p) {
+    for (int i = 0; i < 64; ++i) {
+        printf("%c", vpcs[p->sqtopc[i]]);
+    }
+    printf("|");
+}
 #define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING])
 void debug_position_print(struct position * restrict p) {
     int i;
@@ -876,7 +889,9 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove) {
     if (depth == 0) {
         if (in_check(pos, pos->wtm)) {
             ++checkcnt;
-        }        
+        }
+        pyprint_fake_fen(pos);
+        pymove_print(pmove);
         return 1;
     }
     nmoves = generate_moves(pos, &moves[0]);
@@ -885,7 +900,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove) {
         make_move(pos, moves[i], &sp);
         if (sp.was_ep == 1) {
             ++enpassants;
-        }        
+        }
         nodes += perft_ex(depth - 1, pos, moves[i]);
         undo_move(pos, moves[i], &sp);
         if (CAPTURE(moves[i]) != NO_CAPTURE) {
@@ -944,7 +959,7 @@ int main(int argc, char **argv) {
         fputs("Unable to open \"test_cases.txt\"\n", stderr);
         exit(1);
     }
-    printf("Checking test cases...\n");
+    //printf("Checking test cases...\n");
 
     int c;
     while ((c = fgetc(fp)) != EOF) {
@@ -963,19 +978,19 @@ int main(int argc, char **argv) {
     }
 
     fclose(fp);
-    printf("Successfully passed test cases\n");
+    //printf("Successfully passed test cases\n");
 
-    printf("Perft:\n");
-    uint64_t res;
-    for (int ply = 0; ply < 4; ++ply) {
+    //printf("Perft:\n");
+    //uint64_t res;
+    for (int ply = 4; ply < 5; ++ply) {
         checkcnt = 0;
-        res = perft(ply);
-        printf("Perft(%u) = %" PRIu64 ", "
-               "Check Count = %" PRIu64 ", "
-               "Capture Count = %" PRIu64 ", "
-               "Enpassant Count = %" PRIu64 "\n"
-               , ply, res, checkcnt, capturecnt, enpassants);
-
+        //res = perft(ply);
+        perft(ply);
+        /* printf("Perft(%u) = %" PRIu64 ", " */
+        /*        "Check Count = %" PRIu64 ", " */
+        /*        "Capture Count = %" PRIu64 ", " */
+        /*        "Enpassant Count = %" PRIu64 "\n" */
+        /*        , ply, res, checkcnt, capturecnt, enpassants); */
     }
 #endif
 #if 0
