@@ -28,9 +28,8 @@ BLACK_PIECES_PROMO = [BKNIGHT,BBISHOP,BROOK,BQUEEN]
 KNIGHT_OFFSETS = [(-1,-2),(-2,-1),(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2)]
 BISHOP_OFFSETS = [(-1,-1),(-1,1),(1,-1),(1,1)]
 ROOK_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1)]
-QUEEN_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1),   # Rook offsets
-              (-1,-1),(-1,1),(1,-1),(1,1)] # Bishop offsets
-KING_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1), (-1,-1),(-1,1),(1,-1),(1,1)]
+QUEEN_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1),(-1,-1),(-1,1),(1,-1),(1,1)]
+KING_OFFSETS = [(1,0),(-1,0),(0,1),(0,-1),(-1,-1),(-1,1),(1,-1),(1,1)]
 def get_promo_piece(wtm):
     return WHITE_PIECES_PROMO if wtm else BLACK_PIECES_PROMO
 SQ_TO_STR = [
@@ -52,6 +51,7 @@ def is_rook(p, wtm): return p == WROOK if wtm else p == BROOK
 def is_queen(p, wtm): return p == WQUEEN if wtm else p == BQUEEN
 def is_king(p, wtm): return p == WKING if wtm else p == BKING
 def is_opponent(p, wtm): return is_black(p) if wtm else is_white(p)
+def is_opponent_knight(p, wtm): return p == BKNIGHT if wtm else p == WKNIGHT
 def col_to_num(c): return ord(c) - ord('A')
 def row_to_num(r): return r - 1
 def sq_to_num(col, row): return row*8 + col
@@ -117,7 +117,7 @@ def in_check(board, wtm):
         if r < 0 or r > 7 or c < 0 or c > 7:
             continue
         tosq = sq_to_num(c, r)
-        if is_opponent(board[tosq], wtm):
+        if is_opponent_knight(board[tosq], wtm):
             return True
 
     # pawn attacks
@@ -269,7 +269,8 @@ def generate_moves(board, wtm, ledger):
             if board[tosq] == EMPTY:
                 create_move(fromsq, tosq)
             elif is_opponent(board[tosq], wtm):
-                create_move(fromsq, tosq)                
+                create_move(fromsq, tosq)
+                
     # pawn moves
     for row, col in pawns:
         sq = sq_to_num(col, row)
@@ -352,8 +353,10 @@ def perft(board, wtm, ledger, depth):
     if depth == 0:
         if in_check(board, wtm): # count checks
             CHECKS += 1
-        print_fake_fen(sys.stdout, board)
-        print_move(ledger[-1])        
+        # # DEBUG
+        # print_fake_fen(sys.stdout, board)
+        # print_move(ledger[-1])
+        # # GUBED
         return 1
     
     moves = generate_moves(board, wtm, ledger)
@@ -364,6 +367,8 @@ def perft(board, wtm, ledger, depth):
     for move in moves:
         tmpledger.append(move)
         if depth == 1 and is_capture(board, move):
+            # print_board(sys.stdout, board)
+            # print_move(move)
             CAPTURES += 1
         make_move(tmpboard, move, wtm)
         nodes += perft(tmpboard, wtm, tmpledger, depth - 1)
@@ -380,19 +385,6 @@ if __name__ == '__main__':
         set_starting_position(board)
         wtm = True
         ledger = []
-
-        # board[0] = EMPTY
-        # board[8] = EMPTY
-        # board[16] = WROOK
-        # board[24] = WPAWN
-        # board[52] = EMPTY
-        # board[44] = BPAWN
-        # print_board(sys.stdout, board)
-        # wtm = False # black to move
-        # moves = generate_moves(board, wtm, ledger)
-        # for m in moves:
-        #     print_move(m)
-        
-        perft(board, wtm, ledger, i)
-        # print("Perft #{}: {}, Captures={}, Checks={}".format(i, perft(board, wtm, ledger, i), CAPTURES, CHECKS))
+        # perft(board, wtm, ledger, i)
+        print("Perft #{}: {}, Captures={}, Checks={}".format(i, perft(board, wtm, ledger, i), CAPTURES, CHECKS))
         
