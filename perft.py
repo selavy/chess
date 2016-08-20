@@ -366,12 +366,11 @@ def perft(board, wtm, ledger, depth):
     wtm = wtm ^ True # flip whose move it is
     for move in moves:
         tmpledger.append(move)
-        if depth == 1 and is_capture(board, move):
-            # print_board(sys.stdout, board)
-            # print_move(move)
-            CAPTURES += 1
         make_move(tmpboard, move, wtm)
-        nodes += perft(tmpboard, wtm, tmpledger, depth - 1)
+        cnt = perft(tmpboard, wtm, tmpledger, depth - 1)
+        if depth == 1 and cnt == 1 and is_capture(board, move):
+            CAPTURES += 1
+        nodes += cnt
         undo_move(tmpboard, move)
         tmpledger.pop()
         
