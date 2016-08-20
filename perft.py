@@ -43,8 +43,8 @@ SQ_TO_STR = [
     "A7", "B7", "C7", "D7", "E7", "F7", "G7", "H7",
     "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8",
 ]
-def is_white(p): return p in set([WPAWN,WKNIGHT,WBISHOP,WQUEEN,WKING])
-def is_black(p): return p in set([BPAWN,BKNIGHT,BBISHOP,BQUEEN,BKING])
+def is_white(p): return p in set([WPAWN,WKNIGHT,WBISHOP,WROOK,WQUEEN,WKING])
+def is_black(p): return p in set([BPAWN,BKNIGHT,BBISHOP,BROOK,BQUEEN,BKING])
 def is_pawn(p, wtm): return p == WPAWN if wtm else p == BPAWN
 def is_knight(p, wtm): return p == WKNIGHT if wtm else p == BKNIGHT
 def is_bishop(p, wtm): return p == WBISHOP if wtm else p == BBISHOP
@@ -240,6 +240,7 @@ def generate_moves(board, wtm, ledger):
                     c = col + i*off[1]
                     if r < 0 or r > 7 or c < 0 or c > 7:
                         break
+                    
                     tosq = sq_to_num(c, r)
                     if board[tosq] == EMPTY:
                         create_move(fromsq, tosq)
@@ -379,6 +380,19 @@ if __name__ == '__main__':
         set_starting_position(board)
         wtm = True
         ledger = []
+
+        # board[0] = EMPTY
+        # board[8] = EMPTY
+        # board[16] = WROOK
+        # board[24] = WPAWN
+        # board[52] = EMPTY
+        # board[44] = BPAWN
+        # print_board(sys.stdout, board)
+        # wtm = False # black to move
+        # moves = generate_moves(board, wtm, ledger)
+        # for m in moves:
+        #     print_move(m)
+        
         perft(board, wtm, ledger, i)
-        #print("Perft #{}: {}, Captures={}, Checks={}".format(i, perft(board, wtm, ledger, i), CAPTURES, CHECKS))
+        # print("Perft #{}: {}, Captures={}, Checks={}".format(i, perft(board, wtm, ledger, i), CAPTURES, CHECKS))
         
