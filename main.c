@@ -78,21 +78,23 @@ const char *piecestr(uint32_t piece) {
 // capture [0..11] 4 bit
 // promote [0..5]  3 bit
 typedef uint32_t move;
-#define MOVE(from, to, pc, cap, prm)            \
+#define MOVE(from, to, pc, cap, prm, ep)        \
     (((to) & 0x3f)           |                  \
      (((from ) & 0x3f) << 6) |                  \
      (((pc ) & 0x0f) << 12)  |                  \
      (((prm) & 0x07) << 16)  |                  \
-     (((cap) & 0x0f) << 19))
-#define FROM(m) ((m) & 0x3f)
-#define TO(m) (((m) >> 6) & 0x3f)
-#define PIECE(m) (((m) >> 12) & 0xf)
-#define PROMOTE(m) (((m) >> 16) & 0x7)
-#define CAPTURE(m) (((m) >> 19) & 0xf)
+     (((cap) & 0x0f) << 19)  |                  \
+     (((ep ) & 0x01) << 23))  
+#define FROM(m)      (((m) >>  0) & 0x3f)
+#define TO(m)        (((m) >>  6) & 0x3f)
+#define PIECE(m)     (((m) >> 12) & 0x0f)
+#define PROMOTE(m)   (((m) >> 16) & 0x07)
+#define CAPTURE(m)   (((m) >> 19) & 0x0f)
+#define ENPASSANT(m) (((m) >> 23) & 0x01)
 void move_print(move m) {
-    printf("MOVE(from=%s, to=%s, pc=%s, prm=%d, cap=%s)\n",
+    printf("MOVE(from=%s, to=%s, pc=%s, prm=%d, cap=%s, ep=%s)\n",
            sq_to_str[FROM(m)], sq_to_str[TO(m)],
-           piecestr(PIECE(m)), PROMOTE(m), piecestr(CAPTURE(m)));
+           piecestr(PIECE(m)), PROMOTE(m), piecestr(CAPTURE(m)), BOOLSTR(ENPASSANT(m)));
 }
 void pymove_print(move m) { // matches output from python generator
     char p = vpcs[PIECE(m)];
@@ -488,7 +490,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
                 for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
                     msk = MASK(sq);
                     if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
-                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0, 0);
                     }
                 }
             }
@@ -504,7 +506,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     if (posmoves != 0) {
         for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
             if (posmoves & 0x1) {
-                moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+                moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0, 0);
             }
         }
         pcs &= ~msk;
@@ -520,7 +522,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
                 for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
                     msk = MASK(sq);
                     if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
-                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0, 0);
                     }
                 }
             }
@@ -537,7 +539,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
                 for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
                     msk = MASK(sq);
                     if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
-                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0, 0);
                     }
                 }
             }
@@ -554,7 +556,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
                 for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
                     msk = MASK(sq);
                     if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
-                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0);
+                        moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0, 0);
                     }
                 }
             }
@@ -574,7 +576,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 8 : sq + 8;
             // TODO: if on last rank, generate promotions
-            moves[nmove++] = MOVE(sq, fromsq, pc, EMPTY, 0);
+            moves[nmove++] = MOVE(sq, fromsq, pc, EMPTY, 0, 0);
         }
     }
 
@@ -589,7 +591,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             if (pos->sqtopc[side == WHITE ? sq - 8 : sq + 8] != EMPTY) {
                 continue;
             }
-            moves[nmove++] = MOVE(sq, fromsq, pc, EMPTY, 0);
+            moves[nmove++] = MOVE(sq, fromsq, pc, EMPTY, 0, 0);
         }
     }
 
@@ -601,7 +603,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 7 : sq + 9;
             // TODO: if on last rank, generate promotions
-            moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0);
+            moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0, 0);
         }
     }
 
@@ -613,7 +615,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 9 : sq + 7;
             // TODO: if on last rank, generate promotions
-            moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0);
+            moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0, 0);
         }
     }
 
@@ -628,18 +630,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
                 sq = side == WHITE ? fromsq + 9 : fromsq - 7;
                 if (pos->sqtopc[sq] == EMPTY) {
-                    moves[nmove++] = MOVE(sq, fromsq, pc, PC(contraside,PAWN), 0);
-                    #if 0                    
-                    position_print(&pos->sqtopc[0]);                    
-                    printf("en passant 1 possible\n");
-                    printf("enpassant = %u\n", pos->enpassant);
-                    printf("epsq = %u\n", epsq);
-                    printf("fromsq = %u\n", fromsq);
-                    printf("side = %u\n", side);
-                    printf("sq = %u\n", (unsigned)sq);
-                    printf("pos->sqtopc[epsq] == %s\n", piecestr(pos->sqtopc[epsq]));
-                    assert(0);
-                    #endif
+                    moves[nmove++] = MOVE(sq, fromsq, pc, PC(contraside,PAWN), 0, 1);
                 }
             }
         }
@@ -649,16 +640,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
                 sq = side == WHITE ? fromsq + 7 : fromsq - 9;                
                 if (pos->sqtopc[sq] == EMPTY) {
-                    moves[nmove++] = MOVE(sq, fromsq, pc, PC(contraside,PAWN), 0);
-                    #if 0
-                    position_print(&pos->sqtopc[0]);
-                    printf("en passant 2 possible\n");
-                    printf("enpassant = %u\n", pos->enpassant);
-                    printf("epsq = %u\n", epsq);
-                    printf("fromsq = %u\n", fromsq);
-                    printf("side = %u\n", side);
-                    assert(0);
-                    #endif
+                    moves[nmove++] = MOVE(sq, fromsq, pc, PC(contraside,PAWN), 0, 1);
                 }
             }
         }
@@ -872,7 +854,7 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
     } else {
         assert(0);
     }
-    *m = MOVE(to, from, int_to_piece(pc), int_to_piece(cap), prm);
+    *m = MOVE(to, from, int_to_piece(pc), int_to_piece(cap), prm, 0);
 }
 static uint64_t checkcnt = 0;
 static uint64_t capturecnt = 0;
@@ -891,19 +873,22 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove) {
         if (in_check(pos, pos->wtm)) {
             ++checkcnt;
         }
+        if (ENPASSANT(pmove) != 0) {
+            ++enpassants;
+        }
         return 1;
     }
     nmoves = generate_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
-        if (sp.was_ep == 1) {
-            ++enpassants;
-        }
         cnt = perft_ex(depth - 1, pos, moves[i]);
         nodes += cnt;
         undo_move(pos, moves[i], &sp);
-        if (depth == 1 && cnt == 1 && CAPTURE(moves[i]) != NO_CAPTURE) {
-            ++capturecnt;
+        if (depth == 1 && cnt == 1) {
+            if (CAPTURE(moves[i]) != NO_CAPTURE) {
+                ++capturecnt;
+
+            }
         }
     }
     return nodes;
@@ -930,12 +915,9 @@ int main(int argc, char **argv) {
         read_position_from_file(fp, &pos, &m);
         assert(validate_position(&pos) == 0);
         memcpy(&tmp, &pos, sizeof(tmp));
-        
         make_move(&pos, m, &sp);
         assert(validate_position(&pos) == 0);
-        
         undo_move(&pos, m, &sp);
-        //position_print(&pos.sqtopc[0]);
         assert(validate_position(&pos) == 0);
         assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
     }
