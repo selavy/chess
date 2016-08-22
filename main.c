@@ -92,7 +92,7 @@ typedef uint32_t move;
 #define CAPTURE(m)   (((m) >> 19) & 0x0f)
 #define ENPASSANT(m) (((m) >> 23) & 0x01)
 void move_print(move m) {
-    printf("MOVE(from=%s, to=%s, pc=%s, prm=%d, cap=%s, ep=%s)\n",
+    printf("MOVE(from=%s, to=%s, pc=%s, prm=%d, cap=%s, ep=%s)",
            sq_to_str[FROM(m)], sq_to_str[TO(m)],
            piecestr(PIECE(m)), PROMOTE(m), piecestr(CAPTURE(m)), BOOLSTR(ENPASSANT(m)));
 }
@@ -859,7 +859,7 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
 static uint64_t checkcnt = 0;
 static uint64_t capturecnt = 0;
 static uint64_t enpassants = 0;
-uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove) {
+uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, int ply) {
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
@@ -873,30 +873,31 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove) {
         if (in_check(pos, pos->wtm)) {
             ++checkcnt;
         }
-        if (ENPASSANT(pmove) != 0) {
-            ++enpassants;
-        }
+        if (CAPTURE(pmove) != NO_CAPTURE) {
+            ++capturecnt;
+            if (ENPASSANT(pmove) != 0) {
+                ++enpassants;
+            }
+        } 
         return 1;
     }
     nmoves = generate_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
-        cnt = perft_ex(depth - 1, pos, moves[i]);
+        cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
         nodes += cnt;
         undo_move(pos, moves[i], &sp);
-        if (depth == 1 && cnt == 1) {
-            if (CAPTURE(moves[i]) != NO_CAPTURE) {
-                ++capturecnt;
-
-            }
-        }
+        if (ply == 0) {
+            move_print(moves[i]);
+            printf(" %" PRIu64 "\n", cnt);
+        }        
     }
     return nodes;
 }
 uint64_t perft(int depth) {
     static struct position pos;
     set_initial_position(&pos);
-    return perft_ex(depth, &pos, 0);
+    return perft_ex(depth, &pos, 0, 0);
 }
 int main(int argc, char **argv) {
     static struct position pos;
