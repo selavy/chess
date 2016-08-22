@@ -880,7 +880,8 @@ static uint64_t enpassants = 0;
 uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove) {
     uint32_t i;
     uint32_t nmoves;
-    uint64_t nodes;
+    uint64_t nodes = 0;
+    uint64_t cnt;    
     move moves[MAX_MOVES];
     struct savepos sp;
     if (in_check(pos, FLIP(pos->wtm))) {
@@ -890,20 +891,18 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove) {
         if (in_check(pos, pos->wtm)) {
             ++checkcnt;
         }
-        pyprint_fake_fen(pos);
-        pymove_print(pmove);
         return 1;
     }
     nmoves = generate_moves(pos, &moves[0]);
-    nodes = 0;
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
         if (sp.was_ep == 1) {
             ++enpassants;
         }
-        nodes += perft_ex(depth - 1, pos, moves[i]);
+        cnt = perft_ex(depth - 1, pos, moves[i]);
+        nodes += cnt;
         undo_move(pos, moves[i], &sp);
-        if (CAPTURE(moves[i]) != NO_CAPTURE) {
+        if (depth == 1 && cnt == 1 && CAPTURE(moves[i]) != NO_CAPTURE) {
             ++capturecnt;
         }
     }
@@ -915,40 +914,6 @@ uint64_t perft(int depth) {
     return perft_ex(depth, &pos, 0);
 }
 int main(int argc, char **argv) {
-#if 0
-    static struct position pos;
-    static struct savepos sp;
-    move moves[MAX_MOVES];
-    uint32_t nmoves;
-    int i;
-    move m;
-
-    set_initial_position(&pos);
-    position_print(&pos.sqtopc[0]);
-    m = MOVE(H4, H2, PC(WHITE,PAWN), NO_CAPTURE, NO_PROMOTION);
-    move_print(m);
-    make_move(&pos, m, &sp);
-    position_print(&pos.sqtopc[0]);
-    m = MOVE(F6, F7, PC(BLACK,PAWN), NO_CAPTURE, NO_PROMOTION);
-    move_print(m);
-    make_move(&pos, m, &sp);
-    position_print(&pos.sqtopc[0]);
-    m = MOVE(H5, H4, PC(WHITE,PAWN), NO_CAPTURE, NO_PROMOTION);
-    move_print(m);
-    make_move(&pos, m, &sp);
-    position_print(&pos.sqtopc[0]);
-    m = MOVE(G5, G7, PC(BLACK,PAWN), NO_CAPTURE, NO_PROMOTION);
-    move_print(m);
-    make_move(&pos, m, &sp);
-    position_print(&pos.sqtopc[0]);            
-    
-    nmoves = generate_moves(&pos, &moves[0]);
-    for (i = 0; i < nmoves; ++i) {
-        move_print(moves[i]);
-    }
-#endif
-    
-#if 1
     static struct position pos;
     static struct position tmp;
     static struct savepos sp;
@@ -959,8 +924,6 @@ int main(int argc, char **argv) {
         fputs("Unable to open \"test_cases.txt\"\n", stderr);
         exit(1);
     }
-    //printf("Checking test cases...\n");
-
     int c;
     while ((c = fgetc(fp)) != EOF) {
         ungetc(c, fp);
@@ -976,98 +939,20 @@ int main(int argc, char **argv) {
         assert(validate_position(&pos) == 0);
         assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
     }
-
     fclose(fp);
-    //printf("Successfully passed test cases\n");
+    printf("Successfully passed test cases...\n");
 
-    //printf("Perft:\n");
-    //uint64_t res;
-    for (int ply = 4; ply < 5; ++ply) {
+    printf("Perft:\n");
+    uint64_t res;
+    for (int ply = 6; ply < 7; ++ply) {
         checkcnt = 0;
-        //res = perft(ply);
-        perft(ply);
-        /* printf("Perft(%u) = %" PRIu64 ", " */
-        /*        "Check Count = %" PRIu64 ", " */
-        /*        "Capture Count = %" PRIu64 ", " */
-        /*        "Enpassant Count = %" PRIu64 "\n" */
-        /*        , ply, res, checkcnt, capturecnt, enpassants); */
+        capturecnt = 0;
+        enpassants = 0;
+        res = perft(ply);
+        printf("Perft(%u) = %" PRIu64 ", "
+               "Check Count = %" PRIu64 ", "
+               "Capture Count = %" PRIu64 ", "
+               "Enpassant Count = %" PRIu64 "\n"
+               , ply, res, checkcnt, capturecnt, enpassants);
     }
-#endif
-#if 0
-    FILE *fp;
-    char *line = 0;
-    int castle;
-    int capture;
-    int piece;
-    int tosq;
-    int fromrank;
-    int fromcol;
-    int check;
-    int wtm = WHITE;
-    move m;
-    int from;
-    int to;
-    int pc;
-    int cap;
-    int prm;
-    int promotion;
-    static struct position pos;
-    static struct savepos sp;
-    int nmoves;
-    move moves[MAX_MOVES];
-    int i;
-    int good;
-
-    set_initial_position(&pos);
-
-    fp = fdopen(STDIN_FILENO, "rb");
-    if (!fp) {
-        fputs("Could not open input stream!\n", stderr);
-        exit(EXIT_FAILURE);
-    }
-    
-    while (fscanf(fp, "%d %d %d %d %d %d %d %d",
-                  &castle, &capture, &piece, &tosq,
-                  &fromrank, &fromcol, &check, &promotion) == 8) {
-        
-        // TODO: check for castle
-        piece = piece - 1;        
-        if (wtm == BLACK) {
-            piece += NPIECES;
-        }
-        if (promotion == -1) {
-            prm = NO_PROMOTION;
-        } else {
-            prm = promotion - 1;
-        }
-        printf("%d, %d, %s, %s, %d, %d, %d, %d\n",
-               castle, capture, piecestr(piece), sq_to_str[tosq],
-               fromrank, fromcol, check, promotion);
-
-        to = tosq;
-        from = 0; /* TODO */
-        pc = piece;
-        cap = 0; /* TODO */
-        m = MOVE(from, to, pc, cap, prm);
-
-        good = 0;
-        nmoves = generate_moves(&pos, &moves[0]);
-        for (i = 0; i < nmoves; ++i) {
-            if (moves[i] == m) {
-                good = 1;
-            }
-        }
-        if (!good) {
-            fputs("Did not generate move!!!!\n", stderr);
-            exit(EXIT_FAILURE);
-        }
-        wtm = FLIP(wtm);
-        make_move(&pos, moves[i], &sp);
-    }
-
-    printf("Success.\n");
-    fclose(fp);
-    free(line);
-    return 0;
-#endif
 }

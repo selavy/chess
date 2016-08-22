@@ -106,7 +106,39 @@ def find_king(board, wtm):
         print_board(sys.stdout, board)
         raise RuntimeError("unable to find king position!")
     return king_pos
-    
+
+# # TODO: this implementation is wrong
+# # need to also check:
+# # 1) can checking piece be captured?
+# # 2) can the check be blocked?
+def in_checkmate(board, wtm):
+    return False
+#     moves = []
+#     fromsq = find_king(board, wtm)
+#     row, col = sq_to_rc(fromsq)
+#     king_type = WKING if wtm else BKING    
+#     for off in KING_OFFSETS:
+#         r = row + off[0]
+#         c = col + off[1]
+#         if r < 0 or r > 7 or c < 0 or c > 7:
+#             continue
+#         tosq = sq_to_num(c, r)
+#         if board[tosq] == EMPTY or is_opponent(board[tosq], wtm):
+#             moves.append(Move(pc=king_type,
+#                               fromsq=fromsq,
+#                               tosq=tosq,
+#                               cap=board[tosq],
+#                               promo=EMPTY,
+#                               enpassant=EMPTY))
+
+#     tmpboard = board[:]                
+#     for move in moves:
+#         make_move(tmpboard, move)
+#         if not in_check(tmpboard, wtm):
+#             return False
+#         undo_move(tmpboard, move)
+#     return True
+
 def in_check(board, wtm):
     king_pos = find_king(board, wtm)
     king_row, king_col = sq_to_rc(king_pos)
@@ -269,8 +301,8 @@ def generate_moves(board, wtm, ledger):
             if board[tosq] == EMPTY:
                 create_move(fromsq, tosq)
             elif is_opponent(board[tosq], wtm):
-                create_move(fromsq, tosq)
-                
+                create_move(fromsq, tosq) 
+              
     # pawn moves
     for row, col in pawns:
         sq = sq_to_num(col, row)
@@ -321,42 +353,42 @@ def generate_moves(board, wtm, ledger):
             
     return moves
 
-def make_move(board, move, wtm):
+def make_move(board, move):
     board[move.fromsq] = EMPTY
     assert move.promo == EMPTY # TODO:
-    assert move.enpassant == EMPTY # TODO:
+    # assert move.enpassant == EMPTY # TODO:
     if move.promo != EMPTY:
         assert move.enpassant == EMPTY
         board[move.tosq] = move.promo
     elif move.enpassant != EMPTY:
-        raise RuntimeError("Enpassant move?? {}".format(move))
+        board[move.tosq] = move.pc
+        board[move.fromsq] = EMPTY
+        board[move.enpassant] = EMPTY
     else:
         board[move.tosq] = move.pc
 
 def is_capture(board, move):
-    return board[move.tosq] != EMPTY
+    return board[move.tosq] != EMPTY or is_enpassant(move)
+
+def is_enpassant(move):
+    return move.enpassant != EMPTY
         
 def undo_move(board, move):
     board[move.tosq] = move.cap
     board[move.fromsq] = move.pc
-
-CHECKS = 0
-CAPTURES = 0
     
-def perft(board, wtm, ledger, depth):
-    global CHECKS
-    global CAPTURES
-
+def perft(board, wtm, ledger, depth, stats):
     if in_check(board, wtm ^ True):
         # opponent made illegal move to get here because s/he is still in check
         return 0
-    if depth == 0:
+    
+    if depth == 0: # update stats
         if in_check(board, wtm): # count checks
-            CHECKS += 1
-        # # DEBUG
-        # print_fake_fen(sys.stdout, board)
-        # print_move(ledger[-1])
-        # # GUBED
+            stats.checks += 1
+            if in_checkmate(board, wtm):
+                stats.checkmates += 1
+        if is_enpassant(ledger[-1]):
+            stats.enpassants += 1
         return 1
     
     moves = generate_moves(board, wtm, ledger)
@@ -366,24 +398,31 @@ def perft(board, wtm, ledger, depth):
     wtm = wtm ^ True # flip whose move it is
     for move in moves:
         tmpledger.append(move)
-        make_move(tmpboard, move, wtm)
-        cnt = perft(tmpboard, wtm, tmpledger, depth - 1)
+        make_move(tmpboard, move)
+        cnt = perft(tmpboard, wtm, tmpledger, depth - 1, stats)
         if depth == 1 and cnt == 1 and is_capture(board, move):
-            CAPTURES += 1
+            stats.captures += 1
         nodes += cnt
         undo_move(tmpboard, move)
         tmpledger.pop()
         
     return nodes
 
+class Stats(object):
+    def __init__(self):
+        self.checks = 0
+        self.captures = 0
+        self.checkmates = 0
+        self.enpassants = 0
+
 if __name__ == '__main__':
-    for i in range(4,5):
-        CHECKS = 0
-        CAPTURES = 0
+    for i in range(4,6):
+        stats = Stats()
         board = [EMPTY]*64
         set_starting_position(board)
         wtm = True
         ledger = []
-        # perft(board, wtm, ledger, i)
-        print("Perft #{}: {}, Captures={}, Checks={}".format(i, perft(board, wtm, ledger, i), CAPTURES, CHECKS))
+        nmoves = perft(board, wtm, ledger, i, stats)
+        print("Perft #{}: {}, Captures={}, E.p.={}, Checks={}, Checkmates={}".format(
+            i, nmoves, stats.captures, stats.enpassants, stats.checks, stats.checkmates))
         
