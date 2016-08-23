@@ -376,7 +376,6 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     // TODO: generate attack square data
     uint64_t pcs;
     uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
-
     pcs = pos->brd[PC(side,ROOK)] | pos->brd[PC(side,QUEEN)];
     if ((rook_attacks(square, occupied) & pcs) != 0) {
         return 1;
@@ -389,28 +388,11 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     if ((knight_attacks[square] & pcs) != 0) {
         return 1;
     }
+    
     pcs = pos->brd[PC(side,PAWN)];
-    if ((pawn_attacks(side, square) & pcs) != 0) {
+    if ((pawn_attacks(FLIP(side), square) & pcs) != 0) {
         return 1;
     }
-
-    #if 0
-    if ((rook_attacks[square] & (Rooks(side) | Queens(side)))
-        && (RookAttacks(square,
-                        OccupiedSquares) & (Rooks(side) | Queens(side))))
-        return 1;
-    if ((bishop_attacks[square] & (Bishops(side) | Queens(side)))
-        && (BishopAttacks(square,
-                          OccupiedSquares) & (Bishops(side) | Queens(side))))
-        return 1;
-    if (KnightAttacks(square) & Knights(side))
-        return 1;
-    if (PawnAttacks(Flip(side), square) & Pawns(side))
-        return 1;
-    if (KingAttacks(square) & Kings(side))
-        return 1;
-    return 0;
-    #endif
     return 0;
 }
 // return 1 if `side`s king is attacked
@@ -449,6 +431,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     uint64_t same = FULLSIDE(*pos, side);
     uint64_t contra = FULLSIDE(*pos, FLIP(side));
     uint64_t occupied = same | contra;
+    uint64_t opp_or_empty = ~same;
 
     // knight moves
     pcs = PIECES(*pos, side, KNIGHT);
@@ -456,7 +439,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         pc = PC(side, KNIGHT);
         for (i = 0; i < 64 && pcs; ++i, pcs >>= 1) {
             if ((pcs & 0x01) != 0) {
-                posmoves = knight_attacks[i] & ~same;
+                posmoves = knight_attacks[i] & opp_or_empty;
                 for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
                     msk = MASK(sq);
                     if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
@@ -469,17 +452,17 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
 
     // king moves
     pcs = PIECES(*pos, side, KING);
+    assert(pcs != 0);
     pc = PC(side, KING);
     for (i = 0; i < 64 && (pcs & 0x01) == 0; ++i, pcs >>= 1);
     assert(i < 64 && i >= 0);
-    posmoves = king_attacks[i] & ~same;
-    if (posmoves != 0) {
-        for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
-            if (posmoves & 0x1) {
-                moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0, 0);
-            }
+    assert(pos->sqtopc[i] == pc);
+    posmoves = king_attacks[i] & opp_or_empty;
+    for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
+        msk = MASK(sq);
+        if ((posmoves & 0x1) != 0 && (msk & same) == 0) {
+            moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0, 0);
         }
-        pcs &= ~msk;
     }
 
     // bishop moves
@@ -861,10 +844,12 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
         nodes += cnt;
         undo_move(pos, moves[i], &sp);
+        #if 0
         if (ply == 0) {
             move_print(moves[i]);
-            printf(" %" PRIu64 "\n", cnt);
-        }        
+            printf(" %" PRIu64 "\n", cnt);            
+        }
+        #endif
     }
     return nodes;
 }
@@ -960,19 +945,24 @@ int read_fen(struct position * restrict pos, const char * const fen) {
 
 int main(int argc, char **argv) {
     printf("Perft:\n");
-    /* const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; */
-    /* static struct position pos; */
+    #ifdef FROM_FEN
+    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    static struct position pos;
+    #endif
     uint64_t res;
     for (int depth = 6; depth < 7; ++depth) {
         checkcnt = 0;
         capturecnt = 0;
         enpassants = 0;
-        /* if (read_fen(&pos, fen) != 0) { */
-        /*     fputs("Failed to read FEN for position!", stderr); */
-        /*     break; */
-        /* } */
-        /* res = perft_ex(depth, &pos, 0, 0); */
+        #ifdef FROM_FEN
+        if (read_fen(&pos, fen) != 0) {
+            fputs("Failed to read FEN for position!", stderr);
+            exit(EXIT_FAILURE);
+        }
+        res = perft_ex(depth, &pos, 0, 0);
+        #else
         res = perft(depth);
+        #endif
         printf("Perft(%u) = %" PRIu64 ", "
                "Check Count = %" PRIu64 ", "
                "Capture Count = %" PRIu64 ", "

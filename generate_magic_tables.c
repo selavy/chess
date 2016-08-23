@@ -703,12 +703,12 @@ int main(int argc, char **argv) {
                 // capture left
                 if (c != 0) { // not left column
                     wpawn_attacks[sq] |= (uint64_t)1 << (sq + 7);
-                    bpawn_attacks[sq] |= (uint64_t)1 << (sq + 7);
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 7);
                 }
                 // capture right
                 if (c != 7) { // not right column
                     wpawn_attacks[sq] |= (uint64_t)1 << (sq + 9);
-                    bpawn_attacks[sq] |= (uint64_t)1 << (sq + 9);
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 9);
                 }
             }
         }
