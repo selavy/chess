@@ -873,45 +873,111 @@ uint64_t perft(int depth) {
     set_initial_position(&pos);
     return perft_ex(depth, &pos, 0, 0);
 }
+int read_fen(struct position * restrict pos, const char * const fen) {
+    int row;
+    int col;
+    const char *p = fen;
+    int color;
+    char c;
+
+    // init position
+    pos->nmoves = 0;
+    pos->wtm = WHITE;
+    pos->halfmoves = 0;
+    pos->castle = 0;
+    pos->enpassant = 0;
+    for (row = 0; row < 64; ++row) {
+        pos->sqtopc[row] = EMPTY;
+    }
+    memset(&pos->brd[0], 0, sizeof(pos->brd[0]) * NPIECES*2);
+
+    for (row = 7; row >= 0; --row) {
+        col = 0;
+        do {
+            c = *p++;
+            if (c == 0) { // end-of-input
+                return 1;
+            } else if (c >= '1' && c <= '9') {
+                col += c - '0';
+            } else if (c != '/') {
+                if (c >= 'a') {
+                    color = BLACK;
+                    c += 'A' - 'a';
+                } else {
+                    color = WHITE;
+                }
+                switch (c) {
+                case 'P':
+                    pos->sqtopc[row*8+col] = PC(color,PAWN);
+                    PIECES(*pos, color, PAWN) |= MASK(SQ(col,row));
+                    break;
+                case 'N':
+                    pos->sqtopc[row*8+col] = PC(color,KNIGHT);
+                    PIECES(*pos, color, KNIGHT) |= MASK(SQ(col,row));                    
+                    break;
+                case 'B':
+                    pos->sqtopc[row*8+col] = PC(color,BISHOP);
+                    PIECES(*pos, color, BISHOP) |= MASK(SQ(col,row));                    
+                    break;
+                case 'R':
+                    pos->sqtopc[row*8+col] = PC(color,ROOK);
+                    PIECES(*pos, color, ROOK) |= MASK(SQ(col,row));                    
+                    break;
+                case 'Q':
+                    pos->sqtopc[row*8+col] = PC(color,QUEEN);
+                    PIECES(*pos, color, QUEEN) |= MASK(SQ(col,row));                    
+                    break;
+                case 'K':
+                    pos->sqtopc[row*8+col] = PC(color,KING);
+                    PIECES(*pos, color, KING) |= MASK(SQ(col,row));                    
+                    break;
+                default:
+                    printf("BAD\n");
+                    break;
+                }
+                ++col;
+            }
+        } while (col < 8);
+    }
+
+    ++p;
+    printf("'%c'\n", *p);
+    pos->wtm = *p == 'w' ? WHITE : BLACK;
+    p++;
+
+    // TODO: castle rights
+    // TODO: enpassant square
+    // TODO: halfmoves
+    // TODO: fullmove number
+
+    position_print(&pos->sqtopc[0]);
+    printf("%s\n", pos->wtm == WHITE ? "WHITE":"BLACK");
+    
+    assert(validate_position(pos) == 0);
+
+    return 0;
+}
+
 int main(int argc, char **argv) {
-    #if 0
-    static struct position pos;
-    static struct position tmp;
-    static struct savepos sp;
-    move m;
-
-    FILE *fp = fopen("test_cases.txt", "r");
-    if (!fp) {
-        fputs("Unable to open \"test_cases.txt\"\n", stderr);
-        exit(1);
-    }
-    int c;
-    while ((c = fgetc(fp)) != EOF) {
-        ungetc(c, fp);
-        read_position_from_file(fp, &pos, &m);
-        assert(validate_position(&pos) == 0);
-        memcpy(&tmp, &pos, sizeof(tmp));
-        make_move(&pos, m, &sp);
-        assert(validate_position(&pos) == 0);
-        undo_move(&pos, m, &sp);
-        assert(validate_position(&pos) == 0);
-        assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
-    }
-    fclose(fp);
-    printf("Successfully passed test cases...\n");
-    #endif
-
     printf("Perft:\n");
+    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    static struct position pos;
     uint64_t res;
-    for (int ply = 6; ply < 7; ++ply) {
+    for (int depth = 6; depth < 7; ++depth) {
         checkcnt = 0;
         capturecnt = 0;
         enpassants = 0;
-        res = perft(ply);
+        if (read_fen(&pos, fen) != 0) {
+            fputs("Failed to read FEN for position!", stderr);
+            break;
+        }
+        res = perft_ex(depth, &pos, 0, 0);
         printf("Perft(%u) = %" PRIu64 ", "
                "Check Count = %" PRIu64 ", "
                "Capture Count = %" PRIu64 ", "
                "Enpassant Count = %" PRIu64 "\n"
-               , ply, res, checkcnt, capturecnt, enpassants);
+               , depth, res, checkcnt, capturecnt, enpassants);
     }
+
+    return 0;
 }
