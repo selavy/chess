@@ -960,18 +960,19 @@ int read_fen(struct position * restrict pos, const char * const fen) {
 
 int main(int argc, char **argv) {
     printf("Perft:\n");
-    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    static struct position pos;
+    /* const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; */
+    /* static struct position pos; */
     uint64_t res;
     for (int depth = 6; depth < 7; ++depth) {
         checkcnt = 0;
         capturecnt = 0;
         enpassants = 0;
-        if (read_fen(&pos, fen) != 0) {
-            fputs("Failed to read FEN for position!", stderr);
-            break;
-        }
-        res = perft_ex(depth, &pos, 0, 0);
+        /* if (read_fen(&pos, fen) != 0) { */
+        /*     fputs("Failed to read FEN for position!", stderr); */
+        /*     break; */
+        /* } */
+        /* res = perft_ex(depth, &pos, 0, 0); */
+        res = perft(depth);
         printf("Perft(%u) = %" PRIu64 ", "
                "Check Count = %" PRIu64 ", "
                "Capture Count = %" PRIu64 ", "
