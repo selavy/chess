@@ -96,13 +96,6 @@ void move_print(move m) {
            sq_to_str[FROM(m)], sq_to_str[TO(m)],
            piecestr(PIECE(m)), PROMOTE(m), piecestr(CAPTURE(m)), BOOLSTR(ENPASSANT(m)));
 }
-void pymove_print(move m) { // matches output from python generator
-    char p = vpcs[PIECE(m)];
-    int from = FROM(m);
-    int to = TO(m);
-    printf("Move(%c,%d,%d)\n", p, from, to);
-}
-
 #define NO_PROMOTION 0
 #define NO_CAPTURE EMPTY
 #define NO_ENPASSANT 0
@@ -119,25 +112,7 @@ struct position {
     uint8_t  castle;          // 1 *  1 =  1B
     uint8_t  enpassant;       // 1 *  1 =  1B
 };                            // Total:  164B
-void pyprint_fake_fen(const struct position *p) {
-    for (int i = 0; i < 64; ++i) {
-        printf("%c", vpcs[p->sqtopc[i]]);
-    }
-    printf("|");
-}
 #define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING])
-void debug_position_print(struct position * restrict p) {
-    int i;
-    printf("BitBoards:\n");
-    for (i = 0; i < NPIECES*2; ++i) {
-        printf("%" PRIu64 "\n", p->brd[i]);
-    }
-    printf("nmoves = %u\n", p->nmoves);
-    printf("wtm = %u\n", p->wtm);
-    printf("halfmoves = %u\n", p->halfmoves);
-    printf("castle = %u\n", p->castle);
-    printf("enpassant = %u\n", p->enpassant);
-}
 struct savepos {
     uint8_t halfmoves;
     uint8_t enpassant;
@@ -283,10 +258,8 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     if (capture == NO_CAPTURE) {
         if (pc == PC(WHITE,PAWN) && (to & WHITE_ENPASSANT_SQUARES) != 0 && (from & RANK2(side)) != 0) {
             p->enpassant = tosq - 23;
-            //printf("Setting enpassant to %d\n", p->enpassant);            
         } else if (pc == PC(BLACK,PAWN) && (to & BLACK_ENPASSANT_SQUARES) != 0 && (from & RANK2(side)) != 0) {
             p->enpassant = tosq - 23;
-            //printf("Setting enpassant to %d\n", p->enpassant);            
         }
     }
 }
@@ -410,17 +383,14 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     }
     pcs = pos->brd[PC(side,BISHOP)] | pos->brd[PC(side,QUEEN)];
     if ((bishop_attacks(square, occupied) & pcs) != 0) {
-        //printf("diag attack\n");
         return 1;
     }
     pcs = pos->brd[PC(side,KNIGHT)];
     if ((knight_attacks[square] & pcs) != 0) {
-        //printf("knight attack\n");
         return 1;
     }
     pcs = pos->brd[PC(side,PAWN)];
     if ((pawn_attacks(side, square) & pcs) != 0) {
-        //printf("pawn attack\n");
         return 1;
     }
 
@@ -823,8 +793,8 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
     }
     assert(fscanf(fp, "---------------------------------\n") == 0);
 
-    char wtm;
-    int hf, cstl, ep;
+    char wtm = 'W';
+    int hf = 0, cstl = 0, ep = 0;
     assert(fscanf(fp, "%c %d %d %d\n", &wtm, &hf, &cstl, &ep) == 4);
 
     p->wtm = wtm == 'W' ? WHITE : BLACK;
@@ -833,8 +803,8 @@ void read_position_from_file(FILE* fp, struct position * restrict p, move * rest
     p->enpassant = ep;
     p->nmoves = 0; // TODO: fix me
 
-    char pc, c1, c2, cap, prm;
-    int r1, r2;
+    char pc=0, c1=0, c2=0, cap=0, prm=0;
+    int r1 = 0, r2 = 0;
     assert(fscanf(fp, "%c %c%d %c%d %c %c\n",
                   &pc, &c1, &r1, &c2, &r2, &cap, &prm) == 7);
     int from = (r1 - 1) * 8 + (c1 - 'A');
@@ -870,6 +840,8 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         return 0;
     }
     if (depth == 0) {
+#define COUNTERS
+#ifdef COUNTERS        
         if (in_check(pos, pos->wtm)) {
             ++checkcnt;
         }
@@ -878,9 +850,11 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
             if (ENPASSANT(pmove) != 0) {
                 ++enpassants;
             }
-        } 
+        }
+#endif        
         return 1;
     }
+
     nmoves = generate_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
@@ -900,6 +874,7 @@ uint64_t perft(int depth) {
     return perft_ex(depth, &pos, 0, 0);
 }
 int main(int argc, char **argv) {
+    #if 0
     static struct position pos;
     static struct position tmp;
     static struct savepos sp;
@@ -924,6 +899,7 @@ int main(int argc, char **argv) {
     }
     fclose(fp);
     printf("Successfully passed test cases...\n");
+    #endif
 
     printf("Perft:\n");
     uint64_t res;
