@@ -676,63 +676,6 @@ int validate_position(const struct position * const restrict p) {
     }
     return 0;
 }
-int compare_positions(const struct position * const restrict p1,
-                      const struct position * const restrict p2) {
-    // check sqtopc
-    int i;
-    for (i = 0; i < 64; ++i) {
-        if (p1->sqtopc[i] != p2->sqtopc[i]) {
-            fprintf(stderr, "[sqtopc] %s != %s on %s\n",
-                    piecestr(p1->sqtopc[i]), piecestr(p2->sqtopc[i]),
-                    sq_to_str[i]);
-            goto failure;
-        }
-    }
-
-    // check brd
-    for (i = PC(WHITE,PAWN); i <= PC(BLACK,KING); ++i) {
-        if (p1->brd[i] != p2->brd[i]) {
-            fprintf(stderr, "[brd] 0x%016" PRIx64 " != 0x%016" PRIx64 " for %s\n",
-                    p1->brd[i], p2->brd[i], piecestr(i));
-            goto failure;
-        }
-    }
-
-    if (p1->nmoves != p2->nmoves) {
-        fprintf(stderr, "[nomves] %u != %u\n", p1->nmoves, p2->nmoves);
-        goto failure;
-    }
-
-    if (p1->wtm != p2->wtm) {
-        fprintf(stderr, "[wtm] %u != %u\n", p1->wtm, p2->wtm);
-        goto failure;
-    }
-
-    if (p1->halfmoves != p2->halfmoves) {
-        fprintf(stderr, "[halfmoves] %u != %u\n",
-                p1->halfmoves, p2->halfmoves);
-        goto failure;
-    }
-
-    if (p1->castle != p2->castle) {
-        fprintf(stderr, "[castle] %u != %u\n",
-                p1->castle, p2->castle);
-        goto failure;
-    }
-
-    if (p1->enpassant != p2->enpassant) {
-        fprintf(stderr, "[enpassant[ %u != %u\n",
-                p1->enpassant, p2->enpassant);
-        goto failure;
-    }
-
-    return 0;
-
- failure:
-    position_print(&p1->sqtopc[0]);
-    position_print(&p2->sqtopc[0]);
-    return 1;
-}
 uint8_t int_to_piece(int c) {
     switch (c) {
     case 'P': return PC(WHITE,PAWN);
@@ -945,15 +888,18 @@ int read_fen(struct position * restrict pos, const char * const fen) {
 
 int main(int argc, char **argv) {
     printf("Perft:\n");
+    
     #ifdef FROM_FEN
     const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     static struct position pos;
     #endif
+    
     uint64_t res;
-    for (int depth = 6; depth < 7; ++depth) {
+    for (int depth = 0; depth < 7; ++depth) {
         checkcnt = 0;
         capturecnt = 0;
         enpassants = 0;
+        
         #ifdef FROM_FEN
         if (read_fen(&pos, fen) != 0) {
             fputs("Failed to read FEN for position!", stderr);
@@ -963,6 +909,7 @@ int main(int argc, char **argv) {
         #else
         res = perft(depth);
         #endif
+        
         printf("Perft(%u) = %" PRIu64 ", "
                "Check Count = %" PRIu64 ", "
                "Capture Count = %" PRIu64 ", "
