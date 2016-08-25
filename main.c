@@ -534,7 +534,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             (attacks(pos, contraside, D8) == 0) &&
             (attacks(pos, contraside, C8) == 0)) {
             assert(pos->sqtopc[A8] == PC(BLACK,ROOK));
-            moves[nmove++] = MOVE(B8, E8, PC(BLACK,KING), EMPTY, 0, 0);
+            moves[nmove++] = MOVE(C8, E8, PC(BLACK,KING), EMPTY, 0, 0);
         }
     }
 
@@ -767,10 +767,12 @@ uint8_t int_to_piece(int c) {
         return EMPTY;
     }
 }
-static uint64_t checkcnt = 0;
-static uint64_t capturecnt = 0;
+static uint64_t checks = 0;
+static uint64_t captures = 0;
 static uint64_t enpassants = 0;
 static uint64_t castles = 0;
+static uint64_t promotions = 0;
+static uint64_t checkmates = 0;
 uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, int ply) {
     uint32_t i;
     uint32_t nmoves;
@@ -788,13 +790,13 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
 #ifdef COUNTERS        
         if (pmove != 0) {
             if (in_check(pos, pos->wtm) != 0) {
-                ++checkcnt;
+                ++checks;
             }
             if (is_castle(pmove) != 0) {
                 ++castles;
             }
             if (CAPTURE(pmove) != NO_CAPTURE) {
-                ++capturecnt;
+                ++captures;
                 if (ENPASSANT(pmove) != 0) {
                     ++enpassants;
                 }
@@ -923,7 +925,7 @@ int main(int argc, char **argv) {
     static struct position pos;
     #endif
     
-    uint64_t res;
+    uint64_t nodes;
 
 #ifdef FROM_FEN
     if (read_fen(&pos, fen) != 0) {
@@ -934,28 +936,28 @@ int main(int argc, char **argv) {
 
 #ifdef FROM_FEN
     //int depth = 7; {
-    for (int depth = 0; depth < 2; ++depth) {
+    for (int depth = 0; depth < 4; ++depth) {
 #else
     for (int depth = 0; depth < 9; ++depth) {
 #endif
-        checkcnt = 0;
-        capturecnt = 0;
+        checks = 0;
+        captures = 0;
         enpassants = 0;
         castles = 0;
+        checkmates = 0;
+        promotions = 0;
         
 #ifdef FROM_FEN
-        res = perft_ex(depth, &pos, 0, 0);
+        nodes = perft_ex(depth, &pos, 0, 0);
 #else
-        res = perft(depth);
+        nodes = perft(depth);
 #endif
 
-        printf("Perft(%u) = %" PRIu64 ", "
-               "Check Count = %" PRIu64 ", "
-               "Capture Count = %" PRIu64 ", "
-               "Enpassant Count = %" PRIu64 ", "
-               "Castle Count = %" PRIu64
-               "\n"
-               , depth, res, checkcnt, capturecnt, enpassants, castles);
+        printf("Perft(%u): Nodes=%" PRIu64 ", Captures=%" PRIu64 ", E.p.=%" PRIu64
+                ", Castles=%" PRIu64 ", Promotions=%" PRIu64
+                ", Checks=%" PRIu64 ", Checkmates=%" PRIu64 "\n",
+                depth, nodes, captures, enpassants, castles, promotions,
+                checks, checkmates);
     }
 
     return 0;
