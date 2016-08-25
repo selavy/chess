@@ -54,6 +54,29 @@ const char *sq_to_str[64] = {
     "A7", "B7", "C7", "D7", "E7", "F7", "G7", "H7",
     "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8"
 };
+const char *sq_to_small[64] = {
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
+};
+void position_print(const uint8_t * const restrict sqtopc) {
+    char v;
+    int sq, r, c;
+    fputs("---------------------------------\n", stdout);
+    for (r = (RANKS - 1); r >= 0; --r) {
+        for (c = 0; c < COLS; ++c) {
+            sq = SQ(c, r);
+            v = vpcs[sqtopc[sq]];
+            fprintf(stdout, "| %c ", v);
+        }
+        fputs("|\n---------------------------------\n", stdout);
+    }
+}
 const char *piecestr(uint32_t piece) {
     switch (piece) {
     case PAWN             : return "WHITE PAWN";
@@ -95,6 +118,9 @@ void move_print(move m) {
     printf("MOVE(from=%s, to=%s, pc=%s, prm=%d, cap=%s, ep=%s)",
            sq_to_str[FROM(m)], sq_to_str[TO(m)],
            piecestr(PIECE(m)), PROMOTE(m), piecestr(CAPTURE(m)), BOOLSTR(ENPASSANT(m)));
+}
+void mprnt(move m) {
+    printf("%s%s\t", sq_to_small[FROM(m)], sq_to_small[TO(m)]);
 }
 #define NO_PROMOTION 0
 #define NO_CAPTURE EMPTY
@@ -143,7 +169,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     ++p->nmoves;
 
     // TODO: improve
-    if (pc == PC(WHITE,KING) && tosq == C1) {
+    if (pc == PC(WHITE,KING) && fromsq == E1 && tosq == C1) {
         assert(p->sqtopc[B1] == EMPTY);
         assert(p->sqtopc[C1] == EMPTY);
         assert(p->sqtopc[D1] == EMPTY);
@@ -157,7 +183,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[C1] = PC(WHITE,KING);
         p->sqtopc[D1] = PC(WHITE,ROOK);
         return;
-    } else if (pc == PC(WHITE,KING) && tosq == G1) {
+    } else if (pc == PC(WHITE,KING) && fromsq == E1 && tosq == G1) {
         assert(p->sqtopc[F1] == EMPTY);
         assert(p->sqtopc[G1] == EMPTY);
         p->castle &= ~(WQUEENSD|WKINGSD);
@@ -170,7 +196,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[G1] = PC(WHITE,KING);
         p->sqtopc[F1] = PC(WHITE,ROOK);
         return;
-    } else if (pc == PC(BLACK,KING) && tosq == C8) {
+    } else if (pc == PC(BLACK,KING) && fromsq == E8 && tosq == C8) {
         assert(p->sqtopc[B8] == EMPTY);
         assert(p->sqtopc[C8] == EMPTY);
         assert(p->sqtopc[D8] == EMPTY);
@@ -184,7 +210,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[C8] = PC(BLACK,KING);
         p->sqtopc[D8] = PC(BLACK,ROOK);
         return;
-    } else if (pc == PC(BLACK,KING) && tosq == G8) {
+    } else if (pc == PC(BLACK,KING) && fromsq == E8 && tosq == G8) {
         assert(p->sqtopc[F8] == EMPTY);
         assert(p->sqtopc[G8] == EMPTY);
         p->castle &= ~(BQUEENSD|BKINGSD);
@@ -405,19 +431,7 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
     // check if the other side attacks the king location
     return attacks(pos, FLIP(side), kingloc);
 }
-void position_print(const uint8_t * const restrict sqtopc) {
-    char v;
-    int sq, r, c;
-    fputs("---------------------------------\n", stdout);
-    for (r = (RANKS - 1); r >= 0; --r) {
-        for (c = 0; c < COLS; ++c) {
-            sq = SQ(c, r);
-            v = vpcs[sqtopc[sq]];
-            fprintf(stdout, "| %c ", v);
-        }
-        fputs("|\n---------------------------------\n", stdout);
-    }
-}
+
 uint32_t generate_moves(const struct position * const restrict pos, move * restrict moves) {
     uint32_t i;
     uint32_t pc;
@@ -432,6 +446,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     uint64_t contra = FULLSIDE(*pos, FLIP(side));
     uint64_t occupied = same | contra;
     uint64_t opp_or_empty = ~same;
+    uint8_t castle = pos->castle;
 
     // knight moves
     pcs = PIECES(*pos, side, KNIGHT);
@@ -462,6 +477,52 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         msk = MASK(sq);
         if ((posmoves & 0x1) != 0 && (msk & same) == 0) {
             moves[nmove++] = MOVE(sq, i, pc, pos->sqtopc[sq], 0, 0);
+        }
+    }
+
+    if (side == WHITE) {
+        if ((castle & WKINGSD) != 0    &&
+            (i == E1)                  &&
+            (pos->sqtopc[F1] == EMPTY) &&
+            (pos->sqtopc[G1] == EMPTY) &&
+            (attacks(pos, contraside, E1) == 0) &&
+            (attacks(pos, contraside, F1) == 0) &&
+            (attacks(pos, contraside, G1) == 0)) {
+            assert(pos->sqtopc[H1] == PC(WHITE,ROOK));
+            moves[nmove++] = MOVE(G1, E1, PC(WHITE,KING), EMPTY, 0, 0);
+        }
+        if ((castle & WQUEENSD) != 0   &&
+            (i == E1)                  &&
+            (pos->sqtopc[D1] == EMPTY) &&
+            (pos->sqtopc[C1] == EMPTY) &&
+            (pos->sqtopc[B1] == EMPTY) &&
+            (attacks(pos, contraside, E1) == 0) &&
+            (attacks(pos, contraside, D1) == 0) &&
+            (attacks(pos, contraside, C1) == 0)) {
+            assert(pos->sqtopc[A1] == PC(WHITE,ROOK));
+            moves[nmove++] = MOVE(B1, E1, PC(WHITE,KING), EMPTY, 0, 0);
+        }
+    } else {
+        if ((castle & BKINGSD) != 0    &&
+            (i == E8)                  &&
+            (pos->sqtopc[F8] == EMPTY) &&
+            (pos->sqtopc[G8] == EMPTY) &&
+            (attacks(pos, contraside, E8) == 0) &&
+            (attacks(pos, contraside, F8) == 0) &&
+            (attacks(pos, contraside, G8) == 0)) {
+            assert(pos->sqtopc[H8] == PC(BLACK,ROOK));
+            moves[nmove++] = MOVE(G8, E8, PC(BLACK,KING), EMPTY, 0, 0);
+        }
+        if ((castle & BQUEENSD) != 0   &&
+            (i == E8)                  &&
+            (pos->sqtopc[D8] == EMPTY) &&
+            (pos->sqtopc[C8] == EMPTY) &&
+            (pos->sqtopc[B8] == EMPTY) &&
+            (attacks(pos, contraside, E8) == 0) &&
+            (attacks(pos, contraside, D8) == 0) &&
+            (attacks(pos, contraside, C8) == 0)) {
+            assert(pos->sqtopc[A8] == PC(BLACK,ROOK));
+            moves[nmove++] = MOVE(B8, E8, PC(BLACK,KING), EMPTY, 0, 0);
         }
     }
 
@@ -573,7 +634,6 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     }
 
     // en passant
-    // TODO: improve
     if (pos->enpassant != NO_ENPASSANT) {
         uint32_t epsq = pos->enpassant + 23;
         assert(pos->sqtopc[epsq] == PC(contraside, PAWN));
@@ -599,8 +659,6 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         }
     }
 
-    // TODO: castling
-
     return nmove;
 }
 void set_initial_position(struct position * restrict p) {
@@ -608,9 +666,9 @@ void set_initial_position(struct position * restrict p) {
     p->wtm = WHITE;
     p->nmoves = 0;
     p->halfmoves = 0;
+    p->castle = WKINGSD | WQUEENSD | BKINGSD | BQUEENSD;
     PIECES(*p, WHITE, PAWN  ) = 0x0000ff00ULL;
     for (i = A2; i <= H2; ++i) p->sqtopc[i] = PC(WHITE, PAWN);
-
     PIECES(*p, WHITE, KNIGHT) = 0x00000042ULL;
     p->sqtopc[B1] = PC(WHITE, KNIGHT);
     p->sqtopc[G1] = PC(WHITE, KNIGHT);
@@ -697,61 +755,6 @@ uint8_t int_to_piece(int c) {
         return EMPTY;
     }
 }
-void read_position_from_file(FILE* fp, struct position * restrict p, move * restrict m) {
-    int i, j, sq;
-    for (i = 0; i < NPIECES*2; ++i) {
-        p->brd[i] = 0ULL;
-    }
-    for (i = 0; i < 8; ++i) {
-        assert(fscanf(fp, "---------------------------------\n") == 0);
-        for (j = 0; j < 8; ++j) {
-            assert(fgetc(fp) == '|');
-            assert(fgetc(fp) == ' ');
-            sq = (7-i)*8+j;
-            p->sqtopc[sq] = int_to_piece(fgetc(fp));
-            if (p->sqtopc[sq] != EMPTY) {
-                p->brd[p->sqtopc[sq]] |= MASK(sq);
-            }
-            assert(fgetc(fp) == ' ');
-        }
-        assert(fgetc(fp) == '|');
-        assert(fgetc(fp) == '\n');
-    }
-    assert(fscanf(fp, "---------------------------------\n") == 0);
-
-    char wtm = 'W';
-    int hf = 0, cstl = 0, ep = 0;
-    assert(fscanf(fp, "%c %d %d %d\n", &wtm, &hf, &cstl, &ep) == 4);
-
-    p->wtm = wtm == 'W' ? WHITE : BLACK;
-    p->halfmoves = (uint8_t)hf;
-    p->castle = cstl;
-    p->enpassant = ep;
-    p->nmoves = 0; // TODO: fix me
-
-    char pc=0, c1=0, c2=0, cap=0, prm=0;
-    int r1 = 0, r2 = 0;
-    assert(fscanf(fp, "%c %c%d %c%d %c %c\n",
-                  &pc, &c1, &r1, &c2, &r2, &cap, &prm) == 7);
-    int from = (r1 - 1) * 8 + (c1 - 'A');
-    int to = (r2 - 1) * 8 + (c2 - 'A');
-    if (prm == '_') {
-        prm = NO_PROMOTION;
-    } else if (prm == 'P' || prm == 'p') {
-        prm = PAWN;
-    } else if (prm == 'N' || prm == 'n') {
-        prm = KNIGHT;
-    } else if (prm == 'B' || prm == 'b') {
-        prm = BISHOP;
-    } else if (prm == 'Q' || prm == 'q') {
-        prm = QUEEN;
-    } else if (prm == 'K' || prm == 'k') {
-        prm = KING;
-    } else {
-        assert(0);
-    }
-    *m = MOVE(to, from, int_to_piece(pc), int_to_piece(cap), prm, 0);
-}
 static uint64_t checkcnt = 0;
 static uint64_t capturecnt = 0;
 static uint64_t enpassants = 0;
@@ -759,14 +762,16 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
-    uint64_t cnt;    
+#ifdef DEBUG_OUTPUT
+    uint64_t cnt;
+#endif
     move moves[MAX_MOVES];
     struct savepos sp;
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
     }
     if (depth == 0) {
-#define COUNTERS
+//#define COUNTERS
 #ifdef COUNTERS        
         if (in_check(pos, pos->wtm)) {
             ++checkcnt;
@@ -784,15 +789,16 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
     nmoves = generate_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
+#ifdef DEBUG_OUTPUT
         cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
         nodes += cnt;
-        undo_move(pos, moves[i], &sp);
-        #if 0
-        if (ply == 0) {
-            move_print(moves[i]);
-            printf(" %" PRIu64 "\n", cnt);            
+        if (ply == 0) { // DEBUG OUTPUT
+            mprnt(moves[i]); printf("%" PRIu64 "\n", cnt);            
         }
-        #endif
+#else
+        nodes += perft_ex(depth - 1, pos, moves[i], ply + 1);
+#endif
+        undo_move(pos, moves[i], &sp);
     }
     return nodes;
 }
@@ -869,11 +875,11 @@ int read_fen(struct position * restrict pos, const char * const fen) {
     }
 
     ++p;
-    printf("'%c'\n", *p);
     pos->wtm = *p == 'w' ? WHITE : BLACK;
     p++;
 
     // TODO: castle rights
+    pos->castle = WKINGSD | WQUEENSD | BKINGSD | BQUEENSD;
     // TODO: enpassant square
     // TODO: halfmoves
     // TODO: fullmove number
@@ -888,14 +894,19 @@ int read_fen(struct position * restrict pos, const char * const fen) {
 
 int main(int argc, char **argv) {
     printf("Perft:\n");
-    
+
+    //#define FROM_FEN
     #ifdef FROM_FEN
     const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     static struct position pos;
     #endif
     
     uint64_t res;
-    for (int depth = 0; depth < 7; ++depth) {
+#ifdef FROM_FEN
+    int depth = 7; {
+#else
+    for (int depth = 7; depth < 8; ++depth) {
+#endif
         checkcnt = 0;
         capturecnt = 0;
         enpassants = 0;
