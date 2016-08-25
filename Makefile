@@ -14,7 +14,7 @@ magic_tables.o: $(GEN)
 	./$(GEN)
 	$(CC) -o $@ $(CFLAGS) -c magic_tables.c
 $(GEN): $(GEN).c
-	$(CC) -o $@ $<
+	$(CC) -o $@ $(CFLAGS) $<
 main.o: main.c
 	$(CC) -o $@ $(CFLAGS) -c $<
 pgn_parser: pgn_parser.c

@@ -905,7 +905,7 @@ int main(int argc, char **argv) {
 #ifdef FROM_FEN
     int depth = 7; {
 #else
-    for (int depth = 7; depth < 8; ++depth) {
+    for (int depth = 0; depth < 9; ++depth) {
 #endif
         checkcnt = 0;
         capturecnt = 0;
