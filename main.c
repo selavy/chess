@@ -512,7 +512,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             (attacks(pos, contraside, D1) == 0) &&
             (attacks(pos, contraside, C1) == 0)) {
             assert(pos->sqtopc[A1] == PC(WHITE,ROOK));
-            moves[nmove++] = MOVE(B1, E1, PC(WHITE,KING), EMPTY, 0, 0);
+            moves[nmove++] = MOVE(C1, E1, PC(WHITE,KING), EMPTY, 0, 0);
         }
     } else {
         if ((castle & BKINGSD) != 0    &&
@@ -806,7 +806,9 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
 
     nmoves = generate_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
+        //move_print(moves[i]); printf("\n");
         make_move(pos, moves[i], &sp);
+
 #ifdef DEBUG_OUTPUT
         cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
         nodes += cnt;
@@ -816,6 +818,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
 #else
         nodes += perft_ex(depth - 1, pos, moves[i], ply + 1);
 #endif
+
         undo_move(pos, moves[i], &sp);
     }
     return nodes;
@@ -931,7 +934,7 @@ int main(int argc, char **argv) {
 
 #ifdef FROM_FEN
     //int depth = 7; {
-    for (int depth = 0; depth < 3; ++depth) {
+    for (int depth = 0; depth < 2; ++depth) {
 #else
     for (int depth = 0; depth < 9; ++depth) {
 #endif
