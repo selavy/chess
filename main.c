@@ -145,6 +145,18 @@ struct savepos {
     uint8_t castle;
     uint8_t was_ep;
 };
+int is_castle(move m) {
+    uint32_t pc = PIECE(m);
+    uint32_t from = FROM(m);
+    uint32_t to = TO(m);
+    if (pc == PC(WHITE,KING)) {
+        return from == E1 && (to == C1 || to == G1);
+    } else if (pc == PC(BLACK,KING)) {
+        return from == E8 && (to == C8 || to == G8);
+    } else {
+        return 0;
+    }
+}
 void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
     uint32_t pc = PIECE(m);
     uint32_t fromsq = FROM(m);
@@ -758,6 +770,7 @@ uint8_t int_to_piece(int c) {
 static uint64_t checkcnt = 0;
 static uint64_t capturecnt = 0;
 static uint64_t enpassants = 0;
+static uint64_t castles = 0;
 uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, int ply) {
     uint32_t i;
     uint32_t nmoves;
@@ -771,15 +784,20 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         return 0;
     }
     if (depth == 0) {
-//#define COUNTERS
+#define COUNTERS
 #ifdef COUNTERS        
-        if (in_check(pos, pos->wtm)) {
-            ++checkcnt;
-        }
-        if (CAPTURE(pmove) != NO_CAPTURE) {
-            ++capturecnt;
-            if (ENPASSANT(pmove) != 0) {
-                ++enpassants;
+        if (pmove != 0) {
+            if (in_check(pos, pos->wtm) != 0) {
+                ++checkcnt;
+            }
+            if (is_castle(pmove) != 0) {
+                ++castles;
+            }
+            if (CAPTURE(pmove) != NO_CAPTURE) {
+                ++capturecnt;
+                if (ENPASSANT(pmove) != 0) {
+                    ++enpassants;
+                }
             }
         }
 #endif        
@@ -895,37 +913,46 @@ int read_fen(struct position * restrict pos, const char * const fen) {
 int main(int argc, char **argv) {
     printf("Perft:\n");
 
-    //#define FROM_FEN
+    #define FROM_FEN
     #ifdef FROM_FEN
-    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    //const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
     static struct position pos;
     #endif
     
     uint64_t res;
+
 #ifdef FROM_FEN
-    int depth = 7; {
+    if (read_fen(&pos, fen) != 0) {
+        fputs("Failed to read FEN for position!", stderr);
+        exit(EXIT_FAILURE);
+    }
+#endif
+
+#ifdef FROM_FEN
+    //int depth = 7; {
+    for (int depth = 0; depth < 3; ++depth) {
 #else
     for (int depth = 0; depth < 9; ++depth) {
 #endif
         checkcnt = 0;
         capturecnt = 0;
         enpassants = 0;
+        castles = 0;
         
-        #ifdef FROM_FEN
-        if (read_fen(&pos, fen) != 0) {
-            fputs("Failed to read FEN for position!", stderr);
-            exit(EXIT_FAILURE);
-        }
+#ifdef FROM_FEN
         res = perft_ex(depth, &pos, 0, 0);
-        #else
+#else
         res = perft(depth);
-        #endif
-        
+#endif
+
         printf("Perft(%u) = %" PRIu64 ", "
                "Check Count = %" PRIu64 ", "
                "Capture Count = %" PRIu64 ", "
-               "Enpassant Count = %" PRIu64 "\n"
-               , depth, res, checkcnt, capturecnt, enpassants);
+               "Enpassant Count = %" PRIu64 ", "
+               "Castle Count = %" PRIu64
+               "\n"
+               , depth, res, checkcnt, capturecnt, enpassants, castles);
     }
 
     return 0;
