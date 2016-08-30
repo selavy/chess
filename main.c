@@ -139,6 +139,28 @@ struct position {
     uint8_t  enpassant;       // 1 *  1 =  1B
 };                            // Total:  164B
 #define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING])
+void full_position_print(const struct position *p) {
+    position_print(&p->sqtopc[0]);
+    printf("%s\n", p->wtm == WHITE ? "WHITE":"BLACK");
+    printf("Full moves: %d\n", p->nmoves);
+    printf("Half moves: %d\n", p->halfmoves);
+    //printf("Castle: %d\n", p->castle);
+    printf("Castling: ");
+    if ((p->castle & WKINGSD)) {
+        printf("K");
+    }
+    if ((p->castle & WQUEENSD)) {
+        printf("Q");
+    }
+    if ((p->castle & BKINGSD)) {
+        printf("k");
+    }
+    if ((p->castle & BQUEENSD)) {
+        printf("q");
+    }
+    printf("\n");
+    printf("E.P.: %d\n", p->enpassant);
+}
 struct savepos {
     uint8_t halfmoves;
     uint8_t enpassant;
@@ -900,15 +922,101 @@ int read_fen(struct position * restrict pos, const char * const fen) {
     ++p;
     pos->wtm = *p == 'w' ? WHITE : BLACK;
     p++;
+    pos->castle = 0;
 
+    ++p;
+    while (*p && *p != ' ') {
+        switch (*p) {
+        case 'K':
+            pos->castle |= WKINGSD;
+            break;
+        case 'Q':
+            pos->castle |= WQUEENSD;
+            break;
+        case 'k':
+            pos->castle |= BKINGSD;
+            break;
+        case 'q':
+            pos->castle |= BQUEENSD;
+            break;
+        case '-':
+            break;
+        default:
+            fprintf(stderr, "Unexpected character: '%c'\n", *p);
+            exit(EXIT_FAILURE);
+        }
+        ++p;
+    }
+    ++p;
+
+    if (!*p) {
+        fprintf(stderr, "Unexpected end of input!\n");
+        exit(EXIT_FAILURE);
+    } else if (*p == '-') {
+        pos->enpassant = NO_ENPASSANT;
+    } else {
+        int sq = 0;
+        if (*p >= 'a' && *p <= 'h') {
+            sq = *p - 'a';
+        } else {
+            fprintf(stderr, "Unexpected character in enpassant square: '%c'\n", *p);
+            exit(EXIT_FAILURE);
+        }
+
+        ++p;
+        if (*p >= '1' && *p <= '8') {
+            sq += (*p - '0') * 8;
+        } else {
+            fprintf(stderr, "Unexpected character in enpassant square: '%c'\n", *p);
+            exit(EXIT_FAILURE);            
+        }
+
+        if ((sq >= A3 && sq <= H3) || (sq >= A6 && sq <= H6)) {
+            // I store the square the pawn moved to, FEN gives the square behind the pawn
+            pos->enpassant = sq + 8 - 23;
+        } else {
+            fprintf(stderr, "Invalid enpassant square: %d\n", sq);
+            exit(EXIT_FAILURE);
+        }
+    }
+    ++p;
+
+    if (*p) {
+        int halfmoves = 0;
+        while (*p && *p != ' ') {
+            if (*p >= '0' && *p <= '9') {
+                halfmoves *= 10;
+                halfmoves += *p - '0';
+            } else {
+                fprintf(stderr, "Unexpected character in halfmoves: '%c'\n", *p);
+                exit(EXIT_FAILURE);
+            }
+        }
+        pos->halfmoves = halfmoves;
+
+        ++p;
+        int fullmoves = 0;
+        while (*p && *p != ' ') {
+            if (*p >= '0' && *p <= '9') {
+                fullmoves *= 10;
+                fullmoves += *p - '0';
+            } else {
+                fprintf(stderr, "Unexpected character in fullmoves: '%c'\n", *p);
+                exit(EXIT_FAILURE);
+            }
+        }
+        pos->nmoves = fullmoves;
+    }
+    
     // TODO: castle rights
-    pos->castle = WKINGSD | WQUEENSD | BKINGSD | BQUEENSD;
+    //pos->castle = WKINGSD | WQUEENSD | BKINGSD | BQUEENSD;
     // TODO: enpassant square
     // TODO: halfmoves
     // TODO: fullmove number
 
-    position_print(&pos->sqtopc[0]);
-    printf("%s\n", pos->wtm == WHITE ? "WHITE":"BLACK");
+    //position_print(&pos->sqtopc[0]);
+    full_position_print(pos);
+    //printf("%s\n", pos->wtm == WHITE ? "WHITE":"BLACK");
     
     assert(validate_position(pos) == 0);
 
