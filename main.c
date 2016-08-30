@@ -448,7 +448,7 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     if ((knight_attacks[square] & pcs) != 0) {
         return 1;
     }
-    
+
     pcs = pos->brd[PC(side,PAWN)];
     if ((pawn_attacks(FLIP(side), square) & pcs) != 0) {
         return 1;
@@ -1024,17 +1024,18 @@ int read_fen(struct position * restrict pos, const char * const fen) {
 }
 
 int main(int argc, char **argv) {
-    printf("Perft:\n");
+    int depth;
+    uint64_t nodes;
+    static struct position pos;    
 
     #define FROM_FEN
     #ifdef FROM_FEN
     //const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
-    static struct position pos;
+    //const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q2/PPPBBPpP/R4K1R w kq -";
     #endif
     
-    uint64_t nodes;
-
+    printf("Perft:\n");
 #ifdef FROM_FEN
     if (read_fen(&pos, fen) != 0) {
         fputs("Failed to read FEN for position!", stderr);
@@ -1043,10 +1044,10 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef FROM_FEN
-    //int depth = 7; {
-    for (int depth = 0; depth < 4; ++depth) {
+    //depth = 7; {
+    for (depth = 0; depth < 4; ++depth) {
 #else
-    for (int depth = 0; depth < 9; ++depth) {
+    for (depth = 0; depth < 9; ++depth) {
 #endif
         checks = 0;
         captures = 0;

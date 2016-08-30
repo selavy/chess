@@ -710,6 +710,24 @@ int main(int argc, char **argv) {
                     wpawn_attacks[sq] |= (uint64_t)1 << (sq + 9);
                     bpawn_attacks[sq] |= (uint64_t)1 << (sq - 9);
                 }
+            } else if (r == 0) {
+                // capture left
+                if (c != 0) { // not left column
+                    wpawn_attacks[sq] |= (uint64_t)1 << (sq + 7);
+                }
+                // capture right
+                if (c != 7) { // not right column
+                    wpawn_attacks[sq] |= (uint64_t)1 << (sq + 9);
+                }                
+            } else if (r == 7) {
+                // capture left
+                if (c != 0) { // not left column
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 7);
+                }
+                // capture right
+                if (c != 7) { // not right column
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 9);
+                }                
             }
         }
     }
