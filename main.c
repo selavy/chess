@@ -1007,17 +1007,8 @@ int read_fen(struct position * restrict pos, const char * const fen) {
         }
         pos->nmoves = fullmoves;
     }
-    
-    // TODO: castle rights
-    //pos->castle = WKINGSD | WQUEENSD | BKINGSD | BQUEENSD;
-    // TODO: enpassant square
-    // TODO: halfmoves
-    // TODO: fullmove number
 
-    //position_print(&pos->sqtopc[0]);
     full_position_print(pos);
-    //printf("%s\n", pos->wtm == WHITE ? "WHITE":"BLACK");
-    
     assert(validate_position(pos) == 0);
 
     return 0;
@@ -1030,9 +1021,14 @@ int main(int argc, char **argv) {
 
     #define FROM_FEN
     #ifdef FROM_FEN
+    // starting position:
     //const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
-    //const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q2/PPPBBPpP/R4K1R w kq -";
+    
+    // kiwi pete position:
+    //const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+
+    // position #3
+    const char *fen = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -";
     #endif
     
     printf("Perft:\n");
@@ -1044,8 +1040,7 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef FROM_FEN
-    //depth = 7; {
-    for (depth = 0; depth < 4; ++depth) {
+    for (depth = 0; depth < 3; ++depth) {
 #else
     for (depth = 0; depth < 9; ++depth) {
 #endif
