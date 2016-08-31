@@ -437,10 +437,8 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
         }
     }
 }
-
 // returns 1 if a piece from `side` attacks `square`
 int attacks(const struct position * const restrict pos, uint8_t side, int square) {
-    // TODO: generate attack square data
     uint64_t pcs;
     uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
     pcs = pos->brd[PC(side,ROOK)] | pos->brd[PC(side,QUEEN)];
@@ -457,6 +455,10 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     }
     pcs = pos->brd[PC(side,PAWN)];
     if ((pawn_attacks(FLIP(side), square) & pcs) != 0) {
+        return 1;
+    }
+    pcs = pos->brd[PC(side,KING)];
+    if ((king_attacks[square] & pcs) != 0) {
         return 1;
     }
     return 0;
@@ -866,7 +868,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
 #ifdef DEBUG_OUTPUT
         cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
         nodes += cnt;
-        if (ply == 0 && cnt != 0) { // DEBUG OUTPUT
+        if (ply == 0 && cnt != 0) {
             mprnt(moves[i]); printf("%" PRIu64 "\n", cnt);            
         }
 #else
@@ -1069,18 +1071,17 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    /* if (in_check(&pos, pos.wtm)) { */
-    /*     printf("in check\n"); */
-    /* } else { */
-    /*     printf("not in check\n"); */
-    /* } */
-    /* return 0; */
-
-#ifdef FROM_FEN
-    for (depth = 1; depth < 8; ++depth) {
-#else
-    for (depth = 0; depth < 9; ++depth) {
+#if 0
+    // test if in check then exit...
+    if (in_check(&pos, pos.wtm)) {
+        printf("in check\n");
+    } else {
+        printf("not in check\n");
+    }
+    return 0;
 #endif
+
+    for (depth = 1; depth < 8; ++depth) {
         checks = 0;
         captures = 0;
         enpassants = 0;
