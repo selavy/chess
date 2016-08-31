@@ -95,11 +95,11 @@ const char *piecestr(uint32_t piece) {
     default               : return "UNKNOWN";
     }
 }
-// to   [0..63]    6 bits
-// from [0..63]    6 bits
-// piece [0..5*2]  4 bits
-// capture [0..11] 4 bit
-// promote [0..5]  3 bit
+// to   [0..63]    6 bits  {A1...H6}
+// from [0..63]    6 bits  {A1...H6}
+// piece [0..5*2]  4 bits  { WPAWN...WKING,BPAWN...BKING }
+// capture [0..11] 4 bit - 0 = no capture,   { WPAWN...WKING,BPAWN...BKING }
+// promote [0..5]  3 bit - 0 = no promotion, { KNIGHT, BISHOP, ROOK, QUEEN }
 typedef uint32_t move;
 #define MOVE(from, to, pc, cap, prm, ep)        \
     (((to) & 0x3f)           |                  \
@@ -1077,7 +1077,7 @@ int main(int argc, char **argv) {
     /* return 0; */
 
 #ifdef FROM_FEN
-    for (depth = 1; depth < 7; ++depth) {
+    for (depth = 1; depth < 8; ++depth) {
 #else
     for (depth = 0; depth < 9; ++depth) {
 #endif
