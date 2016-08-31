@@ -264,9 +264,11 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         *pcs |= to;
     } else { // TODO: promotions
         assert(0);
-        pcs = &PIECES(*p, side, promotion-1);
+        pcs = &PIECES(*p, side, promotion);
+        *pcs |= to;
         // TODO: implement
     }
+    
     if (capture != NO_CAPTURE) {
         if (pc == PC(side, PAWN) && p->sqtopc[tosq] == EMPTY) { // e.p.
             sp->was_ep = 1;
@@ -294,7 +296,12 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         }
     }
     p->sqtopc[fromsq] = EMPTY;
-    p->sqtopc[tosq] = pc;
+    // TODO: should be able to avoid checking this twice
+    if (promotion == NO_PROMOTION) {
+        p->sqtopc[tosq] = pc;
+    } else {
+        p->sqtopc[tosq] = promotion - 1;
+    }
 
     // REVISIT: improve
     // update castling flags if needed
@@ -623,7 +630,14 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 8 : sq + 8;
             // TODO: if on last rank, generate promotions
-            moves[nmove++] = MOVE(sq, fromsq, pc, EMPTY, 0, 0);
+            if (sq >= 56 || sq <= 7) { // promotion
+                moves[nmove++] = MOVE(sq, fromsq, pc, NO_CAPTURE, KNIGHT, NO_ENPASSANT);
+                moves[nmove++] = MOVE(sq, fromsq, pc, NO_CAPTURE, BISHOP, NO_ENPASSANT);
+                moves[nmove++] = MOVE(sq, fromsq, pc, NO_CAPTURE, ROOK  , NO_ENPASSANT);
+                moves[nmove++] = MOVE(sq, fromsq, pc, NO_CAPTURE, QUEEN , NO_ENPASSANT);
+            } else {
+                moves[nmove++] = MOVE(sq, fromsq, pc, NO_CAPTURE, 0, 0);
+            }
         }
     }
 
@@ -649,8 +663,14 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 7 : sq + 9;
-            // TODO: if on last rank, generate promotions
-            moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0, 0);
+            if (sq >= 56 || sq <= 7) { // last rank => promotion
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], KNIGHT, NO_ENPASSANT);
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], BISHOP, NO_ENPASSANT);
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], ROOK  , NO_ENPASSANT);
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], QUEEN , NO_ENPASSANT);
+            } else {
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0, 0);
+            }
         }
     }
 
@@ -661,8 +681,14 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 9 : sq + 7;
-            // TODO: if on last rank, generate promotions
-            moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0, 0);
+            if (sq >= 56 || sq <= 7) { // last rank => promotion
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], KNIGHT, NO_ENPASSANT);
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], BISHOP, NO_ENPASSANT);
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], ROOK  , NO_ENPASSANT);
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], QUEEN , NO_ENPASSANT);
+            } else {
+                moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], 0, 0);
+            }
         }
     }
 
@@ -822,6 +848,9 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
                 if (ENPASSANT(pmove) != 0) {
                     ++enpassants;
                 }
+            }
+            if (PROMOTE(pmove) != NO_PROMOTION) {
+                ++promotions;
             }
         }
 #endif        
@@ -1048,7 +1077,7 @@ int main(int argc, char **argv) {
     /* return 0; */
 
 #ifdef FROM_FEN
-    for (depth = 1; depth < 6; ++depth) {
+    for (depth = 1; depth < 7; ++depth) {
 #else
     for (depth = 0; depth < 9; ++depth) {
 #endif
