@@ -448,8 +448,6 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     if ((knight_attacks[square] & pcs) != 0) {
         return 1;
     }
-
-
     pcs = pos->brd[PC(side,PAWN)];
     if ((pawn_attacks(FLIP(side), square) & pcs) != 0) {
         return 1;
@@ -800,6 +798,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
+    //#define DEBUG_OUTPUT
 #ifdef DEBUG_OUTPUT
     uint64_t cnt;
 #endif
@@ -834,10 +833,11 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         //move_print(moves[i]); printf("\n");
         make_move(pos, moves[i], &sp);
 
+        
 #ifdef DEBUG_OUTPUT
         cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
         nodes += cnt;
-        if (ply == 0) { // DEBUG OUTPUT
+        if (ply == 0 && cnt != 0) { // DEBUG OUTPUT
             mprnt(moves[i]); printf("%" PRIu64 "\n", cnt);            
         }
 #else
@@ -1030,7 +1030,6 @@ int main(int argc, char **argv) {
 
     // position #3
     const char *fen = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -";
-    //const char *fen = "8/2p5/3p4/KP5r/1R3p1k/6P1/4P3/8 b - -";
     #endif
     
     printf("Perft:\n");
@@ -1049,7 +1048,7 @@ int main(int argc, char **argv) {
     /* return 0; */
 
 #ifdef FROM_FEN
-    for (depth = 1; depth < 5; ++depth) {
+    for (depth = 1; depth < 6; ++depth) {
 #else
     for (depth = 0; depth < 9; ++depth) {
 #endif

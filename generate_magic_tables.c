@@ -701,14 +701,14 @@ int main(int argc, char **argv) {
             // pawn attacks
             if (r != 0 && r != 7) { // 1st and 8th rank can't capture anything
                 // capture left
-                if (c != 7) { // not left column
+                if (c != 0) { // not left column
                     wpawn_attacks[sq] |= (uint64_t)1 << (sq + 7);
-                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 7);
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 9);
                 }
                 // capture right
-                if (c != 0) { // not right column
+                if (c != 7) { // not right column
                     wpawn_attacks[sq] |= (uint64_t)1 << (sq + 9);
-                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 9);
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 7);
                 }
             } else if (r == 0) {
                 // capture left
@@ -722,11 +722,11 @@ int main(int argc, char **argv) {
             } else if (r == 7) {
                 // capture left
                 if (c != 0) { // not left column
-                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 7);
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 9);
                 }
                 // capture right
                 if (c != 7) { // not right column
-                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 9);
+                    bpawn_attacks[sq] |= (uint64_t)1 << (sq - 7);
                 }                
             }
         }
