@@ -836,7 +836,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         return 0;
     }
     if (depth == 0) {
-#define COUNTERS
+        //#define COUNTERS
 #ifdef COUNTERS        
         if (pmove != 0) {
             if (in_check(pos, pos->wtm) != 0) {
@@ -1054,13 +1054,15 @@ int main(int argc, char **argv) {
     #define FROM_FEN
     #ifdef FROM_FEN
     // starting position:
-    //const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
     
     // kiwi pete position:
     //const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
 
     // position #3
-    const char *fen = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -";
+    //const char *fen = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -";
+    //const char *fen = "8/2p5/3p4/KP5r/5p1k/8/4P1P1/1R6 b - -";
+#define D 6
     #endif
     
     printf("Perft:\n");
@@ -1081,7 +1083,7 @@ int main(int argc, char **argv) {
     return 0;
 #endif
 
-    for (depth = 1; depth < 8; ++depth) {
+    for (depth = D; depth < D+1; ++depth) {
         checks = 0;
         captures = 0;
         enpassants = 0;
