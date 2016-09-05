@@ -394,6 +394,9 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     }
 
     assert(validate_position(p) == 0);
+
+    // either en passant, or the last move was a pawn move
+    assert((p->enpassant == NO_ENPASSANT) || ((pc == PC(WHITE,PAWN) || pc == PC(BLACK,PAWN)) && capture == NO_CAPTURE));
     
     // no pawns on 1st or 8th ranks
     assert(p->sqtopc[A1] != PC(WHITE,PAWN));
@@ -810,7 +813,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         if (epsq != 24 && epsq != 32) {
             // try capture left
             fromsq = epsq - 1;
-            if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
+            // TODO: shouldn't need to check that the ep square is occupied by a pawn on the other side
+            if (pos->sqtopc[fromsq] == PC(side,PAWN) && /*DEBUG*/pos->sqtopc[epsq] == PC(contraside,PAWN)) {
                 sq = side == WHITE ? fromsq + 9 : fromsq - 7;
                 if (pos->sqtopc[sq] == EMPTY) {
                     //DEBUG
@@ -843,7 +847,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         if (epsq != 31 && epsq != 39) {
             // try capture right
             fromsq = epsq + 1;
-            if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
+            // TODO: shouldn't need to check that the ep square is occupied by a pawn on the other side            
+            if (pos->sqtopc[fromsq] == PC(side,PAWN) && /*DEBUG*/pos->sqtopc[epsq] == PC(contraside,PAWN)) {
                 sq = side == WHITE ? fromsq + 7 : fromsq - 9;                
                 if (pos->sqtopc[sq] == EMPTY) {
                     assert(pos->enpassant != NO_ENPASSANT);
@@ -934,12 +939,12 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
+    struct savepos sp;
+    move moves[MAX_MOVES];
     /* #define DEBUG_OUTPUT */
 #ifdef DEBUG_OUTPUT
     uint64_t cnt;
-#endif
-    move moves[MAX_MOVES];
-    struct savepos sp;
+#endif    
     
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
@@ -1176,7 +1181,7 @@ int main(int argc, char **argv) {
     // verified up to depth 3 (9/4/16)
     // kiwi pete position:
     const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
-    #define DEPTH 5
+    #define DEPTH 4
 
     // position #3
     //const char *fen = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -";
