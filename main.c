@@ -315,6 +315,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
                 assert(p->enpassant != NO_ENPASSANT);
                 assert(sq == 23 + p->enpassant);
                 assert(p->sqtopc[sq] == PC(BLACK,PAWN));
+                assert(p->sqtopc[tosq] == EMPTY);
                 p->sqtopc[sq] = EMPTY;
                 p->brd[PC(BLACK,PAWN)] &= ~MASK(sq);
             } else {
@@ -323,6 +324,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
                 assert(p->enpassant != NO_ENPASSANT);
                 assert(sq == 23 + p->enpassant);
                 assert(p->sqtopc[sq] == PC(WHITE,PAWN));
+                assert(p->sqtopc[tosq] == EMPTY);                
                 p->sqtopc[sq] = EMPTY;
                 p->brd[PC(WHITE,PAWN)] &= ~MASK(sq);
             }
@@ -765,7 +767,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 7 : sq + 9;
-            assert(pos->sqtopc[fromsq] == PC(side,PAWN));            
+            assert(pos->sqtopc[fromsq] == PC(side,PAWN));
+            assert(pos->sqtopc[sq] != EMPTY);
             if (sq >= A8 || sq <= H1) { // last rank => promotion
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], KNIGHT, NO_ENPASSANT);
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], BISHOP, NO_ENPASSANT);
@@ -784,7 +787,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 9 : sq + 7;
-            assert(pos->sqtopc[fromsq] == PC(side,PAWN));            
+            assert(pos->sqtopc[fromsq] == PC(side,PAWN));
+            assert(pos->sqtopc[sq] != EMPTY);            
             if (sq >= A8 || sq <= H1) { // last rank => promotion
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], KNIGHT, NO_ENPASSANT);
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], BISHOP, NO_ENPASSANT);
@@ -805,6 +809,16 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
                 sq = side == WHITE ? fromsq + 9 : fromsq - 7;
                 if (pos->sqtopc[sq] == EMPTY) {
+                    assert(pos->enpassant != NO_ENPASSANT);
+                    assert((side == WHITE && (epsq >= A5 && epsq <= H5)) ||
+                           (side == BLACK && (epsq >= A4 && epsq <= H4)));
+                    assert((side == WHITE && (fromsq >= A5 && fromsq <= H5)) ||
+                           (side == BLACK && (fromsq >= A4 && fromsq <= H4)));
+                    assert((side == WHITE && (sq >= A6 && sq <= H6)) ||
+                           (side == BLACK && (sq >= A3 && sq <= H3)));
+                    assert(pos->sqtopc[fromsq] == PC(side,PAWN));
+                    assert(pos->sqtopc[epsq] == PC(contraside,PAWN));
+                    assert(pos->sqtopc[sq] == EMPTY);
                     moves[nmove++] = MOVE(sq, fromsq, pc, PC(contraside,PAWN), 0, 1);
                 }
             }
@@ -815,6 +829,16 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
                 sq = side == WHITE ? fromsq + 7 : fromsq - 9;                
                 if (pos->sqtopc[sq] == EMPTY) {
+                    assert(pos->enpassant != NO_ENPASSANT);
+                    assert((side == WHITE && (epsq >= A5 && epsq <= H5)) ||
+                           (side == BLACK && (epsq >= A4 && epsq <= H4)));
+                    assert((side == WHITE && (fromsq >= A5 && fromsq <= H5)) ||
+                           (side == BLACK && (fromsq >= A4 && fromsq <= H4)));
+                    assert((side == WHITE && (sq >= A6 && sq <= H6)) ||
+                           (side == BLACK && (sq >= A3 && sq <= H3)));
+                    assert(pos->sqtopc[fromsq] == PC(side,PAWN));
+                    assert(pos->sqtopc[epsq] == PC(contraside,PAWN));
+                    assert(pos->sqtopc[sq] == EMPTY);                    
                     moves[nmove++] = MOVE(sq, fromsq, pc, PC(contraside,PAWN), 0, 1);
                 }
             }
