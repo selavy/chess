@@ -97,11 +97,12 @@ const char *piecestr(uint32_t piece) {
     default               : return "UNKNOWN";
     }
 }
-// to   [0..63]    6 bits  {A1...H6}
-// from [0..63]    6 bits  {A1...H6}
-// piece [0..5*2]  4 bits  { WPAWN...WKING,BPAWN...BKING }
-// capture [0..11] 4 bit - 0 = no capture,   { WPAWN...WKING,BPAWN...BKING }
-// promote [0..5]  3 bit - 0 = no promotion, { KNIGHT, BISHOP, ROOK, QUEEN }
+// to        [0..63 ] 6 bits  {A1...H6}
+// from      [0..63 ] 6 bits  {A1...H6}
+// piece     [0..5*2] 4 bits  { WPAWN...WKING,BPAWN...BKING }
+// capture   [0..11 ] 4 bit - 0 = no capture,   { WPAWN...WKING,BPAWN...BKING }
+// promote   [0..5  ] 3 bit - 0 = no promotion, { KNIGHT, BISHOP, ROOK, QUEEN }
+// enpassant [0..1  ] 1 bit - 0 = no en passant
 typedef uint32_t move;
 #define MOVE(to, from, pc, cap, prm, ep)        \
     ((((from ) & 0x3f) <<  0) |                 \
@@ -226,12 +227,13 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     uint64_t from = MASK(fromsq);
     uint64_t to = MASK(tosq);
     uint64_t * restrict pcs = &p->brd[pc];
+    
+    assert(validate_position(p) == 0);
+    
     sp->halfmoves = p->halfmoves;
     sp->enpassant = p->enpassant;
     sp->castle = p->castle;
     sp->was_ep = 0;
-
-    assert(validate_position(p) == 0);
 
     p->wtm = FLIP(p->wtm);
     if (pc == PC(side,PAWN)) {
@@ -384,8 +386,10 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     if (capture == NO_CAPTURE) {
         if (pc == PC(WHITE,PAWN) && (to & WHITE_ENPASSANT_SQUARES) != 0 && (from & RANK2(side)) != 0) {
             p->enpassant = tosq - 23;
+            assert(p->enpassant >= 1 && p->enpassant <= 8);
         } else if (pc == PC(BLACK,PAWN) && (to & BLACK_ENPASSANT_SQUARES) != 0 && (from & RANK2(side)) != 0) {
             p->enpassant = tosq - 23;
+            assert(p->enpassant >= 9 && p->enpassant <= 16);            
         }
     }
 
@@ -575,7 +579,7 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
     return attacks(pos, FLIP(side), kingloc);
 }
 
-uint32_t generate_moves(const struct position * const restrict pos, move * restrict moves) {
+uint32_t generate_moves(const struct position * const restrict pos, move * restrict moves, /*DEBUG*/ const move pmove) {
     uint32_t i;
     uint32_t pc;
     uint64_t pcs;
@@ -809,6 +813,19 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             if (pos->sqtopc[fromsq] == PC(side,PAWN)) {
                 sq = side == WHITE ? fromsq + 9 : fromsq - 7;
                 if (pos->sqtopc[sq] == EMPTY) {
+                    //DEBUG
+                    if (((side == WHITE && (epsq >= A5 && epsq <= H5)) ||
+                         (side == BLACK && (epsq >= A4 && epsq <= H4))) == 0) {
+                        full_position_print(pos);
+                        printf("Trying to create move: sq(%" PRId64 "), fromsq(%d), pc(%d)\n",
+                              sq, fromsq, pc);
+                        printf("epsq = %d\n", epsq);
+                        printf("pos->enpassant = %d\n", pos->enpassant);
+                        printf("previous move: ");
+                        move_print(pmove); printf("\n");
+                    }
+                    //GUBED
+                    
                     assert(pos->enpassant != NO_ENPASSANT);
                     assert((side == WHITE && (epsq >= A5 && epsq <= H5)) ||
                            (side == BLACK && (epsq >= A4 && epsq <= H4)));
@@ -923,6 +940,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
 #endif
     move moves[MAX_MOVES];
     struct savepos sp;
+    
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
     }
@@ -950,8 +968,9 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         return 1;
     }
 
-    nmoves = generate_moves(pos, &moves[0]);
+    nmoves = generate_moves(pos, &moves[0], pmove);
     for (i = 0; i < nmoves; ++i) {
+        memset(&sp, 0, sizeof(sp));
         make_move(pos, moves[i], &sp);
 #ifdef DEBUG_OUTPUT
         cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
@@ -1157,7 +1176,7 @@ int main(int argc, char **argv) {
     // verified up to depth 3 (9/4/16)
     // kiwi pete position:
     const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
-    #define DEPTH 4
+    #define DEPTH 5
 
     // position #3
     //const char *fen = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -";
