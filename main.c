@@ -1228,7 +1228,7 @@ int main(int argc, char **argv) {
     printf("Built in `debug' mode\n");
 #endif
 
-    #define DEPTH 3
+    #define DEPTH 5
     
     // starting position:
     //const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
