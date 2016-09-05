@@ -18,6 +18,8 @@
 #define MASK(x) ((uint64_t)1 << x)
 #define SQ(c,r) ((r)*COLS+(c))
 enum { WHITE=0, BLACK };
+#define FORWARD_ONE_RANK(wtm, sq) ((wtm) == WHITE ? (sq) + 8 : (sq) - 8)
+#define BACKWARD_ONE_RANK(wtm, sq) ((wtm) == WHITE ? (sq) - 8 : (sq) + 8)
 #define pawn_attacks(side, sq) ((side) == WHITE ? wpawn_attacks[sq] : bpawn_attacks[sq])
 enum { PAWN=0, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2) };
 static const char *vpcs = "PNBRQKpnbrqk ";
@@ -101,13 +103,13 @@ const char *piecestr(uint32_t piece) {
 // capture [0..11] 4 bit - 0 = no capture,   { WPAWN...WKING,BPAWN...BKING }
 // promote [0..5]  3 bit - 0 = no promotion, { KNIGHT, BISHOP, ROOK, QUEEN }
 typedef uint32_t move;
-#define MOVE(from, to, pc, cap, prm, ep)        \
-    (((to) & 0x3f)           |                  \
-     (((from ) & 0x3f) << 6) |                  \
-     (((pc ) & 0x0f) << 12)  |                  \
-     (((prm) & 0x07) << 16)  |                  \
-     (((cap) & 0x0f) << 19)  |                  \
-     (((ep ) & 0x01) << 23))  
+#define MOVE(to, from, pc, cap, prm, ep)        \
+    ((((from ) & 0x3f) <<  0) |                 \
+     (((to   ) & 0x3f) <<  6) |                 \
+     (((pc   ) & 0x0f) << 12) |                 \
+     (((prm  ) & 0x07) << 16) |                 \
+     (((cap  ) & 0x0f) << 19) |                 \
+     (((ep   ) & 0x01) << 23))  
 #define FROM(m)      (((m) >>  0) & 0x3f)
 #define TO(m)        (((m) >>  6) & 0x3f)
 #define PIECE(m)     (((m) >> 12) & 0x0f)
@@ -144,18 +146,18 @@ void full_position_print(const struct position *p) {
     printf("%s\n", p->wtm == WHITE ? "WHITE":"BLACK");
     printf("Full moves: %d\n", p->nmoves);
     printf("Half moves: %d\n", p->halfmoves);
-    //printf("Castle: %d\n", p->castle);
+    printf("Castle: 0x%02X\n", p->castle);
     printf("Castling: ");
-    if ((p->castle & WKINGSD)) {
+    if ((p->castle & WKINGSD) != 0) {
         printf("K");
     }
-    if ((p->castle & WQUEENSD)) {
+    if ((p->castle & WQUEENSD) != 0) {
         printf("Q");
     }
-    if ((p->castle & BKINGSD)) {
+    if ((p->castle & BKINGSD) != 0) {
         printf("k");
     }
-    if ((p->castle & BQUEENSD)) {
+    if ((p->castle & BQUEENSD) != 0) {
         printf("q");
     }
     printf("\n");
@@ -179,6 +181,41 @@ int is_castle(move m) {
         return 0;
     }
 }
+int validate_position(const struct position * const restrict p) {
+    int i;
+    int pc;
+    uint64_t msk;
+    uint8_t found;
+    // white king present
+    if (p->brd[PC(WHITE,KING)] == 0) {
+        fputs("No white king present", stderr);
+        return 1;
+    }
+    // black king present
+    if (p->brd[PC(BLACK,KING)] == 0) {
+        fputs("No black king present", stderr);
+        return 2;
+    }
+    for (i = 0; i < SQUARES; ++i) {
+        msk = MASK(i);
+        found = 0;
+        for (pc = PC(WHITE,PAWN); pc <= PC(BLACK,KING); ++pc) {
+            if ((p->brd[pc] & msk) != 0) {
+                if (p->sqtopc[i] != pc) {
+                    fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s, found = %d\n",
+                            piecestr(pc), i, piecestr(p->sqtopc[i]), found);
+
+                    return 3;
+                }
+                found = 1;
+            }
+        }
+        if (found == 0 && p->sqtopc[i] != EMPTY) {
+            return 4;
+        }
+    }
+    return 0;
+}
 void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
     uint32_t pc = PIECE(m);
     uint32_t fromsq = FROM(m);
@@ -193,6 +230,8 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     sp->enpassant = p->enpassant;
     sp->castle = p->castle;
     sp->was_ep = 0;
+
+    assert(validate_position(p) == 0);
 
     p->wtm = FLIP(p->wtm);
     if (pc == PC(side,PAWN)) {
@@ -262,11 +301,9 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     *pcs &= ~from;
     if (promotion == NO_PROMOTION) {
         *pcs |= to;
-    } else { // TODO: promotions
-        assert(0);
+    } else {
         pcs = &PIECES(*p, side, promotion);
         *pcs |= to;
-        // TODO: implement
     }
     
     if (capture != NO_CAPTURE) {
@@ -300,12 +337,15 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     if (promotion == NO_PROMOTION) {
         p->sqtopc[tosq] = pc;
     } else {
-        p->sqtopc[tosq] = promotion - 1;
+        assert(promotion != PAWN);
+        assert(promotion != KING);
+        p->sqtopc[tosq] = PC(side, promotion);
     }
 
     // REVISIT: improve
     // update castling flags if needed
     if (p->castle != 0) {
+        // detect rook moving
         if (pc == PC(WHITE,ROOK) && fromsq == A1) {
             p->castle &= ~WQUEENSD;
         } else if (pc == PC(WHITE,ROOK) && fromsq == H1) {
@@ -314,10 +354,27 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
             p->castle &= ~BQUEENSD;
         } else if (pc == PC(BLACK,ROOK) && fromsq == H8) {
             p->castle &= ~BKINGSD;
-        } else if (pc == PC(WHITE,KING)) {
+        }
+        // detect king moving
+        else if (pc == PC(WHITE,KING)) {
             p->castle &= ~(WQUEENSD | WKINGSD);
         } else if (pc == PC(BLACK,KING)) {
             p->castle &= ~(BQUEENSD | BKINGSD);
+        }
+        // TODO: check if faster to always remove even if bits not present
+        // i.e. check if ((p->castle & BIT) != 0) is true as well.
+        // detect capturing on rook squares
+        if (p->sqtopc[A1] != PC(WHITE,ROOK)) {
+            p->castle &= ~WQUEENSD;
+        }
+        if (p->sqtopc[H1] != PC(WHITE,ROOK)) {
+            p->castle &= ~WKINGSD;
+        }
+        if (p->sqtopc[A8] != PC(BLACK,ROOK)) {
+            p->castle &= ~BQUEENSD;
+        }
+        if (p->sqtopc[H8] != PC(BLACK,ROOK)) {
+            p->castle &= ~BKINGSD;
         }
     }
 
@@ -329,6 +386,48 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
             p->enpassant = tosq - 23;
         }
     }
+
+    assert(validate_position(p) == 0);
+    
+    // no pawns on 1st or 8th ranks
+    assert(p->sqtopc[A1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[B1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[C1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[D1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[E1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[F1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[G1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[H1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[A1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[B1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[C1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[D1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[E1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[F1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[G1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[H1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[A8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[B8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[C8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[D8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[E8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[F8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[G8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[H8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[A8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[B8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[C8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[D8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[E8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[F8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[G8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[H8] != PC(BLACK,PAWN));
+
+    // either "cant castle"              OR "king and rook are still on original squares"
+    assert(((p->castle & WQUEENSD) == 0) || (p->sqtopc[A1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)));        
+    assert(((p->castle & WKINGSD)  == 0) || (p->sqtopc[H1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)));
+    assert(((p->castle & BQUEENSD) == 0) || (p->sqtopc[A8] == PC(BLACK,ROOK) && p->sqtopc[E8] == PC(BLACK,KING)));
+    assert(((p->castle & BKINGSD)  == 0) || (p->sqtopc[H8] == PC(BLACK,ROOK) && p->sqtopc[E8] == PC(BLACK,KING)));
 }
 void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
     uint32_t pc = PIECE(m);
@@ -336,10 +435,10 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     uint32_t tosq = TO(m);
     uint32_t capture = CAPTURE(m);
     uint32_t promotion = PROMOTE(m);
-    uint8_t side = FLIP(p->wtm);
+    uint8_t  side = FLIP(p->wtm);
     uint64_t from = MASK(fromsq);
     uint64_t to = MASK(tosq);
-    uint64_t * restrict pcs = &p->brd[pc];
+    uint64_t *restrict pcs = &p->brd[pc];
 
     p->halfmoves = sp->halfmoves;
     p->enpassant = sp->enpassant;
@@ -522,6 +621,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
         }
     }
 
+    // castling
     if (side == WHITE) {
         if ((castle & WKINGSD) != 0    &&
             (i == E1)                  &&
@@ -620,7 +720,6 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     }
 
     // pawn moves
-    // TODO: promotion
     uint32_t fromsq;
     pc = PC(side, PAWN);
     pcs = PIECES(*pos, side, PAWN);
@@ -631,8 +730,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 8 : sq + 8;
-            // TODO: if on last rank, generate promotions
-            if (sq >= 56 || sq <= 7) { // promotion
+            assert(pos->sqtopc[fromsq] == PC(side,PAWN));
+            if (sq >= A8 || sq <= H1) { // promotion
                 moves[nmove++] = MOVE(sq, fromsq, pc, NO_CAPTURE, KNIGHT, NO_ENPASSANT);
                 moves[nmove++] = MOVE(sq, fromsq, pc, NO_CAPTURE, BISHOP, NO_ENPASSANT);
                 moves[nmove++] = MOVE(sq, fromsq, pc, NO_CAPTURE, ROOK  , NO_ENPASSANT);
@@ -650,7 +749,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 16 : sq + 16;
-            // TODO: can i do this with the bitmasks?
+            assert(pos->sqtopc[fromsq] == PC(side,PAWN));            
+            // TODO: do this with the bitmasks?
             if (pos->sqtopc[side == WHITE ? sq - 8 : sq + 8] != EMPTY) {
                 continue;
             }
@@ -665,7 +765,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 7 : sq + 9;
-            if (sq >= 56 || sq <= 7) { // last rank => promotion
+            assert(pos->sqtopc[fromsq] == PC(side,PAWN));            
+            if (sq >= A8 || sq <= H1) { // last rank => promotion
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], KNIGHT, NO_ENPASSANT);
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], BISHOP, NO_ENPASSANT);
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], ROOK  , NO_ENPASSANT);
@@ -683,7 +784,8 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     for (sq = 0; posmoves; ++sq, posmoves >>= 1) {
         if ((posmoves & 0x01) != 0) {
             fromsq = side == WHITE ? sq - 9 : sq + 7;
-            if (sq >= 56 || sq <= 7) { // last rank => promotion
+            assert(pos->sqtopc[fromsq] == PC(side,PAWN));            
+            if (sq >= A8 || sq <= H1) { // last rank => promotion
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], KNIGHT, NO_ENPASSANT);
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], BISHOP, NO_ENPASSANT);
                 moves[nmove++] = MOVE(sq, fromsq, pc, pos->sqtopc[sq], ROOK  , NO_ENPASSANT);
@@ -697,7 +799,6 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
     // en passant
     if (pos->enpassant != NO_ENPASSANT) {
         uint32_t epsq = pos->enpassant + 23;
-        assert(pos->sqtopc[epsq] == PC(contraside, PAWN));
         if (epsq != 24 && epsq != 32) {
             // try capture left
             fromsq = epsq - 1;
@@ -760,41 +861,7 @@ void set_initial_position(struct position * restrict p) {
     p->sqtopc[E8] = PC(BLACK, KING);
     for (i = A3; i < A7; ++i) p->sqtopc[i] = EMPTY;
 }
-int validate_position(const struct position * const restrict p) {
-    int i;
-    int pc;
-    uint64_t msk;
-    uint8_t found;
-    // white king present
-    if (p->brd[PC(WHITE,KING)] == 0) {
-        fputs("No white king present", stderr);
-        return 1;
-    }
-    // black king present
-    if (p->brd[PC(BLACK,KING)] == 0) {
-        fputs("No black king present", stderr);
-        return 2;
-    }
-    for (i = 0; i < SQUARES; ++i) {
-        msk = MASK(i);
-        found = 0;
-        for (pc = PC(WHITE,PAWN); pc <= PC(BLACK,KING); ++pc) {
-            if ((p->brd[pc] & msk) != 0) {
-                if (p->sqtopc[i] != pc) {
-                    fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s, found = %d\n",
-                            piecestr(pc), i, piecestr(p->sqtopc[i]), found);
 
-                    return 3;
-                }
-                found = 1;
-            }
-        }
-        if (found == 0 && p->sqtopc[i] != EMPTY) {
-            return 4;
-        }
-    }
-    return 0;
-}
 uint8_t int_to_piece(int c) {
     switch (c) {
     case 'P': return PC(WHITE,PAWN);
@@ -826,7 +893,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
-    //#define DEBUG_OUTPUT
+    /* #define DEBUG_OUTPUT */
 #ifdef DEBUG_OUTPUT
     uint64_t cnt;
 #endif
@@ -836,7 +903,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         return 0;
     }
     if (depth == 0) {
-        //#define COUNTERS
+#define COUNTERS
 #ifdef COUNTERS        
         if (pmove != 0) {
             if (in_check(pos, pos->wtm) != 0) {
@@ -861,10 +928,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
 
     nmoves = generate_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
-        //move_print(moves[i]); printf("\n");
         make_move(pos, moves[i], &sp);
-
-        
 #ifdef DEBUG_OUTPUT
         cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
         nodes += cnt;
@@ -874,8 +938,8 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
 #else
         nodes += perft_ex(depth - 1, pos, moves[i], ply + 1);
 #endif
-
         undo_move(pos, moves[i], &sp);
+        assert(validate_position(pos) == 0);
     }
     return nodes;
 }
@@ -997,7 +1061,7 @@ int read_fen(struct position * restrict pos, const char * const fen) {
 
         ++p;
         if (*p >= '1' && *p <= '8') {
-            sq += (*p - '0') * 8;
+            sq += (*p - '1') * 8;
         } else {
             fprintf(stderr, "Unexpected character in enpassant square: '%c'\n", *p);
             exit(EXIT_FAILURE);            
@@ -1005,7 +1069,11 @@ int read_fen(struct position * restrict pos, const char * const fen) {
 
         if ((sq >= A3 && sq <= H3) || (sq >= A6 && sq <= H6)) {
             // I store the square the pawn moved to, FEN gives the square behind the pawn
-            pos->enpassant = sq + 8 - 23;
+            if (pos->wtm == WHITE) {
+                pos->enpassant = sq + 8 - 23;
+            } else {
+                pos->enpassant = sq - 8 - 23;
+            }
         } else {
             fprintf(stderr, "Invalid enpassant square: %d\n", sq);
             exit(EXIT_FAILURE);
@@ -1049,29 +1117,33 @@ int read_fen(struct position * restrict pos, const char * const fen) {
 int main(int argc, char **argv) {
     int depth;
     uint64_t nodes;
-    static struct position pos;    
+    static struct position pos;
 
-    #define FROM_FEN
-    #ifdef FROM_FEN
+#ifdef NDEBUG
+    printf("Built in `release' mode\n");
+#else
+    printf("Built in `debug' mode\n");
+#endif
+
+    //#define DEPTH 6
+    // verified up to depth 7 (9/4/16)
     // starting position:
-    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
-    
+    //const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+
+    // verified up to depth 3 (9/4/16)
     // kiwi pete position:
-    //const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+    const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+    #define DEPTH 4
 
     // position #3
     //const char *fen = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -";
     //const char *fen = "8/2p5/3p4/KP5r/5p1k/8/4P1P1/1R6 b - -";
-#define D 6
-    #endif
     
     printf("Perft:\n");
-#ifdef FROM_FEN
     if (read_fen(&pos, fen) != 0) {
         fputs("Failed to read FEN for position!", stderr);
         exit(EXIT_FAILURE);
     }
-#endif
 
 #if 0
     // test if in check then exit...
@@ -1082,8 +1154,20 @@ int main(int argc, char **argv) {
     }
     return 0;
 #endif
+#if 0
+    move m = MOVE(C8, E8, PC(BLACK,KING), NO_CAPTURE, NO_PROMOTION, NO_ENPASSANT);
+    static struct savepos sp;
+    make_move(&pos, m, &sp);
+    position_print(pos.sqtopc);
+    undo_move(&pos, m, &sp);
+    position_print(pos.sqtopc);
+    if (validate_position(&pos) != 0) {
+        printf("Failed to validate pos\n");
+    }
+    exit(EXIT_SUCCESS);
+#endif
 
-    for (depth = D; depth < D+1; ++depth) {
+    for (depth = DEPTH; depth < DEPTH+1; ++depth) {
         checks = 0;
         captures = 0;
         enpassants = 0;
@@ -1091,12 +1175,7 @@ int main(int argc, char **argv) {
         checkmates = 0;
         promotions = 0;
         
-#ifdef FROM_FEN
         nodes = perft_ex(depth, &pos, 0, 0);
-#else
-        nodes = perft(depth);
-#endif
-
         printf("Perft(%u): Nodes=%" PRIu64 ", Captures=%" PRIu64 ", E.p.=%" PRIu64
                 ", Castles=%" PRIu64 ", Promotions=%" PRIu64
                 ", Checks=%" PRIu64 ", Checkmates=%" PRIu64 "\n",
