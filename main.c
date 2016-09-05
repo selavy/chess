@@ -164,6 +164,49 @@ void full_position_print(const struct position *p) {
     printf("\n");
     printf("E.P.: %d\n", p->enpassant);
 }
+int position_cmp(const struct position *const a, const struct position *const b) {
+    /* if (memcmp(&a->brd[0], &b->brd[0], sizeof(*(a->brd))) != 0) { */
+    /*     fputs("brd comparison failed\n", stderr); */
+    /*     return 1; */
+    /* } */
+    int i;
+    int j;
+    for (i = 0; i < NPIECES*2; ++i) {
+        if (a->brd[i] != b->brd[i]) {
+            printf("Boards don't match for %c\n", vpcs[i]);
+            for (j = 0; j < 64; ++j) {
+                if ((a->brd[i] & MASK(j)) != (b->brd[i] & MASK(j))) {
+                    printf("Don't match on square: %d\n", j);
+                }
+            }
+            printf("\nTMP position:\n");
+            position_print(a->sqtopc);
+            printf("\nPOS position:\n");
+            position_print(b->sqtopc);
+            return 1;   
+        }
+    }
+    if (memcmp(a->sqtopc, b->sqtopc, sizeof(*(a->sqtopc))) != 0) {
+        fputs("sqtopc comparison failed\n", stderr);
+        return 2;
+    }
+    if (a->nmoves != b->nmoves) {
+        fputs("nmoves comparison failed\n", stderr);
+        return 3;
+    }
+    if (a->halfmoves != b->halfmoves) {
+        fputs("halfmoves comparison failed\n", stderr);
+        return 4;
+    }
+    if (a->castle != b->castle) {
+        fputs("castle comparison failed\n", stderr);
+        return 5;
+    }
+    if (a->enpassant != b->enpassant) {
+        fputs("enpassant comparison failed\n", stderr);
+    }
+    return memcmp(a, b, sizeof(*a));
+}
 struct savepos {
     uint8_t halfmoves;
     uint8_t enpassant;
@@ -182,6 +225,8 @@ int is_castle(move m) {
         return 0;
     }
 }
+// `validate_position': verify both sides have a king and
+// that the sqtopc array matches the bitboards.
 int validate_position(const struct position * const restrict p) {
     int i;
     int pc;
@@ -197,6 +242,12 @@ int validate_position(const struct position * const restrict p) {
         fputs("No black king present", stderr);
         return 2;
     }
+    if (__builtin_popcountll(p->brd[PC(WHITE,KING)]) != 1) {
+        fputs("Too many white kings present", stderr);
+    }
+    if (__builtin_popcountll(p->brd[PC(BLACK,KING)]) != 1) {
+        fputs("Too many black kings present", stderr);
+    }
     for (i = 0; i < SQUARES; ++i) {
         msk = MASK(i);
         found = 0;
@@ -205,7 +256,6 @@ int validate_position(const struct position * const restrict p) {
                 if (p->sqtopc[i] != pc) {
                     fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s, found = %d\n",
                             piecestr(pc), i, piecestr(p->sqtopc[i]), found);
-
                     return 3;
                 }
                 found = 1;
@@ -448,6 +498,12 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     uint64_t from = MASK(fromsq);
     uint64_t to = MASK(tosq);
     uint64_t *restrict pcs = &p->brd[pc];
+
+    //DEBUG
+    /* printf("undo_move: hm(%d), ep(%d), cst(%d), wtm(%d), from(%s), to(%s)\n", */
+    /*        sp->halfmoves, sp->enpassant, sp->castle, side, */
+    /*        sq_to_str[fromsq], sq_to_str[tosq]); */
+    //GUBED
 
     p->halfmoves = sp->halfmoves;
     p->enpassant = sp->enpassant;
@@ -935,16 +991,22 @@ static uint64_t enpassants = 0;
 static uint64_t castles = 0;
 static uint64_t promotions = 0;
 static uint64_t checkmates = 0;
+
 uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, int ply) {
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
     struct savepos sp;
     move moves[MAX_MOVES];
-    /* #define DEBUG_OUTPUT */
+    //DEBUG
+    struct position tmp;
+    memcpy(&tmp, pos, sizeof(tmp));
+    //GUBED
+    
+/* #define DEBUG_OUTPUT */
 #ifdef DEBUG_OUTPUT
     uint64_t cnt;
-#endif    
+#endif // ~DEBUG_OUTPUT
     
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
@@ -969,14 +1031,15 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
                 ++promotions;
             }
         }
-#endif        
+#endif // ~COUNTERS
         return 1;
     }
-
+    
     nmoves = generate_moves(pos, &moves[0], pmove);
     for (i = 0; i < nmoves; ++i) {
-        memset(&sp, 0, sizeof(sp));
         make_move(pos, moves[i], &sp);
+        assert(validate_position(pos) == 0);
+        
 #ifdef DEBUG_OUTPUT
         cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
         nodes += cnt;
@@ -985,9 +1048,12 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         }
 #else
         nodes += perft_ex(depth - 1, pos, moves[i], ply + 1);
-#endif
+#endif // ~DEBUG_OUTPUT
+        
         undo_move(pos, moves[i], &sp);
+        
         assert(validate_position(pos) == 0);
+        assert(position_cmp(&tmp, pos) == 0);
     }
     return nodes;
 }
@@ -1192,28 +1258,6 @@ int main(int argc, char **argv) {
         fputs("Failed to read FEN for position!", stderr);
         exit(EXIT_FAILURE);
     }
-
-#if 0
-    // test if in check then exit...
-    if (in_check(&pos, pos.wtm)) {
-        printf("in check\n");
-    } else {
-        printf("not in check\n");
-    }
-    return 0;
-#endif
-#if 0
-    move m = MOVE(C8, E8, PC(BLACK,KING), NO_CAPTURE, NO_PROMOTION, NO_ENPASSANT);
-    static struct savepos sp;
-    make_move(&pos, m, &sp);
-    position_print(pos.sqtopc);
-    undo_move(&pos, m, &sp);
-    position_print(pos.sqtopc);
-    if (validate_position(&pos) != 0) {
-        printf("Failed to validate pos\n");
-    }
-    exit(EXIT_SUCCESS);
-#endif
 
     for (depth = DEPTH; depth < DEPTH+1; ++depth) {
         checks = 0;
