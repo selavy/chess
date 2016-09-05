@@ -315,6 +315,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[A1] = EMPTY;
         p->sqtopc[C1] = PC(WHITE,KING);
         p->sqtopc[D1] = PC(WHITE,ROOK);
+        p->enpassant = NO_ENPASSANT;
         goto end;
     } else if (pc == PC(WHITE,KING) && fromsq == E1 && tosq == G1) {
         assert(p->sqtopc[F1] == EMPTY);
@@ -328,6 +329,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[H1] = EMPTY;
         p->sqtopc[G1] = PC(WHITE,KING);
         p->sqtopc[F1] = PC(WHITE,ROOK);
+        p->enpassant = NO_ENPASSANT;
         goto end;
     } else if (pc == PC(BLACK,KING) && fromsq == E8 && tosq == C8) {
         assert(p->sqtopc[B8] == EMPTY);
@@ -342,6 +344,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[A8] = EMPTY;
         p->sqtopc[C8] = PC(BLACK,KING);
         p->sqtopc[D8] = PC(BLACK,ROOK);
+        p->enpassant = NO_ENPASSANT;
         goto end;
     } else if (pc == PC(BLACK,KING) && fromsq == E8 && tosq == G8) {
         assert(p->sqtopc[F8] == EMPTY);
@@ -355,6 +358,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[H8] = EMPTY;
         p->sqtopc[G8] = PC(BLACK,KING);
         p->sqtopc[F8] = PC(BLACK,ROOK);
+        p->enpassant = NO_ENPASSANT;
         goto end;
     }
 
@@ -440,7 +444,6 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         }
     }
 
- end:
     p->enpassant = NO_ENPASSANT;
     if (capture == NO_CAPTURE) {
         if (pc == PC(WHITE,PAWN) && (to & WHITE_ENPASSANT_SQUARES) != 0 && (from & RANK2(side)) != 0) {
@@ -451,7 +454,8 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
             assert(p->enpassant >= 9 && p->enpassant <= 16);            
         }
     }
-
+    
+ end: // verification tests should always be run
     assert(validate_position(p) == 0);
 
     // either en passant, or the last move was a pawn move
