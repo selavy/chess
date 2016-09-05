@@ -97,6 +97,14 @@ const char *piecestr(uint32_t piece) {
     default               : return "UNKNOWN";
     }
 }
+// TODO: could do move in 16-bits - definitely makes harder to debug and more implicit knowledge
+//     +6 bits for to square
+//     +6 bits for from square
+//     // determine if promotion from flags
+//     +2 bits for promotion piece { KNIGHT=0, BISHOP=1, ROOK=2, QUEEN=3 } 
+//     // know capture from sqtopc array, need captured piece in savepos struct
+//     +2 bits for { NORMAL=0, EN_PASSANT=1, PROMOTION=2, CASTLE=3 }       
+
 // to        [0..63 ] 6 bits  {A1...H6}
 // from      [0..63 ] 6 bits  {A1...H6}
 // piece     [0..5*2] 4 bits  { WPAWN...WKING,BPAWN...BKING }
@@ -307,7 +315,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[A1] = EMPTY;
         p->sqtopc[C1] = PC(WHITE,KING);
         p->sqtopc[D1] = PC(WHITE,ROOK);
-        return;
+        goto end;
     } else if (pc == PC(WHITE,KING) && fromsq == E1 && tosq == G1) {
         assert(p->sqtopc[F1] == EMPTY);
         assert(p->sqtopc[G1] == EMPTY);
@@ -320,7 +328,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[H1] = EMPTY;
         p->sqtopc[G1] = PC(WHITE,KING);
         p->sqtopc[F1] = PC(WHITE,ROOK);
-        return;
+        goto end;
     } else if (pc == PC(BLACK,KING) && fromsq == E8 && tosq == C8) {
         assert(p->sqtopc[B8] == EMPTY);
         assert(p->sqtopc[C8] == EMPTY);
@@ -334,7 +342,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[A8] = EMPTY;
         p->sqtopc[C8] = PC(BLACK,KING);
         p->sqtopc[D8] = PC(BLACK,ROOK);
-        return;
+        goto end;
     } else if (pc == PC(BLACK,KING) && fromsq == E8 && tosq == G8) {
         assert(p->sqtopc[F8] == EMPTY);
         assert(p->sqtopc[G8] == EMPTY);
@@ -347,7 +355,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         p->sqtopc[H8] = EMPTY;
         p->sqtopc[G8] = PC(BLACK,KING);
         p->sqtopc[F8] = PC(BLACK,ROOK);
-        return;
+        goto end;
     }
 
     *pcs &= ~from;
@@ -432,6 +440,7 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
         }
     }
 
+ end:
     p->enpassant = NO_ENPASSANT;
     if (capture == NO_CAPTURE) {
         if (pc == PC(WHITE,PAWN) && (to & WHITE_ENPASSANT_SQUARES) != 0 && (from & RANK2(side)) != 0) {
@@ -498,12 +507,6 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     uint64_t from = MASK(fromsq);
     uint64_t to = MASK(tosq);
     uint64_t *restrict pcs = &p->brd[pc];
-
-    //DEBUG
-    /* printf("undo_move: hm(%d), ep(%d), cst(%d), wtm(%d), from(%s), to(%s)\n", */
-    /*        sp->halfmoves, sp->enpassant, sp->castle, side, */
-    /*        sq_to_str[fromsq], sq_to_str[tosq]); */
-    //GUBED
 
     p->halfmoves = sp->halfmoves;
     p->enpassant = sp->enpassant;
@@ -638,7 +641,7 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
     return attacks(pos, FLIP(side), kingloc);
 }
 
-uint32_t generate_moves(const struct position * const restrict pos, move * restrict moves, /*DEBUG*/ const move pmove) {
+uint32_t generate_moves(const struct position * const restrict pos, move * restrict moves) {
     uint32_t i;
     uint32_t pc;
     uint64_t pcs;
@@ -870,22 +873,9 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             // try capture left
             fromsq = epsq - 1;
             // TODO: shouldn't need to check that the ep square is occupied by a pawn on the other side
-            if (pos->sqtopc[fromsq] == PC(side,PAWN) && /*DEBUG*/pos->sqtopc[epsq] == PC(contraside,PAWN)) {
+            if (pos->sqtopc[fromsq] == PC(side,PAWN)) {                
                 sq = side == WHITE ? fromsq + 9 : fromsq - 7;
                 if (pos->sqtopc[sq] == EMPTY) {
-                    //DEBUG
-                    if (((side == WHITE && (epsq >= A5 && epsq <= H5)) ||
-                         (side == BLACK && (epsq >= A4 && epsq <= H4))) == 0) {
-                        full_position_print(pos);
-                        printf("Trying to create move: sq(%" PRId64 "), fromsq(%d), pc(%d)\n",
-                              sq, fromsq, pc);
-                        printf("epsq = %d\n", epsq);
-                        printf("pos->enpassant = %d\n", pos->enpassant);
-                        printf("previous move: ");
-                        move_print(pmove); printf("\n");
-                    }
-                    //GUBED
-                    
                     assert(pos->enpassant != NO_ENPASSANT);
                     assert((side == WHITE && (epsq >= A5 && epsq <= H5)) ||
                            (side == BLACK && (epsq >= A4 && epsq <= H4)));
@@ -904,7 +894,7 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
             // try capture right
             fromsq = epsq + 1;
             // TODO: shouldn't need to check that the ep square is occupied by a pawn on the other side            
-            if (pos->sqtopc[fromsq] == PC(side,PAWN) && /*DEBUG*/pos->sqtopc[epsq] == PC(contraside,PAWN)) {
+            if (pos->sqtopc[fromsq] == PC(side,PAWN)) {                
                 sq = side == WHITE ? fromsq + 7 : fromsq - 9;                
                 if (pos->sqtopc[sq] == EMPTY) {
                     assert(pos->enpassant != NO_ENPASSANT);
@@ -998,10 +988,6 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
     uint64_t nodes = 0;
     struct savepos sp;
     move moves[MAX_MOVES];
-    //DEBUG
-    struct position tmp;
-    memcpy(&tmp, pos, sizeof(tmp));
-    //GUBED
     
 /* #define DEBUG_OUTPUT */
 #ifdef DEBUG_OUTPUT
@@ -1035,7 +1021,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         return 1;
     }
     
-    nmoves = generate_moves(pos, &moves[0], pmove);
+    nmoves = generate_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
@@ -1051,10 +1037,9 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
 #endif // ~DEBUG_OUTPUT
         
         undo_move(pos, moves[i], &sp);
-        
         assert(validate_position(pos) == 0);
-        assert(position_cmp(&tmp, pos) == 0);
     }
+
     return nodes;
 }
 uint64_t perft(int depth) {
