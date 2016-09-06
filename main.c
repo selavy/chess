@@ -1002,7 +1002,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
         return 0;
     }
     if (depth == 0) {
-#define COUNTERS
+//#define COUNTERS
 #ifdef COUNTERS        
         if (pmove != 0) {
             if (in_check(pos, pos->wtm) != 0) {
@@ -1228,10 +1228,10 @@ int main(int argc, char **argv) {
     printf("Built in `debug' mode\n");
 #endif
 
-    #define DEPTH 5
+    #define DEPTH 8
     
     // starting position:
-    //const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
 
     // kiwi pete position:
     /* const char *fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"; */
@@ -1246,7 +1246,7 @@ int main(int argc, char **argv) {
     //const char* fen = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ -";
 
     // position #6
-    const char* fen = "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - -";
+    //const char* fen = "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - -";
     
     printf("Perft:\n");
     if (read_fen(&pos, fen) != 0) {
