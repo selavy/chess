@@ -32,8 +32,10 @@ typedef uint32_t move;
 #define CAPTURE(m)   (((m) >> 19) & 0x0f)
 #define ENPASSANT(m) (((m) >> 23) & 0x01)
 
-void move_print(move m);
+extern void move_print(move m);
 
-void mprnt(move m);
+extern void mprnt(move m);
+
+extern int is_castle(move m);
 
 #endif // MOVE__H_

@@ -31,6 +31,7 @@
 #define NO_PROMOTION 0
 #define NO_CAPTURE EMPTY
 #define NO_ENPASSANT 0
+#define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING])
 
 enum {
     WHITE=0, BLACK
@@ -53,8 +54,28 @@ enum {
     BKINGSD  = (1<<2), BQUEENSD = (1<<3),
 };
 
+struct position {
+    uint64_t brd[NPIECES*2];  // 8 * 12 = 96B
+    uint8_t  sqtopc[SQUARES]; // 1 * 64 = 64B
+    uint16_t nmoves;          // 2 *  1 =  2B
+    uint8_t  wtm;             // 1 *  1 =  1B
+    uint8_t  halfmoves;       // 1 *  1 =  1B
+    uint8_t  castle;          // 1 *  1 =  1B
+    uint8_t  enpassant;       // 1 *  1 =  1B
+};                            // Total:  164B
+
+struct savepos {
+    uint8_t halfmoves;
+    uint8_t enpassant;
+    uint8_t castle;
+    uint8_t was_ep;
+};
+
 extern const char *vpcs;
 extern const char *sq_to_str[64];
 extern const char *sq_to_small[64];
+extern void position_print(const uint8_t * const restrict sqtopc);
+extern void full_position_print(const struct position *p);
+extern int validate_position(const struct position * const restrict p);
 
 #endif // TYPES__H_
