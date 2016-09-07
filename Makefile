@@ -3,7 +3,7 @@ DEBUG=-O2 -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fb
 RELEASE=-O3 -fstrict-aliasing -ffast-math -flto -DNDEBUG -flto -msse4.2 -march=native
 CFLAGS=$(RELEASE) -Wall -Werror -pedantic -std=c11
 GENERATED=magic_tables.o
-OBJS=$(GENERATED) main.o
+OBJS=$(GENERATED) types.o main.o
 TARGET=chess
 GEN=generate_magic_tables
 
@@ -16,6 +16,8 @@ magic_tables.o: $(GEN)
 $(GEN): $(GEN).c
 	$(CC) -o $@ $(CFLAGS) $<
 main.o: main.c
+	$(CC) -o $@ $(CFLAGS) -c $<
+%.o: %.c %.c
 	$(CC) -o $@ $(CFLAGS) -c $<
 pgn_parser: pgn_parser.c
 	$(CC) -o $@ $(CFLAGS) $<
