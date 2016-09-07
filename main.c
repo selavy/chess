@@ -3,11 +3,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include "types.h"
 #include <assert.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "types.h"
+#include "move.h"
 
+struct position {
+    uint64_t brd[NPIECES*2];  // 8 * 12 = 96B
+    uint8_t  sqtopc[SQUARES]; // 1 * 64 = 64B
+    uint16_t nmoves;          // 2 *  1 =  2B
+    uint8_t  wtm;             // 1 *  1 =  1B
+    uint8_t  halfmoves;       // 1 *  1 =  1B
+    uint8_t  castle;          // 1 *  1 =  1B
+    uint8_t  enpassant;       // 1 *  1 =  1B
+};                            // Total:  164B
+#define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING])
 void position_print(const uint8_t * const restrict sqtopc) {
     char v;
     int sq, r, c;
@@ -21,77 +32,6 @@ void position_print(const uint8_t * const restrict sqtopc) {
         fputs("|\n---------------------------------\n", stdout);
     }
 }
-const char *piecestr(uint32_t piece) {
-    switch (piece) {
-    case PAWN             : return "WHITE PAWN";
-    case KNIGHT           : return "WHITE KNIGHT";
-    case BISHOP           : return "WHITE BISHOP";
-    case ROOK             : return "WHITE ROOK";
-    case QUEEN            : return "WHITE QUEEN";
-    case KING             : return "WHITE KING";
-    case PC(BLACK,PAWN)   : return "BLACK PAWN";
-    case PC(BLACK,KNIGHT) : return "BLACK KNIGHT";
-    case PC(BLACK,BISHOP) : return "BLACK BISHOP";
-    case PC(BLACK,ROOK)   : return "BLACK ROOK";
-    case PC(BLACK,QUEEN)  : return "BLACK QUEEN";
-    case PC(BLACK,KING)   : return "BLACK KING";
-    case EMPTY            : return "EMPTY";
-    default               : return "UNKNOWN";
-    }
-}
-// TODO: could do move in 16-bits - definitely makes harder to debug and more implicit knowledge
-//     +6 bits for to square
-//     +6 bits for from square
-//     // determine if promotion from flags
-//     +2 bits for promotion piece { KNIGHT=0, BISHOP=1, ROOK=2, QUEEN=3 } 
-//     // know capture from sqtopc array, need captured piece in savepos struct
-//     +2 bits for { NORMAL=0, EN_PASSANT=1, PROMOTION=2, CASTLE=3 }       
-
-// to        [0..63 ] 6 bits  {A1...H6}
-// from      [0..63 ] 6 bits  {A1...H6}
-// piece     [0..5*2] 4 bits  { WPAWN...WKING,BPAWN...BKING }
-// capture   [0..11 ] 4 bit - 0 = no capture,   { WPAWN...WKING,BPAWN...BKING }
-// promote   [0..5  ] 3 bit - 0 = no promotion, { KNIGHT, BISHOP, ROOK, QUEEN }
-// enpassant [0..1  ] 1 bit - 0 = no en passant
-typedef uint32_t move;
-#define MOVE(to, from, pc, cap, prm, ep)        \
-    ((((from ) & 0x3f) <<  0) |                 \
-     (((to   ) & 0x3f) <<  6) |                 \
-     (((pc   ) & 0x0f) << 12) |                 \
-     (((prm  ) & 0x07) << 16) |                 \
-     (((cap  ) & 0x0f) << 19) |                 \
-     (((ep   ) & 0x01) << 23))  
-#define FROM(m)      (((m) >>  0) & 0x3f)
-#define TO(m)        (((m) >>  6) & 0x3f)
-#define PIECE(m)     (((m) >> 12) & 0x0f)
-#define PROMOTE(m)   (((m) >> 16) & 0x07)
-#define CAPTURE(m)   (((m) >> 19) & 0x0f)
-#define ENPASSANT(m) (((m) >> 23) & 0x01)
-void move_print(move m) {
-    printf("MOVE(from=%s, to=%s, pc=%s, prm=%d, cap=%s, ep=%s)",
-           sq_to_str[FROM(m)], sq_to_str[TO(m)],
-           piecestr(PIECE(m)), PROMOTE(m), piecestr(CAPTURE(m)), BOOLSTR(ENPASSANT(m)));
-}
-void mprnt(move m) {
-    printf("%s%s\t", sq_to_small[FROM(m)], sq_to_small[TO(m)]);
-}
-#define NO_PROMOTION 0
-#define NO_CAPTURE EMPTY
-#define NO_ENPASSANT 0
-enum {
-    WKINGSD  = (1<<0), WQUEENSD = (1<<1),
-    BKINGSD  = (1<<2), BQUEENSD = (1<<3),
-};
-struct position {
-    uint64_t brd[NPIECES*2];  // 8 * 12 = 96B
-    uint8_t  sqtopc[SQUARES]; // 1 * 64 = 64B
-    uint16_t nmoves;          // 2 *  1 =  2B
-    uint8_t  wtm;             // 1 *  1 =  1B
-    uint8_t  halfmoves;       // 1 *  1 =  1B
-    uint8_t  castle;          // 1 *  1 =  1B
-    uint8_t  enpassant;       // 1 *  1 =  1B
-};                            // Total:  164B
-#define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING])
 void full_position_print(const struct position *p) {
     position_print(&p->sqtopc[0]);
     printf("%s\n", p->wtm == WHITE ? "WHITE":"BLACK");
@@ -113,49 +53,6 @@ void full_position_print(const struct position *p) {
     }
     printf("\n");
     printf("E.P.: %d\n", p->enpassant);
-}
-int position_cmp(const struct position *const a, const struct position *const b) {
-    /* if (memcmp(&a->brd[0], &b->brd[0], sizeof(*(a->brd))) != 0) { */
-    /*     fputs("brd comparison failed\n", stderr); */
-    /*     return 1; */
-    /* } */
-    int i;
-    int j;
-    for (i = 0; i < NPIECES*2; ++i) {
-        if (a->brd[i] != b->brd[i]) {
-            printf("Boards don't match for %c\n", vpcs[i]);
-            for (j = 0; j < 64; ++j) {
-                if ((a->brd[i] & MASK(j)) != (b->brd[i] & MASK(j))) {
-                    printf("Don't match on square: %d\n", j);
-                }
-            }
-            printf("\nTMP position:\n");
-            position_print(a->sqtopc);
-            printf("\nPOS position:\n");
-            position_print(b->sqtopc);
-            return 1;   
-        }
-    }
-    if (memcmp(a->sqtopc, b->sqtopc, sizeof(*(a->sqtopc))) != 0) {
-        fputs("sqtopc comparison failed\n", stderr);
-        return 2;
-    }
-    if (a->nmoves != b->nmoves) {
-        fputs("nmoves comparison failed\n", stderr);
-        return 3;
-    }
-    if (a->halfmoves != b->halfmoves) {
-        fputs("halfmoves comparison failed\n", stderr);
-        return 4;
-    }
-    if (a->castle != b->castle) {
-        fputs("castle comparison failed\n", stderr);
-        return 5;
-    }
-    if (a->enpassant != b->enpassant) {
-        fputs("enpassant comparison failed\n", stderr);
-    }
-    return memcmp(a, b, sizeof(*a));
 }
 struct savepos {
     uint8_t halfmoves;
@@ -204,8 +101,8 @@ int validate_position(const struct position * const restrict p) {
         for (pc = PC(WHITE,PAWN); pc <= PC(BLACK,KING); ++pc) {
             if ((p->brd[pc] & msk) != 0) {
                 if (p->sqtopc[i] != pc) {
-                    fprintf(stderr, "p->brd[%s] != p->sqtopc[%d] = %s, found = %d\n",
-                            piecestr(pc), i, piecestr(p->sqtopc[i]), found);
+                    fprintf(stderr, "p->brd[%c] != p->sqtopc[%d] = %c, found = %d\n",
+                            vpcs[pc], i, vpcs[p->sqtopc[i]], found);
                     return 3;
                 }
                 found = 1;
@@ -935,11 +832,6 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
     struct savepos sp;
     move moves[MAX_MOVES];
     
-/* #define DEBUG_OUTPUT */
-#ifdef DEBUG_OUTPUT
-    uint64_t cnt;
-#endif // ~DEBUG_OUTPUT
-    
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
     }
@@ -971,17 +863,7 @@ uint64_t perft_ex(int depth, struct position * const restrict pos, move pmove, i
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
-        
-#ifdef DEBUG_OUTPUT
-        cnt = perft_ex(depth - 1, pos, moves[i], ply + 1);
-        nodes += cnt;
-        if (ply == 0 && cnt != 0) {
-            mprnt(moves[i]); printf("%" PRIu64 "\n", cnt);            
-        }
-#else
         nodes += perft_ex(depth - 1, pos, moves[i], ply + 1);
-#endif // ~DEBUG_OUTPUT
-        
         undo_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
     }

@@ -28,9 +28,16 @@
 #define THIRD_RANK 0xff0000ULL
 #define SIXTH_RANK 0xff0000000000ULL
 #define RANK3(side) ((side) == WHITE ? THIRD_RANK : SIXTH_RANK)
+#define NO_PROMOTION 0
+#define NO_CAPTURE EMPTY
+#define NO_ENPASSANT 0
 
-enum { WHITE=0, BLACK };
-enum { PAWN=0, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2) };
+enum {
+    WHITE=0, BLACK
+};
+enum {
+    PAWN=0, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2)
+};
 enum {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -40,6 +47,10 @@ enum {
     A6, B6, C6, D6, E6, F6, G6, H6,
     A7, B7, C7, D7, E7, F7, G7, H7,
     A8, B8, C8, D8, E8, F8, G8, H8,
+};
+enum {
+    WKINGSD  = (1<<0), WQUEENSD = (1<<1),
+    BKINGSD  = (1<<2), BQUEENSD = (1<<3),
 };
 
 extern const char *vpcs;
