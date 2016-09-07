@@ -1,5 +1,6 @@
 #include "types.h"
 #include <stdio.h>
+#include <assert.h>
 
 const char *vpcs = "PNBRQKpnbrqk ";
 
@@ -102,3 +103,43 @@ int validate_position(const struct position * const restrict p) {
     }
     return 0;
 }
+
+void set_initial_position(struct position * restrict p) {
+    int i;
+    p->wtm = WHITE;
+    p->nmoves = 0;
+    p->halfmoves = 0;
+    p->castle = WKINGSD | WQUEENSD | BKINGSD | BQUEENSD;
+    PIECES(*p, WHITE, PAWN  ) = 0x0000ff00ULL;
+    for (i = A2; i <= H2; ++i) p->sqtopc[i] = PC(WHITE, PAWN);
+    PIECES(*p, WHITE, KNIGHT) = 0x00000042ULL;
+    p->sqtopc[B1] = PC(WHITE, KNIGHT);
+    p->sqtopc[G1] = PC(WHITE, KNIGHT);
+    PIECES(*p, WHITE, BISHOP) = 0x00000024ULL;
+    p->sqtopc[C1] = PC(WHITE, BISHOP);
+    p->sqtopc[F1] = PC(WHITE, BISHOP);
+    PIECES(*p, WHITE, ROOK  ) = 0x00000081ULL;
+    p->sqtopc[A1] = PC(WHITE, ROOK);
+    p->sqtopc[H1] = PC(WHITE, ROOK);
+    PIECES(*p, WHITE, QUEEN ) = 0x00000008ULL;
+    p->sqtopc[D1] = PC(WHITE, QUEEN);
+    PIECES(*p, WHITE, KING  ) = 0x00000010ULL;
+    p->sqtopc[E1] = PC(WHITE, KING);
+    PIECES(*p, BLACK, PAWN  ) = 0xff000000000000ULL;
+    for (i = A7; i <= H7; ++i) p->sqtopc[i] = PC(BLACK, PAWN);
+    PIECES(*p, BLACK, KNIGHT) = 0x4200000000000000ULL;
+    p->sqtopc[B8] = PC(BLACK, KNIGHT);
+    p->sqtopc[G8] = PC(BLACK, KNIGHT);
+    PIECES(*p, BLACK, BISHOP) = 0x2400000000000000ULL;
+    p->sqtopc[C8] = PC(BLACK, BISHOP);
+    p->sqtopc[F8] = PC(BLACK, BISHOP);
+    PIECES(*p, BLACK, ROOK  ) = 0x8100000000000000ULL;
+    p->sqtopc[A8] = PC(BLACK, ROOK);
+    p->sqtopc[H8] = PC(BLACK, ROOK);
+    PIECES(*p, BLACK, QUEEN ) = 0x800000000000000ULL;
+    p->sqtopc[D8] = PC(BLACK, QUEEN);
+    PIECES(*p, BLACK, KING  ) = 0x1000000000000000ULL;
+    p->sqtopc[E8] = PC(BLACK, KING);
+    for (i = A3; i < A7; ++i) p->sqtopc[i] = EMPTY;
+}
+
