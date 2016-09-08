@@ -89,6 +89,34 @@ uint64_t perft_bulk(int depth, struct position * const restrict pos) {
     return nodes;
 }
 
+static int perft_bulk_test_ex(const char *name, const char *fen, const uint64_t *expected, int max_depth) {
+    int depth;
+    uint64_t nodes;
+    struct position pos;
+
+    if (read_fen(&pos, fen, 0) != 0) {
+        fputs("Failed to read FEN for position!", stderr);
+        return 1;
+    }
+
+    printf("Running test for %s\n", name);
+    for (depth = 0; depth < max_depth; ++depth) {
+        printf("Beginning depth %d...", depth);
+        reset_counts();
+        nodes = perft(depth, &pos, 0);
+        if (nodes != expected[depth]) {
+            printf("Failed nodes!\n");
+            printf("Expected = %" PRIu64 ", Actual = %" PRIu64 "\n",
+                   expected[depth], nodes);
+            return 1;
+        } else {
+            printf("Passed.\n");
+        }
+    }
+
+    return 0;
+}
+
 struct expected_t {
     uint64_t nodes;
     uint64_t captures;    
@@ -215,6 +243,32 @@ int perft_count_test() {
         { .nodes=422333, .captures=131393, .enpassants=0, .castles=7795, .promotions=60032, .checks=15492, .checkmates=0 },                        
     };
     if ((ret = perft_count_test_ex("position #4", pos4, &pos4_exp[0], pos4_depth)) != 0) {
+        return ret;
+    }
+
+    const char *pos5 = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ -";
+    #define pos5_depth 5
+    uint64_t pos5_exp[pos5_depth] = {
+        1,
+        44,
+        1486,
+        62379,
+        2103487
+    };
+    if ((ret = perft_bulk_test_ex("position #5", pos5, &pos5_exp[0], pos5_depth)) != 0) {
+        return ret;
+    }
+
+    const char* pos6 = "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - -";
+    #define pos6_depth 5
+    uint64_t pos6_exp[pos6_depth] = {
+        1,
+        46,
+        2079,
+        89890,
+        3894594
+    };
+    if ((ret = perft_bulk_test_ex("position #6", pos6, &pos6_exp[0], pos6_depth)) != 0) {
         return ret;
     }    
     
