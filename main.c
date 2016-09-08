@@ -13,6 +13,13 @@
 #include "perft.h"
 
 int main(int argc, char **argv) {
+    if (perft_count_test() != 0) {
+        fputs("FAILURE!!\n", stderr);
+    } else {
+        fputs("Success.\n", stdout);
+    }
+    
+    #if 0
     int depth;
     /* uint64_t nodes; */
     static struct position pos;
@@ -52,7 +59,7 @@ int main(int argc, char **argv) {
     for (depth = 0; depth < DEPTH+1; ++depth) {
         /* reset_counts(); */
         
-        /* nodes = perft(depth, &pos, 0, 0); */
+        /* nodes = perft(depth, &pos, 0); */
         /* printf("Perft(%u): Nodes=%" PRIu64 ", Captures=%" PRIu64 ", E.p.=%" PRIu64 */
         /*         ", Castles=%" PRIu64 ", Promotions=%" PRIu64 */
         /*         ", Checks=%" PRIu64 ", Checkmates=%" PRIu64 "\n", */
@@ -62,6 +69,7 @@ int main(int argc, char **argv) {
         printf("Perft(%u): %" PRIu64 "\n",
                depth, perft_bulk(depth, &pos));
     }
+    #endif
 
     return 0;
 }

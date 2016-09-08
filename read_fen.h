@@ -3,6 +3,6 @@
 
 struct position;
 
-extern int read_fen(struct position * restrict pos, const char * const fen);
+extern int read_fen(struct position * restrict pos, const char * const fen, int print);
 
 #endif // READ_FEN__H_

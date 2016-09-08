@@ -4,7 +4,7 @@
 #include <string.h>
 #include "types.h"
 
-int read_fen(struct position * restrict pos, const char * const fen) {
+int read_fen(struct position * restrict pos, const char * const fen, int print) {
     int row;
     int col;
     const char *p = fen;
@@ -63,7 +63,7 @@ int read_fen(struct position * restrict pos, const char * const fen) {
                     PIECES(*pos, color, KING) |= MASK(SQ(col,row));                    
                     break;
                 default:
-                    printf("BAD\n");
+                    return 1;
                     break;
                 }
                 ++col;
@@ -164,7 +164,9 @@ int read_fen(struct position * restrict pos, const char * const fen) {
         pos->nmoves = fullmoves;
     }
 
-    full_position_print(pos);
+    if (print) {
+        full_position_print(pos);
+    }
     assert(validate_position(pos) == 0);
 
     return 0;
