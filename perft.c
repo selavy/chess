@@ -10,6 +10,15 @@ uint64_t castles    = 0;
 uint64_t promotions = 0;
 uint64_t checkmates = 0;
 
+void reset_counts() {
+    checks     = 0;
+    captures   = 0;
+    enpassants = 0;
+    castles    = 0;
+    promotions = 0;
+    checkmates = 0;
+}
+
 uint64_t perft(int depth, struct position * const restrict pos, move pmove) {
     uint32_t i;
     uint32_t nmoves;

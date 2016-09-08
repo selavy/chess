@@ -12,6 +12,8 @@ extern uint64_t castles;
 extern uint64_t promotions;
 extern uint64_t checkmates;
 
+extern void reset_counts();
+
 extern uint64_t perft(int depth, struct position * const restrict pos, move pmove);
 
 extern uint64_t perft_bulk(int depth, struct position * const restrict pos);

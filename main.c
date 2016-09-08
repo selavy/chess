@@ -50,12 +50,7 @@ int main(int argc, char **argv) {
     }
 
     for (depth = 0; depth < DEPTH+1; ++depth) {
-        /* checks = 0; */
-        /* captures = 0; */
-        /* enpassants = 0; */
-        /* castles = 0; */
-        /* checkmates = 0; */
-        /* promotions = 0; */
+        /* reset_counts(); */
         
         /* nodes = perft(depth, &pos, 0, 0); */
         /* printf("Perft(%u): Nodes=%" PRIu64 ", Captures=%" PRIu64 ", E.p.=%" PRIu64 */
