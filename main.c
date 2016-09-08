@@ -14,7 +14,7 @@
 
 int main(int argc, char **argv) {
     int depth;
-    uint64_t nodes;
+    /* uint64_t nodes; */
     static struct position pos;
 
 #ifdef NDEBUG
@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     printf("Built in `debug' mode\n");
 #endif
 
-    #define DEPTH 8
+    #define DEPTH 7
     
     // starting position:
     const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
@@ -49,20 +49,23 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    for (depth = DEPTH; depth < DEPTH+1; ++depth) {
-        checks = 0;
-        captures = 0;
-        enpassants = 0;
-        castles = 0;
-        checkmates = 0;
-        promotions = 0;
+    for (depth = 0; depth < DEPTH+1; ++depth) {
+        /* checks = 0; */
+        /* captures = 0; */
+        /* enpassants = 0; */
+        /* castles = 0; */
+        /* checkmates = 0; */
+        /* promotions = 0; */
         
-        nodes = perft(depth, &pos, 0, 0);
-        printf("Perft(%u): Nodes=%" PRIu64 ", Captures=%" PRIu64 ", E.p.=%" PRIu64
-                ", Castles=%" PRIu64 ", Promotions=%" PRIu64
-                ", Checks=%" PRIu64 ", Checkmates=%" PRIu64 "\n",
-                depth, nodes, captures, enpassants, castles, promotions,
-                checks, checkmates);
+        /* nodes = perft(depth, &pos, 0, 0); */
+        /* printf("Perft(%u): Nodes=%" PRIu64 ", Captures=%" PRIu64 ", E.p.=%" PRIu64 */
+        /*         ", Castles=%" PRIu64 ", Promotions=%" PRIu64 */
+        /*         ", Checks=%" PRIu64 ", Checkmates=%" PRIu64 "\n", */
+        /*         depth, nodes, captures, enpassants, castles, promotions, */
+        /*         checks, checkmates); */
+
+        printf("Perft(%u): %" PRIu64 "\n",
+               depth, perft_bulk(depth, &pos));
     }
 
     return 0;

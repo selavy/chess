@@ -10,7 +10,7 @@ uint64_t castles    = 0;
 uint64_t promotions = 0;
 uint64_t checkmates = 0;
 
-uint64_t perft(int depth, struct position * const restrict pos, move pmove, int ply) {
+uint64_t perft(int depth, struct position * const restrict pos, move pmove) {
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
@@ -48,9 +48,35 @@ uint64_t perft(int depth, struct position * const restrict pos, move pmove, int 
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
-        nodes += perft(depth - 1, pos, moves[i], ply + 1);
+        nodes += perft(depth - 1, pos, moves[i]);
         undo_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
+    }
+
+    return nodes;
+}
+
+
+uint64_t perft_bulk(int depth, struct position * const restrict pos) {
+    uint32_t i;
+    uint32_t nmoves;
+    uint64_t nodes = 0;
+    struct savepos sp;
+    move moves[MAX_MOVES];
+
+    if (in_check(pos, FLIP(pos->wtm))) {
+        return 0;
+    }
+    nmoves = generate_moves(pos, &moves[0]);
+
+    if (depth > 0) {
+        for (i = 0; i < nmoves; ++i) {
+            make_move(pos, moves[i], &sp);
+            assert(validate_position(pos) == 0);
+            nodes += perft(depth - 1, pos, moves[i]);
+            undo_move(pos, moves[i], &sp);
+            assert(validate_position(pos) == 0);
+        }
     }
 
     return nodes;
