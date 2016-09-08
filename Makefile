@@ -1,6 +1,6 @@
 CC=gcc
 DEBUG=-O2 -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fbounds-check 
-RELEASE=-O3 -fstrict-aliasing -ffast-math -flto -DNDEBUG -flto -msse4.2 -march=native
+RELEASE=-O3 -fstrict-aliasing -ffast-math -flto -DNDEBUG -flto -msse4.2 -march=native -fomit-frame-pointer
 CFLAGS=$(RELEASE) -Wall -Werror -pedantic -std=c11
 GENERATED=magic_tables.o
 OBJS=$(GENERATED) types.o move.o movegen.o read_fen.o perft.o main.o
