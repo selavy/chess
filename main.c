@@ -25,6 +25,7 @@ struct command_t {
 struct command_t commands[] = {
     { "--perft", &do_perft, "Run perft unit tests" },
     { "--help", &print_usage, "Print usage" },
+    { "--make-move-test", &make_move_test, "Run make move tests" },
     { 0, 0, 0 }
 };
 

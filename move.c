@@ -1,6 +1,24 @@
 #include "move.h"
 #include <stdio.h>
+#include <assert.h>
 #include "types.h"
+
+#ifndef NDEBUG
+smove_t SMALLMOVE(int to, int from, int prm, int ep, int csl) {
+    assert(ep  == SM_TRUE || ep  == SM_FALSE);
+    assert(csl == SM_TRUE || csl == SM_FALSE);
+    assert(prm == SM_PRM_NONE ||
+           prm == SM_PRM_KNIGHT ||
+           prm == SM_PRM_BISHOP ||
+           prm == SM_PRM_ROOK ||
+           prm == SM_PRM_QUEEN);
+    assert(ep == 0 || (prm == 0 && csl == 0));
+    assert(prm == 0 || (ep == 0 && csl == 0));
+    assert(csl == 0 || (ep == 0 && prm == 0));
+
+    return _SMALLMOVE(to, from, prm, ep, csl);
+}
+#endif
 
 void move_print(move m) {
     printf("MOVE(from=%s, to=%s, pc=%c, prm=%d, cap=%c, ep=%s)",

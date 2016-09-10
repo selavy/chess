@@ -1,6 +1,9 @@
 #include "movegen.h"
-#include "types.h"
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include "types.h"
+#include "read_fen.h"
 
 void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
     uint32_t pc = PIECE(m);
@@ -381,6 +384,37 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
 
     // --- validate position after ---
     assert(validate_position(p) == 0);
+}
+
+void make_move_test() {
+    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+    struct position pos;
+    struct position tmp;
+    struct saveposex sp;
+
+    if (read_fen(&pos, fen, 0) != 0) {
+        fputs("Failed to read FEN for position!", stderr);
+        return;
+    }
+    memcpy(&tmp, &pos, sizeof(tmp));
+
+    printf("Running make move tests...\n");
+    smove_t moves[] = {
+        SMALLMOVE(E4, E2, SM_FALSE, SM_FALSE, SM_FALSE),
+        0
+    };
+    
+    smove_t *m = &moves[0];
+    while (*m) {
+        make_move_ex(&pos, *m, &sp);
+        if (validate_position(&pos) != 0) {
+            fputs("Failed to make move!\n", stderr);
+            return;
+        }
+        // restore pos
+        memcpy(&pos, &tmp, sizeof(tmp));
+    }
+    printf("Succeeded.\n");
 }
 
 void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {

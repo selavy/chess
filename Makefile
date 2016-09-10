@@ -3,7 +3,7 @@ DEBUG=-O2 -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fb
 GEN_PROFILE=-fprofile-generate
 USE_PROFILE=-fprofile-use
 RELEASE=-O3 -fstrict-aliasing -ffast-math -DNDEBUG -flto -msse -march=native -fomit-frame-pointer
-CFLAGS=$(RELEASE) -Wall -Werror -pedantic -std=c11
+CFLAGS=$(DEBUG) -Wall -Werror -pedantic -std=c11
 GENERATED=magic_tables.o
 OBJS=$(GENERATED) types.o move.o movegen.o read_fen.o perft.o main.o
 TARGET=chess

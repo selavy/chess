@@ -26,6 +26,13 @@ const char *sq_to_small[64] = {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 };
 
+const uint32_t PROMOPC[4] = {
+    KNIGHT,
+    BISHOP,
+    ROOK,
+    QUEEN
+};
+
 void position_print(const uint8_t * const restrict sqtopc) {
     char v;
     int sq, r, c;

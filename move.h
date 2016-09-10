@@ -52,24 +52,13 @@ typedef uint16_t smove_t;
      (((from) & 0x3f) <<  6) |                                  \
      (((prm)  & 0x02) << 12) |                                  \
      (((!!(ep)*1 + !!(prm)*2 + !!(csl)*3) << 14) & 0x02))
-#ifdef NDEBUG
-#define SMALLMOVE _SMALLMOVE
-#else
-smove_t SMALLMOVE(int to, int from, int prm, int ep, int csl) {
-    assert(ep  == SM_TRUE || ep  == SM_FALSE);
-    assert(csl == SM_TRUE || csl == SM_FALSE);
-    assert(prm == SM_PRM_NONE ||
-           prm == SM_PRM_KNIGHT ||
-           prm == SM_PRM_BISHOP ||
-           prm == SM_PRM_ROOK ||
-           prm == SM_PRM_QUEEN);
-    assert(ep == 0 || (prm == 0 && csl == 0));
-    assert(prm == 0 || (ep == 0 && csl == 0));
-    assert(csl == 0 || (ep == 0 && prm == 0));
 
-    return _SMALLMOVE(to, from, prm, ep, csl);
-}
+#ifdef NDEBUG
+    #define SMALLMOVE _SMALLMOVE
+#else
+    smove_t SMALLMOVE(int to, int from, int prm, int ep, int csl);
 #endif
+
 // TODO(plesslie): don't actually need to AND off the other bits...
 #define SM_FROM(m)     (((m) >>  0) & 0x3f)
 #define SM_TO(m)       (((m) >>  6) & 0x3f)
