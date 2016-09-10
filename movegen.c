@@ -386,11 +386,83 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
     assert(validate_position(p) == 0);
 }
 
+static int move_creation_test() {
+    // verify that move creation macro works correctly
+    
+    int i;
+    int ret;
+    struct test_t {
+        uint32_t to;
+        uint32_t from;
+        uint32_t prm;        
+        uint32_t ep;
+        uint32_t csl;
+    } tests[] = {
+        { E4, E2, SM_FALSE     , SM_FALSE, SM_FALSE }, // regular case
+        { E5, D6, SM_FALSE     , SM_TRUE , SM_FALSE }, // ep case
+        { E7, E8, SM_PRM_QUEEN , SM_FALSE, SM_FALSE }, // prm case - white queen
+        { E7, E8, SM_PRM_ROOK  , SM_FALSE, SM_FALSE }, // prm case - white rook
+        { E7, E8, SM_PRM_BISHOP, SM_FALSE, SM_FALSE }, // prm case - white bishop
+        { E7, E8, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - white knight
+        { E2, E1, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - black knight
+        { E1, G1, SM_FALSE     , SM_FALSE, SM_TRUE  }
+    };
+
+    for (i = 0; i < (sizeof(tests)/sizeof(tests[0])); ++i) {
+        const smove_t mv = SMALLMOVE(tests[i].to,
+                                     tests[i].from,
+                                     tests[i].prm,
+                                     tests[i].ep,
+                                     tests[i].csl);
+        const uint32_t to    = SM_TO(mv);
+        const uint32_t from  = SM_FROM(mv);
+        const uint32_t prm   = SM_PROMO_PC(mv);
+        const uint32_t flags = SM_FLAGS(mv);
+
+        if (to != tests[i].to) {
+            printf("to(%u) != tests[i].to(%u)\n", to, tests[i].to);
+            ret = 1;
+        } else if (from != tests[i].from) {
+            printf("from(%u) != tests[i].from(%u)\n", from, tests[i].from);
+            ret = 1;
+        } else if (tests[i].prm != SM_FALSE && flags != SM_PROMO) {
+            printf("prm != FALSE && flags(%u) != SM_PROMO\n", flags);
+            ret = 1;
+        } else if (tests[i].prm != SM_FALSE && prm != tests[i].prm) {
+            printf("prm(%u) != tests[i].prm(%u)\n", prm, tests[i].prm);
+            ret = 1;
+        } else if (tests[i].ep == SM_TRUE && flags != SM_EP) {
+            printf("ep != FALSE && flags(%u) != SM_EP\n", flags);
+            ret = 1;
+        } else if (tests[i].csl == SM_TRUE && flags != SM_CASTLE) {
+            printf("csl != FALSE && flags(%u) != SM_CASTLE\n", flags);
+            ret = 1;
+        } else {
+            ret = 0;
+        }
+
+        if (ret != 0) {
+            printf("Failed on test case: (to=%s, frm=%s, prm=%u, ep=%u, csl=%u) sm = 0x%04" PRIx32 "\n",
+                   sq_to_str[tests[i].to], sq_to_str[tests[i].from], tests[i].prm,
+                   tests[i].ep, tests[i].csl, mv);
+            pbin(mv);
+            return ret;
+        }
+                
+    }
+    printf("Success.\n");
+    return 0;
+}
+
 void make_move_test() {
     const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
     struct position pos;
     struct position tmp;
     struct saveposex sp;
+
+    if (move_creation_test() != 0) {
+        return;
+    }
 
     if (read_fen(&pos, fen, 0) != 0) {
         fputs("Failed to read FEN for position!", stderr);

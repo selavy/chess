@@ -19,7 +19,7 @@ $(GEN): $(GEN).c
 	$(CC) -o $@ $(CFLAGS) $<
 main.o: main.c
 	$(CC) -o $@ $(CFLAGS) -c $<
-%.o: %.c %.c
+%.o: %.c %.h
 	$(CC) -o $@ $(CFLAGS) -c $<
 pgn_parser: pgn_parser.c
 	$(CC) -o $@ $(CFLAGS) $<

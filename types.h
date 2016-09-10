@@ -83,10 +83,13 @@ struct saveposex {
 extern const char *vpcs;
 extern const char *sq_to_str[64];
 extern const char *sq_to_small[64];
-extern const uint32_t PROMOPC[4];
+extern const uint32_t PROMOPC[5];
 extern void position_print(const uint8_t * const restrict sqtopc);
 extern void full_position_print(const struct position *p);
 extern int validate_position(const struct position * const restrict p);
 extern void set_initial_position(struct position * restrict p);
+
+// TODO: delete
+extern void pbin(uint16_t b);
 
 #endif // TYPES__H_

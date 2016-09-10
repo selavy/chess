@@ -41,29 +41,29 @@ extern int is_castle(move m);
 #define SM_TRUE       1
 #define SM_FALSE      0
 #define SM_PRM_NONE   (SM_FALSE)
-#define SM_PRM_KNIGHT 0
-#define SM_PRM_BISHOP 1
-#define SM_PRM_ROOK   2
-#define SM_PRM_QUEEN  3
+#define SM_PRM_KNIGHT 1
+#define SM_PRM_BISHOP 2
+#define SM_PRM_ROOK   3
+#define SM_PRM_QUEEN  4
 typedef uint16_t smove_t;
 // TODO(plesslie): don't actually need to AND off the other bits...
-#define _SMALLMOVE(to, from, prm, ep, csl)                      \
-    ((((to)   & 0x3f) <<  0) |                                  \
-     (((from) & 0x3f) <<  6) |                                  \
-     (((prm)  & 0x02) << 12) |                                  \
-     (((!!(ep)*1 + !!(prm)*2 + !!(csl)*3) << 14) & 0x02))
+extern const uint16_t _sm_translation[5];
+#define _SMALLMOVE(to, from, prm, ep, csl)              \
+    (((to)    <<  0) |                                  \
+     ((from)  <<  6) |                                  \
+     (_sm_translation[prm] << 12) |                     \
+     (((!!(ep))*1 + (!!(prm))*2 + (!!(csl))*3) << 14))
 
 #ifdef NDEBUG
     #define SMALLMOVE _SMALLMOVE
 #else
-    smove_t SMALLMOVE(int to, int from, int prm, int ep, int csl);
+    smove_t SMALLMOVE(uint32_t to, uint32_t from, uint32_t prm, uint32_t ep, uint32_t csl);
 #endif
 
-// TODO(plesslie): don't actually need to AND off the other bits...
-#define SM_FROM(m)     (((m) >>  0) & 0x3f)
-#define SM_TO(m)       (((m) >>  6) & 0x3f)
-#define SM_PROMO_PC(m) (((m) >> 12) & 0x02)
-#define SM_FLAGS(m)    (((m) >> 14) & 0x02)
+#define SM_TO(m)       (((m) >>  0) & 0x3f)
+#define SM_FROM(m)     (((m) >>  6) & 0x3f)
+#define SM_PROMO_PC(m) ((((m) >> 12) & 0x03)+1)
+#define SM_FLAGS(m)    (((m) >> 14))
 
 #define SM_NONE   0
 #define SM_EP     1

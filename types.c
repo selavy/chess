@@ -26,7 +26,8 @@ const char *sq_to_small[64] = {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 };
 
-const uint32_t PROMOPC[4] = {
+const uint32_t PROMOPC[5] = {
+    0,
     KNIGHT,
     BISHOP,
     ROOK,
@@ -150,3 +151,10 @@ void set_initial_position(struct position * restrict p) {
     for (i = A3; i < A7; ++i) p->sqtopc[i] = EMPTY;
 }
 
+void pbin(uint16_t b) {
+        int i;
+    for (i = 15; i >= 0; --i) {
+        printf("%d", (b & (1 << i)) ? 1 : 0); 
+    }
+    printf("\n");
+}
