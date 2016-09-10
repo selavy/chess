@@ -106,6 +106,8 @@ int validate_position(const struct position * const restrict p) {
             }
         }
         if (found == 0 && p->sqtopc[i] != EMPTY) {
+            fprintf(stderr, "bitboards = EMPTY but sqtopc[%s] == %c\n",
+                    sq_to_str[i], vpcs[p->sqtopc[i]]);
             return 4;
         }
     }
