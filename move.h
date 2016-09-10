@@ -45,15 +45,17 @@ extern int is_castle(move m);
 #define SM_PRM_BISHOP 1
 #define SM_PRM_ROOK   2
 #define SM_PRM_QUEEN  3
-typedef uint16_t smallmove_t;
+typedef uint16_t smove_t;
+// TODO(plesslie): don't actually need to AND off the other bits...
+#define _SMALLMOVE(to, from, prm, ep, csl)                      \
+    ((((to)   & 0x3f) <<  0) |                                  \
+     (((from) & 0x3f) <<  6) |                                  \
+     (((prm)  & 0x02) << 12) |                                  \
+     (((!!(ep)*1 + !!(prm)*2 + !!(csl)*3) << 14) & 0x02))
 #ifdef NDEBUG
-#define SMALLMOVE(to, from, prm, ep, csl)       \
-    (((to)   & 0x3f) <<  0) |                   \
-    (((from) & 0x3f) <<  6) |                   \
-    (((prm)  & 0x02) << 12) |                   \
-    ((!!(ep)*1 + !!(prm)*2 + !!(csl)*3) << 14)
+#define SMALLMOVE _SMALLMOVE
 #else
-uint16_t SMALLMOVE(int to, int from, int prm, int ep, int csl) {
+smove_t SMALLMOVE(int to, int from, int prm, int ep, int csl) {
     assert(ep  == SM_TRUE || ep  == SM_FALSE);
     assert(csl == SM_TRUE || csl == SM_FALSE);
     assert(prm == SM_PRM_NONE ||
@@ -65,11 +67,18 @@ uint16_t SMALLMOVE(int to, int from, int prm, int ep, int csl) {
     assert(prm == 0 || (ep == 0 && csl == 0));
     assert(csl == 0 || (ep == 0 && prm == 0));
 
-    return ((((to)   & 0x3f) <<  0) |                  
-            (((from) & 0x3f) <<  6) |                   
-            (((prm)  & 0x02) << 12) |                   
-            ((!!(ep)*1 + !!(prm)*2 + !!(csl)*3) << 14));
+    return _SMALLMOVE(to, from, prm, ep, csl);
 }
 #endif
+// TODO(plesslie): don't actually need to AND off the other bits...
+#define SM_FROM(m)     (((m) >>  0) & 0x3f)
+#define SM_TO(m)       (((m) >>  6) & 0x3f)
+#define SM_PROMO_PC(m) (((m) >> 12) & 0x02)
+#define SM_FLAGS(m)    (((m) >> 14) & 0x02)
+
+#define SM_NONE   0
+#define SM_EP     1
+#define SM_PROMO  2
+#define SM_CASTLE 3
 
 #endif // MOVE__H_

@@ -39,6 +39,12 @@ enum {
 enum {
     PAWN=0, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2)
 };
+uint32_t PROMOPC[4] = {
+    KNIGHT,
+    BISHOP,
+    ROOK,
+    QUEEN
+};
 enum {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -69,6 +75,14 @@ struct savepos {
     uint8_t enpassant;
     uint8_t castle;
     uint8_t was_ep;
+};
+
+struct saveposex {
+    uint8_t halfmoves;
+    uint8_t enpassant;
+    uint8_t castle;
+    uint8_t was_ep;
+    uint8_t was_capture;
 };
 
 extern const char *vpcs;

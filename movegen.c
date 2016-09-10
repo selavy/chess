@@ -229,6 +229,160 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
     assert(((p->castle & BKINGSD)  == 0) || (p->sqtopc[H8] == PC(BLACK,ROOK) && p->sqtopc[E8] == PC(BLACK,KING)));
 }
 
+void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *restrict sp) {
+    // --- loads ---
+    const uint32_t fromsq = SM_FROM(m);
+    const uint32_t tosq   = SM_TO(m);
+    const uint32_t promo  = PROMOPC[SM_PROMO_PC(m)]; // only valid if promo flag set
+    const uint32_t flags  = SM_FLAGS(m);
+    const uint8_t  side   = p->wtm;
+    const uint8_t  contra = FLIP(side);
+    const uint32_t pc     = p->sqtopc[fromsq];
+    const uint32_t topc   = p->sqtopc[tosq];
+    const uint64_t from   = MASK(fromsq);
+    const uint64_t to     = MASK(tosq);
+    const uint32_t epsq   = p->enpassant + 23;       // only valid if ep flag set
+    
+    uint64_t *restrict pcs = &p->brd[pc];
+    uint8_t  *restrict s2p = p->sqtopc;
+
+    // --- validate position before ---
+    assert(validate_position(p) == 0);
+
+    // --- update saveposex ---
+    sp->halfmoves = p->halfmoves;
+    sp->enpassant = p->enpassant;
+    sp->castle    = p->castle;
+    sp->was_ep    = SM_FALSE;
+
+    // TODO(plesslie): make this a jump table? (or switch)
+    if (flags == SM_NONE) { // normal case
+        *pcs &= from;
+        *pcs |= to;
+        s2p[fromsq] = EMPTY;
+        s2p[tosq]   = pc;        
+        if (topc != EMPTY) { // capture
+            p->brd[topc] &= ~to;
+        }
+    } else if (flags == SM_EP) {
+        sp->was_ep = 1;
+        if (side == WHITE) {
+            assert(tosq >= A6 && tosq <= H6);
+            assert(topc == EMPTY);
+            assert(epsq != NO_ENPASSANT);
+            assert(s2p[epsq] == PC(BLACK,PAWN));
+            assert(epsq == (tosq - 8));
+            *pcs &= from;
+            *pcs |= to;
+            p->brd[PC(BLACK,PAWN)] &= ~MASK(epsq);
+            s2p[epsq] = EMPTY;
+            s2p[fromsq] = EMPTY;            
+            s2p[tosq] = PC(WHITE,PAWN);            
+        } else {
+            assert(tosq >= A3 && tosq <= H3);
+            assert(topc == EMPTY);
+            assert(epsq != NO_ENPASSANT);
+            assert(s2p[epsq] == PC(WHITE,PAWN));
+            assert(epsq == (tosq + 8));
+            *pcs &= from;
+            *pcs |= to;
+            p->brd[PC(WHITE,PAWN)] &= ~MASK(epsq);            
+            s2p[epsq] = EMPTY;
+            s2p[fromsq] = EMPTY;            
+            s2p[tosq] = PC(BLACK,PAWN);            
+        }
+    } else if (flags == SM_PROMO) {
+        const uint32_t promopc = PC(side,promo);
+        *pcs &= from;
+        p->brd[promopc] |= to;
+        s2p[to]   = promopc;        
+        s2p[from] = EMPTY;
+        if (topc != EMPTY) { // capture
+            p->brd[topc] &= ~to;
+        }
+    } else if (flags == SM_CASTLE) {
+        assert(pc == PC(side,KING));
+        uint64_t *restrict rooks = &p->brd[PC(side,ROOK)];
+        if (side == WHITE) {
+            assert(fromsq == E1);
+            assert(tosq == C1 || tosq == G1);
+            if (tosq == G1) { // king side castle
+                assert(s2p[E1] == PC(WHITE,KING));
+                assert(s2p[F1] == EMPTY);
+                assert(s2p[G1] == EMPTY);
+                assert(s2p[H1] == PC(WHITE,ROOK));
+                *pcs   &= ~MASK(E1);
+                *pcs   |= MASK(G1);
+                *rooks &= ~MASK(H1);
+                *rooks |= MASK(F1);
+                s2p[E1] = EMPTY;
+                s2p[F1] = PC(WHITE,ROOK);
+                s2p[G1] = PC(WHITE,KING);
+                s2p[H1] = EMPTY;
+            } else { // queen side castle
+                assert(s2p[E1] == PC(WHITE,KING));
+                assert(s2p[D1] == EMPTY);
+                assert(s2p[C1] == EMPTY);
+                assert(s2p[B1] == EMPTY);
+                assert(s2p[A1] == PC(WHITE,ROOK));
+                *pcs   &= ~MASK(E1);
+                *pcs   |= MASK(C1);
+                *rooks &= ~MASK(A1);
+                *rooks |= MASK(D1);
+                s2p[A1] = EMPTY;
+                s2p[B1] = EMPTY;
+                s2p[C1] = PC(WHITE,KING);
+                s2p[D1] = PC(WHITE,ROOK);
+                s2p[E1] = EMPTY;
+            }
+            p->castle &= ~(WQUEENSD | WKINGSD);
+        } else {
+            assert(fromsq == E8);
+            assert(tosq == C8 || tosq == G8);
+            if (tosq == G8) { // king side castle
+                assert(s2p[E8] == PC(WHITE,KING));
+                assert(s2p[F8] == EMPTY);
+                assert(s2p[G8] == EMPTY);
+                assert(s2p[H8] == PC(WHITE,ROOK));
+                *pcs   &= ~MASK(E8);
+                *pcs   |= MASK(G8);
+                *rooks &= ~MASK(H8);
+                *rooks |= MASK(F8);
+                s2p[E8] = EMPTY;
+                s2p[F8] = PC(BLACK,ROOK);
+                s2p[G8] = PC(BLACK,KING);
+                s2p[H8] = EMPTY;
+            } else { // queen side castle
+                assert(s2p[E8] == PC(BLACK,KING));
+                assert(s2p[D8] == EMPTY);
+                assert(s2p[C8] == EMPTY);
+                assert(s2p[B8] == EMPTY);
+                assert(s2p[A8] == PC(BLACK,ROOK));
+                *pcs   &= ~MASK(E8);
+                *pcs   |= MASK(C8);
+                *rooks &= ~MASK(A8);
+                *rooks |= MASK(D8);
+                s2p[A8] = EMPTY;
+                s2p[B8] = EMPTY;
+                s2p[C8] = PC(BLACK,KING);
+                s2p[D8] = PC(BLACK,ROOK);
+                s2p[E8] = EMPTY;
+            }
+            p->castle &= ~(BQUEENSD | BKINGSD);
+        }
+    } else {
+        assert(0);
+    }
+
+    // --- stores ---
+    p->wtm = contra;
+    p->halfmoves = pc == PC(side,PAWN) ? 0 : p->halfmoves + 1;
+    ++p->nmoves;
+
+    // --- validate position after ---
+    assert(validate_position(p) == 0);
+}
+
 void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
     uint32_t pc = PIECE(m);
     uint32_t fromsq = FROM(m);
