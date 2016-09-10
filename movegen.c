@@ -5,6 +5,8 @@
 #include "types.h"
 #include "read_fen.h"
 
+#define EXTRA_INFO
+
 void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
     uint32_t pc = PIECE(m);
     uint32_t fromsq = FROM(m);
@@ -245,6 +247,14 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
     const uint64_t from   = MASK(fromsq);
     const uint64_t to     = MASK(tosq);
     const uint32_t epsq   = p->enpassant + 23;       // only valid if ep flag set
+
+    #ifdef EXTRA_INFO
+    printf("make_move_ex: fromsq(%s) tosq(%s) promo(%u) flags(%u) side(%s) "
+           "contra(%s) pc(%c) topc(%c) from(0x%08" PRIX64 ") to(0x%08" PRIX64 ") "
+           "epsq(%u)\n",
+           sq_to_str[fromsq], sq_to_str[tosq], promo, flags, side==WHITE?"WHITE":"BLACK",
+           contra==WHITE?"WHITE":"BLACK", vpcs[pc], vpcs[topc], from, to, epsq);
+    #endif
     
     uint64_t *restrict pcs = &p->brd[pc];
     uint8_t  *restrict s2p = p->sqtopc;
@@ -260,7 +270,7 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
 
     // TODO(plesslie): make this a jump table? (or switch)
     if (flags == SM_NONE) { // normal case
-        *pcs &= from;
+        *pcs &= ~from;
         *pcs |= to;
         s2p[fromsq] = EMPTY;
         s2p[tosq]   = pc;        
@@ -478,8 +488,10 @@ void make_move_test() {
     
     smove_t *m = &moves[0];
     while (*m) {
-        printf("Testing: ");
-        smove_print(*m);
+        #ifdef EXTRA_INFO
+        printf("Testing: "); smove_print(*m);
+        #endif
+        
         make_move_ex(&pos, *m, &sp);
         if (validate_position(&pos) != 0) {
             fputs("Failed to make move!\n", stderr);
@@ -487,6 +499,7 @@ void make_move_test() {
         }
         // restore pos
         memcpy(&pos, &tmp, sizeof(tmp));
+        ++m;
     }
     printf("Succeeded.\n");
 }
