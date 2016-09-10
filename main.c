@@ -23,9 +23,9 @@ struct command_t {
     const char *desc;
 };
 struct command_t commands[] = {
-    { "--perft", &do_perft, "Run perft unit tests" },
+    { "--perft", &test_perft, "Run perft unit tests" },
     { "--help", &print_usage, "Print usage" },
-    { "--make-move-test", &make_move_test, "Run make move tests" },
+    { "--moves", &test_make_move, "Run make move tests" },
     { 0, 0, 0 }
 };
 
@@ -38,14 +38,6 @@ void print_usage() {
         ++cmd;
     }
     printf("\n");
-}
-
-void do_perft() {
-    if (perft_count_test() != 0) {
-        fputs("FAILURE!!\n", stderr);
-    } else {
-        fputs("Success.\n", stdout);
-    }
 }
 
 int main(int argc, char **argv) {

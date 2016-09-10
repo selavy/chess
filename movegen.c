@@ -415,9 +415,12 @@ static int move_creation_test() {
         { E7, E8, SM_PRM_BISHOP, SM_FALSE, SM_FALSE }, // prm case - white bishop
         { E7, E8, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - white knight
         { E2, E1, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - black knight
-        { E1, G1, SM_FALSE     , SM_FALSE, SM_TRUE  }
+        { E1, G1, SM_FALSE     , SM_FALSE, SM_TRUE  },
+        { H8, A1, SM_FALSE     , SM_FALSE, SM_FALSE },
+        { B1, A1, SM_FALSE     , SM_FALSE, SM_FALSE }
     };
 
+    printf("Testing move creation...\n");
     for (i = 0; i < (sizeof(tests)/sizeof(tests[0])); ++i) {
         const smove_t mv = SMALLMOVE(tests[i].to,
                                      tests[i].from,
@@ -464,7 +467,7 @@ static int move_creation_test() {
     return 0;
 }
 
-void make_move_test() {
+void test_make_move() {
     const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
     struct position pos;
     struct position tmp;
@@ -482,7 +485,8 @@ void make_move_test() {
 
     printf("Running make move tests...\n");
     smove_t moves[] = {
-        SMALLMOVE(E4, E2, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(E2, E4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(A2, A3, SM_FALSE, SM_FALSE, SM_FALSE),
         0
     };
     

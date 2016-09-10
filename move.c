@@ -12,7 +12,7 @@ const uint16_t _sm_translation[5] = {
 };
 
 #ifndef NDEBUG
-smove_t SMALLMOVE(uint32_t to, uint32_t from, uint32_t prm, uint32_t ep, uint32_t csl) {
+smove_t SMALLMOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl) {
     assert(ep  == SM_TRUE || ep  == SM_FALSE);
     assert(csl == SM_TRUE || csl == SM_FALSE);
     assert(prm == SM_PRM_NONE   ||

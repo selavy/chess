@@ -274,3 +274,11 @@ int perft_count_test() {
     
     return 0;
 }
+
+void test_perft() {
+    if (perft_count_test() != 0) {
+        fputs("FAILURE!!\n", stderr);
+    } else {
+        fputs("Success.\n", stdout);
+    }    
+}

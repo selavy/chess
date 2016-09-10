@@ -48,7 +48,7 @@ extern int is_castle(move m);
 typedef uint16_t smove_t;
 // TODO(plesslie): don't actually need to AND off the other bits...
 extern const uint16_t _sm_translation[5];
-#define _SMALLMOVE(to, from, prm, ep, csl)              \
+#define _SMALLMOVE(from, to, prm, ep, csl)              \
     (((to)    <<  0) |                                  \
      ((from)  <<  6) |                                  \
      (_sm_translation[prm] << 12) |                     \
@@ -57,7 +57,7 @@ extern const uint16_t _sm_translation[5];
 #ifdef NDEBUG
     #define SMALLMOVE _SMALLMOVE
 #else
-    smove_t SMALLMOVE(uint32_t to, uint32_t from, uint32_t prm, uint32_t ep, uint32_t csl);
+    smove_t SMALLMOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl);
 #endif
 
 #define SM_TO(m)       (((m) >>  0) & 0x3f)
