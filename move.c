@@ -64,3 +64,25 @@ int is_castle(move m) {
         return 0;
     }
 }
+
+void smove_print(smove_t mv) {
+    const uint32_t to    = SM_TO(mv);
+    const uint32_t from  = SM_FROM(mv);
+    const uint32_t prm   = SM_PROMO_PC(mv);
+    const uint32_t flags = SM_FLAGS(mv);
+
+    printf("from(%s) to(%s)", sq_to_str[from], sq_to_str[to]);
+    switch (flags) {
+    case SM_EP:
+        printf(" e.p.");
+        break;
+    case SM_PROMO:
+        printf(" promo(%c)", vpcs[PROMOPC[prm]]);
+        break;
+    case SM_CASTLE:
+        printf(" castle");
+    default:
+        break;
+    }
+    printf("\n");
+}

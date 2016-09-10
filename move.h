@@ -70,4 +70,6 @@ extern const uint16_t _sm_translation[5];
 #define SM_PROMO  2
 #define SM_CASTLE 3
 
+void smove_print(smove_t mv);
+
 #endif // MOVE__H_

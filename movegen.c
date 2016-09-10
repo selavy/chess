@@ -478,6 +478,8 @@ void make_move_test() {
     
     smove_t *m = &moves[0];
     while (*m) {
+        printf("Testing: ");
+        smove_print(*m);
         make_move_ex(&pos, *m, &sp);
         if (validate_position(&pos) != 0) {
             fputs("Failed to make move!\n", stderr);
