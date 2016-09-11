@@ -1,6 +1,8 @@
 #include "perft.h"
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 #include "types.h"
 #include "movegen.h"
 #include "read_fen.h"
@@ -70,6 +72,7 @@ uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove,
     uint64_t nodes = 0;
     struct saveposex sp;
     smove_t moves[MAX_MOVES];
+    struct position tmp;
     
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
@@ -94,6 +97,7 @@ uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove,
         return 1;
     }
     
+    memcpy(&tmp, pos, sizeof(tmp));
     nmoves = generate_moves_ex(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
         make_move_ex(pos, moves[i], &sp);
@@ -101,6 +105,16 @@ uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove,
         nodes += perft_ex(depth - 1, pos, moves[i], sp.captured_pc);
         undo_move_ex(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
+        //assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
+        if (memcmp(&tmp, pos, sizeof(tmp)) != 0) {
+            printf("Original position:\n");
+            full_position_print(&tmp);
+            printf("\n\nAfter undo move:\n");
+            full_position_print(pos);
+            printf("\nMove:\n");
+            smove_print(moves[i]);
+            assert(0);
+        }
     }
 
     return nodes;

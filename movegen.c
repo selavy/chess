@@ -305,15 +305,13 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
         if (pc == PC(side,KING)) {
             p->castle &= ~CSL(side);
         } else if (pc == PC(side,ROOK)) {
-            if (fromsq == A1) {
-                p->castle &= ~WQUEENSD;
-            } else if (fromsq == H1) {
-                p->castle &= ~WKINGSD;
-            } else if (fromsq == A8) {
-                p->castle &= ~BQUEENSD;
-            } else if (fromsq == H8) {
-                p->castle &= ~BKINGSD;
-            }
+            switch (fromsq) {
+            case A1: p->castle &= ~WQUEENSD; break;
+            case H1: p->castle &= ~WKINGSD;  break;
+            case A8: p->castle &= ~BQUEENSD; break;
+            case H8: p->castle &= ~BKINGSD;  break;
+            default: break;
+            }            
         }
     } else if (flags == SM_EP) {
         sp->was_ep = 1;
@@ -824,8 +822,8 @@ void undo_move_ex(struct position * restrict p, smove_t m, const struct savepose
             p->brd[PC(BLACK,PAWN)] |= MASK(epsq);
         } else {
             assert(epsq == (tosq + 8));            
-            s2p[epsq] = PC(BLACK,PAWN);
-            p->brd[PC(BLACK,PAWN)] |= MASK(epsq);            
+            s2p[epsq] = PC(WHITE,PAWN);
+            p->brd[PC(WHITE,PAWN)] |= MASK(epsq);            
         }
     } else if (flags == SM_PROMO) {
         p->brd[PC(side,PAWN)] |= from;
