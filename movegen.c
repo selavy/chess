@@ -751,6 +751,12 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     }
 }
 
+void undo_move_ex(struct position * restrict p, smove_t m, const struct saveposex * restrict sp) {
+}
+
+void test_undo_move() {
+}
+
 // returns 1 if a piece from `side` attacks `square`
 int attacks(const struct position * const restrict pos, uint8_t side, int square) {
     uint64_t pcs;
