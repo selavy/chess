@@ -396,34 +396,34 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
     assert(validate_position(p) == 0);
 }
 
-static int move_creation_test() {
+static int test_move_creation() {
     // verify that move creation macro works correctly
     
     int i;
     int ret;
     struct test_t {
-        uint32_t to;
         uint32_t from;
+        uint32_t to;
         uint32_t prm;        
         uint32_t ep;
         uint32_t csl;
     } tests[] = {
-        { E4, E2, SM_FALSE     , SM_FALSE, SM_FALSE }, // regular case
-        { E5, D6, SM_FALSE     , SM_TRUE , SM_FALSE }, // ep case
-        { E7, E8, SM_PRM_QUEEN , SM_FALSE, SM_FALSE }, // prm case - white queen
-        { E7, E8, SM_PRM_ROOK  , SM_FALSE, SM_FALSE }, // prm case - white rook
-        { E7, E8, SM_PRM_BISHOP, SM_FALSE, SM_FALSE }, // prm case - white bishop
-        { E7, E8, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - white knight
-        { E2, E1, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - black knight
-        { E1, G1, SM_FALSE     , SM_FALSE, SM_TRUE  },
-        { H8, A1, SM_FALSE     , SM_FALSE, SM_FALSE },
-        { B1, A1, SM_FALSE     , SM_FALSE, SM_FALSE }
+        { E2, E4, SM_FALSE     , SM_FALSE, SM_FALSE }, // regular case
+        { E6, D5, SM_FALSE     , SM_TRUE , SM_FALSE }, // ep case
+        { E8, E7, SM_PRM_QUEEN , SM_FALSE, SM_FALSE }, // prm case - white queen
+        { E8, E7, SM_PRM_ROOK  , SM_FALSE, SM_FALSE }, // prm case - white rook
+        { E8, E7, SM_PRM_BISHOP, SM_FALSE, SM_FALSE }, // prm case - white bishop
+        { E8, E7, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - white knight
+        { E1, E2, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - black knight
+        { G1, E1, SM_FALSE     , SM_FALSE, SM_TRUE  },
+        { A1, H8, SM_FALSE     , SM_FALSE, SM_FALSE },
+        { A1, B1, SM_FALSE     , SM_FALSE, SM_FALSE }
     };
 
     printf("Testing move creation...\n");
     for (i = 0; i < (sizeof(tests)/sizeof(tests[0])); ++i) {
-        const smove_t mv = SMALLMOVE(tests[i].to,
-                                     tests[i].from,
+        const smove_t mv = SMALLMOVE(tests[i].from,
+                                     tests[i].to,
                                      tests[i].prm,
                                      tests[i].ep,
                                      tests[i].csl);
@@ -455,8 +455,8 @@ static int move_creation_test() {
         }
 
         if (ret != 0) {
-            printf("Failed on test case: (to=%s, frm=%s, prm=%u, ep=%u, csl=%u) sm = 0x%04" PRIx32 "\n",
-                   sq_to_str[tests[i].to], sq_to_str[tests[i].from], tests[i].prm,
+            printf("Failed on test case: (frm=%s, to=%s, prm=%u, ep=%u, csl=%u) sm = 0x%04" PRIx32 "\n",
+                   sq_to_str[tests[i].from], sq_to_str[tests[i].to], tests[i].prm,
                    tests[i].ep, tests[i].csl, mv);
             pbin(mv);
             return ret;
@@ -473,7 +473,7 @@ void test_make_move() {
     struct position tmp;
     struct saveposex sp;
 
-    if (move_creation_test() != 0) {
+    if (test_move_creation() != 0) {
         return;
     }
 

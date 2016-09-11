@@ -38,7 +38,7 @@ smove_t SMALLMOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_
     pbin(gmsk);
     #endif
     
-    return _SMALLMOVE(to, from, prm, ep, csl);
+    return _SMALLMOVE(from, to, prm, ep, csl);
 }
 #endif
 

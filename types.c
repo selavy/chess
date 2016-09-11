@@ -98,8 +98,12 @@ int validate_position(const struct position * const restrict p) {
         for (pc = PC(WHITE,PAWN); pc <= PC(BLACK,KING); ++pc) {
             if ((p->brd[pc] & msk) != 0) {
                 if (p->sqtopc[i] != pc) {
+                    fprintf(stderr, "sqtopc[i] = %d\n", p->sqtopc[i]);
                     fprintf(stderr, "p->brd[%c] != p->sqtopc[%d] = %c, found = %d\n",
-                            vpcs[pc], i, vpcs[p->sqtopc[i]], found);
+                            vpcs[pc],
+                            i,
+                            vpcs[p->sqtopc[i]],
+                            found);
                     return 3;
                 }
                 found = 1;
