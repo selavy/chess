@@ -334,7 +334,7 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
         const uint32_t promopc = PC(side,promo);
         *pcs            &= ~from;
         p->brd[promopc] |= to;
-        s2p[tosq]        = promopc;        
+        s2p[tosq]        = promopc;
         s2p[fromsq]      = EMPTY;
         if (topc != EMPTY) { // capture
             p->brd[topc] &= ~to;
@@ -637,7 +637,7 @@ void test_make_move() {
         0
     };
     if (test_make_move_ex(promo_fen, &promo_moves[0]) != 0) {
-        printf("Failed test for moves from e.p. position!\n");
+        printf("Failed test for moves from promo position!\n");
         return;
     }
     
@@ -794,14 +794,14 @@ void undo_move_ex(struct position * restrict p, smove_t m, const struct savepose
         } else {
         }
     } else if (flags == SM_PROMO) {
-        s2p[fromsq] = pc;
-        *pcs |= from;
-        *pcs &= ~to;
-        s2p[tosq] = cappc;
+        const uint32_t promopc = PC(side,promo);        
+        p->brd[PC(side,PAWN)] |= from;
+        p->brd[promopc] &= ~to;
+        s2p[tosq] = cappc;        
+        s2p[fromsq] = PC(side,PAWN);
         if (cappc != EMPTY) {
-            p->brd[cappc] |= MASK(tosq);
+            p->brd[cappc] |= to;
         }
-        p->brd[promo] &= ~to;
     } else if (flags == SM_CASTLE) {
         assert(pc == PC(side,KING));
         // TODO(plesslie): switch statement?
@@ -899,11 +899,16 @@ int test_undo_move_ex(const char *fen, const smove_t *moves) {
         // restore pos
         undo_move_ex(&pos, *m, &sp);
         if (validate_position(&pos) != 0) {
-            fputs("Failed to undo move!\n", stderr);
+            fputs("validate_position failed after calling undo move!\n", stderr);
             return 1;
+        }
+        if (position_cmp(&pos, &tmp) != 0) {
+            fputs("position_cmp failed after undo_move()\n", stderr);
+            return 1;            
         }
         if (memcmp(&pos, &tmp, sizeof(tmp)) != 0) {
             fputs("memcmp failed after undo_move()\n", stderr);
+            return 1;
         }
         ++m;
     }
@@ -978,7 +983,7 @@ void test_undo_move() {
         0
     };
     if (test_undo_move_ex(promo_fen, &promo_moves[0]) != 0) {
-        printf("Failed test for moves from e.p. position!\n");
+        printf("Failed test for moves from promo position!\n");
         return;
     }
     

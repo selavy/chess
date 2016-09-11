@@ -33,6 +33,7 @@
 #define NO_CAPTURE EMPTY
 #define NO_ENPASSANT 0
 #define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING])
+#define SIDESTR(side) ((side)==WHITE?"WHITE":"BLACK")
 
 enum {
     WHITE=0, BLACK
@@ -92,5 +93,7 @@ extern void set_initial_position(struct position * restrict p);
 
 // TODO: delete
 extern void pbin(uint16_t b);
+extern int position_cmp(const struct position *restrict l, const struct position *restrict r);
+extern void pbbrd(uint64_t bb);
 
 #endif // TYPES__H_
