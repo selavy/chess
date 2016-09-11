@@ -527,9 +527,22 @@ void test_make_move() {
         SMALLMOVE(G1, H3, SM_FALSE, SM_FALSE, SM_FALSE),
         0
     };
-
     if (test_make_move_ex(start_pos_fen, &start_pos_moves[0]) != 0) {
         printf("Failed test for moves from starting position!\n");
+        return;
+    }
+
+    const char *kiwi_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+    smove_t kiwi_moves[] = {
+        SMALLMOVE(E2, A6, SM_FALSE, SM_FALSE, SM_FALSE), // bishop captures bishop
+        SMALLMOVE(G2, H3, SM_FALSE, SM_FALSE, SM_FALSE), // pawn captures pawn
+        SMALLMOVE(D2, G5, SM_FALSE, SM_FALSE, SM_FALSE), // bishop move
+        SMALLMOVE(E1, G1, SM_FALSE, SM_FALSE, SM_TRUE), // castle king side
+        SMALLMOVE(E1, C1, SM_FALSE, SM_FALSE, SM_TRUE), // castle queen side
+        0
+    };
+    if (test_make_move_ex(kiwi_fen, &kiwi_moves[0]) != 0) {
+        printf("Failed test for moves from kiwi position!\n");
         return;
     }
 
