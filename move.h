@@ -31,10 +31,10 @@ extern const uint16_t _sm_translation[5];
 #define PROMO_PC(m) ((((m) >> 12) & 0x03)+1)
 #define FLAGS(m)    (((m) >> 14))
 
-#define SM_NONE   0
-#define SM_EP     1
-#define SM_PROMO  2
-#define SM_CASTLE 3
+#define FLG_NONE   0
+#define FLG_EP     1
+#define FLG_PROMO  2
+#define FLG_CASTLE 3
 
 void smove_print(move mv);
 

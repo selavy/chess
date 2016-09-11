@@ -50,13 +50,13 @@ void smove_print(move mv) {
 
     printf("from(%s) to(%s)", sq_to_str[from], sq_to_str[to]);
     switch (flags) {
-    case SM_EP:
+    case FLG_EP:
         printf(" e.p.");
         break;
-    case SM_PROMO:
+    case FLG_PROMO:
         printf(" promo(%c)", vpcs[PROMOPC[prm]]);
         break;
-    case SM_CASTLE:
+    case FLG_CASTLE:
         printf(" castle");
     default:
         break;

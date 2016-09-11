@@ -29,7 +29,7 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
     printf("make_move_ex: fromsq(%s) tosq(%s) promo(%c) flags(%u) side(%s) "
            "contra(%s) pc(%c) topc(%c) from(0x%08" PRIX64 ") to(0x%08" PRIX64 ") "
            "epsq(%s)\n",
-           sq_to_str[fromsq], sq_to_str[tosq], flags==SM_PROMO?vpcs[promo]:' ', flags, side==WHITE?"WHITE":"BLACK",
+           sq_to_str[fromsq], sq_to_str[tosq], flags==FLG_PROMO?vpcs[promo]:' ', flags, side==WHITE?"WHITE":"BLACK",
            contra==WHITE?"WHITE":"BLACK", vpcs[pc], vpcs[topc], from, to, sq_to_str[epsq]);
     #endif
 
@@ -40,10 +40,10 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
     assert(epsq   >= A1 && epsq   <= H8);
     assert(side   == WHITE || side   == BLACK);
     assert(contra == WHITE || contra == BLACK);
-    assert(flags >= SM_NONE && flags <= SM_CASTLE);
+    assert(flags >= FLG_NONE && flags <= FLG_CASTLE);
     assert(pc   >= PC(WHITE,PAWN) && pc   <= EMPTY);
     assert(topc >= PC(WHITE,PAWN) && topc <= EMPTY);
-    assert(promo != SM_PROMO || (promopc >= PC(side,KNIGHT) && promopc <= PC(side,QUEEN)));
+    assert(promo != FLG_PROMO || (promopc >= PC(side,KNIGHT) && promopc <= PC(side,QUEEN)));
 
     // --- update saveposex ---
     sp->halfmoves   = p->halfmoves;
@@ -55,7 +55,7 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
     p->enpassant = NO_ENPASSANT;
             
     // TODO(plesslie): make this a jump table? (or switch)
-    if (flags == SM_NONE) { // normal case
+    if (flags == FLG_NONE) { // normal case
         *pcs &= ~from;
         *pcs |= to;
         s2p[fromsq] = EMPTY;
@@ -86,7 +86,7 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
             default: break;
             }            
         }
-    } else if (flags == SM_EP) {
+    } else if (flags == FLG_EP) {
         sp->was_ep = 1;
         if (side == WHITE) {
             assert(tosq >= A6 && tosq <= H6);
@@ -113,7 +113,7 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
             s2p[fromsq] = EMPTY;            
             s2p[tosq] = PC(BLACK,PAWN);            
         }
-    } else if (flags == SM_PROMO) {
+    } else if (flags == FLG_PROMO) {
         *pcs            &= ~from;
         p->brd[promopc] |= to;
         s2p[tosq]        = promopc;
@@ -128,7 +128,7 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
             default: break;
             }
         }
-    } else if (flags == SM_CASTLE) {
+    } else if (flags == FLG_CASTLE) {
         assert(pc == PC(side,KING));
         uint64_t *restrict rooks = &p->brd[PC(side,ROOK)];
         if (side == WHITE) {
@@ -298,17 +298,17 @@ static int test_move_creation() {
         } else if (from != tests[i].from) {
             printf("from(%u) != tests[i].from(%u)\n", from, tests[i].from);
             ret = 1;
-        } else if (tests[i].prm != SM_FALSE && flags != SM_PROMO) {
-            printf("prm != FALSE && flags(%u) != SM_PROMO\n", flags);
+        } else if (tests[i].prm != SM_FALSE && flags != FLG_PROMO) {
+            printf("prm != FALSE && flags(%u) != FLG_PROMO\n", flags);
             ret = 1;
         } else if (tests[i].prm != SM_FALSE && prm != tests[i].prm) {
             printf("prm(%u) != tests[i].prm(%u)\n", prm, tests[i].prm);
             ret = 1;
-        } else if (tests[i].ep == SM_TRUE && flags != SM_EP) {
-            printf("ep != FALSE && flags(%u) != SM_EP\n", flags);
+        } else if (tests[i].ep == SM_TRUE && flags != FLG_EP) {
+            printf("ep != FALSE && flags(%u) != FLG_EP\n", flags);
             ret = 1;
-        } else if (tests[i].csl == SM_TRUE && flags != SM_CASTLE) {
-            printf("csl != FALSE && flags(%u) != SM_CASTLE\n", flags);
+        } else if (tests[i].csl == SM_TRUE && flags != FLG_CASTLE) {
+            printf("csl != FALSE && flags(%u) != FLG_CASTLE\n", flags);
             ret = 1;
         } else {
             ret = 0;
@@ -456,10 +456,10 @@ void undo_move_ex(struct position * restrict p, move m, const struct saveposex *
     assert(fromsq >= A1 && fromsq <= H8);
     assert(tosq   >= A1 && tosq   <= H8);
     assert(side == WHITE || side == BLACK);
-    assert(flags >= SM_NONE && flags <= SM_CASTLE);
+    assert(flags >= FLG_NONE && flags <= FLG_CASTLE);
     assert(pc    >= PC(WHITE,PAWN) && pc    <= EMPTY);
     assert(cappc >= PC(WHITE,PAWN) && cappc <= EMPTY);
-    assert(promo != SM_PROMO || (promopc >= PC(side,KNIGHT) && promopc <= PC(side,QUEEN)));
+    assert(promo != FLG_PROMO || (promopc >= PC(side,KNIGHT) && promopc <= PC(side,QUEEN)));
     
     p->halfmoves = sp->halfmoves;
     p->enpassant = sp->enpassant;
@@ -468,7 +468,7 @@ void undo_move_ex(struct position * restrict p, move m, const struct saveposex *
     --p->nmoves;
 
     // TODO(plesslie): make this a jump table? (or switch)
-    if (flags == SM_NONE) {
+    if (flags == FLG_NONE) {
         s2p[fromsq] = pc;
         *pcs |= from;
         *pcs &= ~to;
@@ -476,7 +476,7 @@ void undo_move_ex(struct position * restrict p, move m, const struct saveposex *
         if (cappc != EMPTY) {
             p->brd[cappc] |= MASK(tosq);
         }
-    } else if (flags == SM_EP) {
+    } else if (flags == FLG_EP) {
         s2p[fromsq] = pc;
         *pcs |= from;
         *pcs &= ~to;
@@ -490,7 +490,7 @@ void undo_move_ex(struct position * restrict p, move m, const struct saveposex *
             s2p[epsq] = PC(WHITE,PAWN);
             p->brd[PC(WHITE,PAWN)] |= MASK(epsq);            
         }
-    } else if (flags == SM_PROMO) {
+    } else if (flags == FLG_PROMO) {
         p->brd[PC(side,PAWN)] |= from;
         p->brd[promopc] &= ~to;
         s2p[tosq] = cappc;        
@@ -498,7 +498,7 @@ void undo_move_ex(struct position * restrict p, move m, const struct saveposex *
         if (cappc != EMPTY) {
             p->brd[cappc] |= to;
         }
-    } else if (flags == SM_CASTLE) {
+    } else if (flags == FLG_CASTLE) {
         assert(pc == PC(side,KING));
         // TODO(plesslie): switch statement?
         if (tosq == C1) {
