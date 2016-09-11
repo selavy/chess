@@ -276,6 +276,8 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
         s2p[tosq]   = pc;        
         if (topc != EMPTY) { // capture
             p->brd[topc] &= ~to;
+        } else if (pc == PC(side,PAWN) && (from & RANK2(side)) && (to & EP_SQUARES(side))) {
+            p->enpassant = tosq - 23;
         }
     } else if (flags == SM_EP) {
         sp->was_ep = 1;
@@ -304,6 +306,7 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
             s2p[fromsq] = EMPTY;            
             s2p[tosq] = PC(BLACK,PAWN);            
         }
+        p->enpassant = NO_ENPASSANT;
     } else if (flags == SM_PROMO) {
         const uint32_t promopc = PC(side,promo);
         *pcs            &= ~from;
@@ -313,6 +316,7 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
         if (topc != EMPTY) { // capture
             p->brd[topc] &= ~to;
         }
+        p->enpassant = NO_ENPASSANT;
     } else if (flags == SM_CASTLE) {
         assert(pc == PC(side,KING));
         uint64_t *restrict rooks = &p->brd[PC(side,ROOK)];
@@ -383,6 +387,7 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
             }
             p->castle &= ~(BQUEENSD | BKINGSD);
         }
+        p->enpassant = NO_ENPASSANT;
     } else {
         assert(0);
     }
