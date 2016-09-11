@@ -467,30 +467,18 @@ static int test_move_creation() {
     return 0;
 }
 
-void test_make_move() {
-    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+int test_make_move_ex(const char *fen, const smove_t *moves) {
     struct position pos;
     struct position tmp;
     struct saveposex sp;
 
-    if (test_move_creation() != 0) {
-        return;
-    }
-
     if (read_fen(&pos, fen, 0) != 0) {
         fputs("Failed to read FEN for position!", stderr);
-        return;
+        return 1;
     }
     memcpy(&tmp, &pos, sizeof(tmp));
 
-    printf("Running make move tests...\n");
-    smove_t moves[] = {
-        SMALLMOVE(E2, E4, SM_FALSE, SM_FALSE, SM_FALSE),
-        SMALLMOVE(A2, A3, SM_FALSE, SM_FALSE, SM_FALSE),
-        0
-    };
-    
-    smove_t *m = &moves[0];
+    const smove_t *m = moves;
     while (*m) {
         #ifdef EXTRA_INFO
         printf("Testing: "); smove_print(*m);
@@ -499,12 +487,52 @@ void test_make_move() {
         make_move_ex(&pos, *m, &sp);
         if (validate_position(&pos) != 0) {
             fputs("Failed to make move!\n", stderr);
-            return;
+            return 1;
         }
         // restore pos
         memcpy(&pos, &tmp, sizeof(tmp));
         ++m;
     }
+
+    return 0;
+}
+
+void test_make_move() {
+    if (test_move_creation() != 0) {
+        return;
+    }
+
+    printf("Running make move tests...\n");
+    const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";    
+    smove_t start_pos_moves[] = {
+        SMALLMOVE(A2, A3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(A2, A4, SM_FALSE, SM_FALSE, SM_FALSE),        
+        SMALLMOVE(B2, B3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(B2, B4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(C2, C3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(C2, C4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(D2, D3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(D2, D4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(E2, E3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(E2, E4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(F2, F3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(F2, F4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(G2, G3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(G2, G4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(H2, H3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(H2, H4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(B1, A3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(B1, C3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(G1, F3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(G1, H3, SM_FALSE, SM_FALSE, SM_FALSE),
+        0
+    };
+
+    if (test_make_move_ex(start_pos_fen, &start_pos_moves[0]) != 0) {
+        printf("Failed test for moves from starting position!\n");
+        return;
+    }
+
     printf("Succeeded.\n");
 }
 
