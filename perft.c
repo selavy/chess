@@ -86,6 +86,7 @@ uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove,
                 ++castles;
             } else if (SM_FLAGS(pmove) == SM_EP) {
                 ++enpassants;
+                ++captures; // e.p. don't set the sp->captured_pc flag
             } else if (SM_FLAGS(pmove) == SM_PROMO) {
                 ++promotions;
             }
