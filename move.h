@@ -38,6 +38,7 @@ extern void mprnt(move m);
 
 extern int is_castle(move m);
 
+
 #define SM_TRUE       1
 #define SM_FALSE      0
 #define SM_PRM_NONE   (SM_FALSE)
@@ -46,8 +47,9 @@ extern int is_castle(move m);
 #define SM_PRM_ROOK   3
 #define SM_PRM_QUEEN  4
 typedef uint16_t smove_t;
-// TODO(plesslie): don't actually need to AND off the other bits...
+// TODO(plesslie): make CSLMOVE(), EPMOVE()
 extern const uint16_t _sm_translation[5];
+#define SIMPLEMOVE(from, to) (((to) << 0) | ((from) << 6))
 #define _SMALLMOVE(from, to, prm, ep, csl)              \
     (((to)    <<  0) |                                  \
      ((from)  <<  6) |                                  \
