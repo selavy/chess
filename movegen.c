@@ -49,7 +49,7 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
     sp->halfmoves   = p->halfmoves;
     sp->enpassant   = p->enpassant;
     sp->castle      = p->castle;
-    sp->was_ep      = SM_FALSE;
+    sp->was_ep      = MV_FALSE;
     sp->captured_pc = topc;
 
     p->enpassant = NO_ENPASSANT;
@@ -268,16 +268,16 @@ static int test_move_creation() {
         uint32_t ep;
         uint32_t csl;
     } tests[] = {
-        { E2, E4, SM_FALSE     , SM_FALSE, SM_FALSE }, // regular case
-        { E6, D5, SM_FALSE     , SM_TRUE , SM_FALSE }, // ep case
-        { E8, E7, SM_PRM_QUEEN , SM_FALSE, SM_FALSE }, // prm case - white queen
-        { E8, E7, SM_PRM_ROOK  , SM_FALSE, SM_FALSE }, // prm case - white rook
-        { E8, E7, SM_PRM_BISHOP, SM_FALSE, SM_FALSE }, // prm case - white bishop
-        { E8, E7, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - white knight
-        { E1, E2, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE }, // prm case - black knight
-        { G1, E1, SM_FALSE     , SM_FALSE, SM_TRUE  },
-        { A1, H8, SM_FALSE     , SM_FALSE, SM_FALSE },
-        { A1, B1, SM_FALSE     , SM_FALSE, SM_FALSE }
+        { E2, E4, MV_FALSE     , MV_FALSE, MV_FALSE }, // regular case
+        { E6, D5, MV_FALSE     , MV_TRUE , MV_FALSE }, // ep case
+        { E8, E7, MV_PRM_QUEEN , MV_FALSE, MV_FALSE }, // prm case - white queen
+        { E8, E7, MV_PRM_ROOK  , MV_FALSE, MV_FALSE }, // prm case - white rook
+        { E8, E7, MV_PRM_BISHOP, MV_FALSE, MV_FALSE }, // prm case - white bishop
+        { E8, E7, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE }, // prm case - white knight
+        { E1, E2, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE }, // prm case - black knight
+        { G1, E1, MV_FALSE     , MV_FALSE, MV_TRUE  },
+        { A1, H8, MV_FALSE     , MV_FALSE, MV_FALSE },
+        { A1, B1, MV_FALSE     , MV_FALSE, MV_FALSE }
     };
 
     printf("Testing move creation...\n");
@@ -298,16 +298,16 @@ static int test_move_creation() {
         } else if (from != tests[i].from) {
             printf("from(%u) != tests[i].from(%u)\n", from, tests[i].from);
             ret = 1;
-        } else if (tests[i].prm != SM_FALSE && flags != FLG_PROMO) {
+        } else if (tests[i].prm != MV_FALSE && flags != FLG_PROMO) {
             printf("prm != FALSE && flags(%u) != FLG_PROMO\n", flags);
             ret = 1;
-        } else if (tests[i].prm != SM_FALSE && prm != tests[i].prm) {
+        } else if (tests[i].prm != MV_FALSE && prm != tests[i].prm) {
             printf("prm(%u) != tests[i].prm(%u)\n", prm, tests[i].prm);
             ret = 1;
-        } else if (tests[i].ep == SM_TRUE && flags != FLG_EP) {
+        } else if (tests[i].ep == MV_TRUE && flags != FLG_EP) {
             printf("ep != FALSE && flags(%u) != FLG_EP\n", flags);
             ret = 1;
-        } else if (tests[i].csl == SM_TRUE && flags != FLG_CASTLE) {
+        } else if (tests[i].csl == MV_TRUE && flags != FLG_CASTLE) {
             printf("csl != FALSE && flags(%u) != FLG_CASTLE\n", flags);
             ret = 1;
         } else {
@@ -365,26 +365,26 @@ void test_make_move() {
     printf("Running make move tests...\n");
     const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";    
     move start_pos_moves[] = {
-        MOVE(A2, A3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(A2, A4, SM_FALSE, SM_FALSE, SM_FALSE),        
-        MOVE(B2, B3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(B2, B4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(C2, C3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(C2, C4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(D2, D3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(D2, D4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(E2, E3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(E2, E4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(F2, F3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(F2, F4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(G2, G3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(G2, G4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(H2, H3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(H2, H4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(B1, A3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(B1, C3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(G1, F3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(G1, H3, SM_FALSE, SM_FALSE, SM_FALSE),
+        MOVE(A2, A3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(A2, A4, MV_FALSE, MV_FALSE, MV_FALSE),        
+        MOVE(B2, B3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B2, B4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(C2, C3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(C2, C4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(D2, D3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(D2, D4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(E2, E3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(E2, E4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(F2, F3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(F2, F4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G2, G3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G2, G4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(H2, H3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(H2, H4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B1, A3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B1, C3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G1, F3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G1, H3, MV_FALSE, MV_FALSE, MV_FALSE),
         0
     };
     if (test_make_move_ex(start_pos_fen, &start_pos_moves[0]) != 0) {
@@ -394,14 +394,14 @@ void test_make_move() {
 
     const char *kiwi_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
     move kiwi_moves[] = {
-        MOVE(E2, A6, SM_FALSE, SM_FALSE, SM_FALSE), // bishop captures bishop
-        MOVE(G2, H3, SM_FALSE, SM_FALSE, SM_FALSE), // pawn captures pawn
-        MOVE(D2, G5, SM_FALSE, SM_FALSE, SM_FALSE), // bishop move
-        MOVE(E1, G1, SM_FALSE, SM_FALSE, SM_TRUE ), // castle king side
-        MOVE(E1, C1, SM_FALSE, SM_FALSE, SM_TRUE ), // castle queen side
-        MOVE(F3, H3, SM_FALSE, SM_FALSE, SM_FALSE), // queen captures pawn
-        MOVE(H1, F1, SM_FALSE, SM_FALSE, SM_FALSE), // rook move
-        MOVE(E1, F1, SM_FALSE, SM_FALSE, SM_FALSE), // king move (not castling)
+        MOVE(E2, A6, MV_FALSE, MV_FALSE, MV_FALSE), // bishop captures bishop
+        MOVE(G2, H3, MV_FALSE, MV_FALSE, MV_FALSE), // pawn captures pawn
+        MOVE(D2, G5, MV_FALSE, MV_FALSE, MV_FALSE), // bishop move
+        MOVE(E1, G1, MV_FALSE, MV_FALSE, MV_TRUE ), // castle king side
+        MOVE(E1, C1, MV_FALSE, MV_FALSE, MV_TRUE ), // castle queen side
+        MOVE(F3, H3, MV_FALSE, MV_FALSE, MV_FALSE), // queen captures pawn
+        MOVE(H1, F1, MV_FALSE, MV_FALSE, MV_FALSE), // rook move
+        MOVE(E1, F1, MV_FALSE, MV_FALSE, MV_FALSE), // king move (not castling)
         0
     };
     if (test_make_move_ex(kiwi_fen, &kiwi_moves[0]) != 0) {
@@ -411,7 +411,7 @@ void test_make_move() {
 
     const char *ep_fen = "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6";
     move ep_moves[] = {
-        MOVE(E5, D6, SM_FALSE, SM_TRUE, SM_FALSE),
+        MOVE(E5, D6, MV_FALSE, MV_TRUE, MV_FALSE),
         0
     };
     if (test_make_move_ex(ep_fen, &ep_moves[0]) != 0) {
@@ -421,10 +421,10 @@ void test_make_move() {
 
     const char *promo_fen = "8/1Pp5/7r/8/KR1p1p1k/8/4P1P1/8 w - -";
     move promo_moves[] = {
-        MOVE(B7, B8, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE), // knight promo
-        MOVE(B7, B8, SM_PRM_BISHOP, SM_FALSE, SM_FALSE), // bishop promo
-        MOVE(B7, B8, SM_PRM_ROOK  , SM_FALSE, SM_FALSE), // rook promo
-        MOVE(B7, B8, SM_PRM_QUEEN , SM_FALSE, SM_FALSE), // queen promo
+        MOVE(B7, B8, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE), // knight promo
+        MOVE(B7, B8, MV_PRM_BISHOP, MV_FALSE, MV_FALSE), // bishop promo
+        MOVE(B7, B8, MV_PRM_ROOK  , MV_FALSE, MV_FALSE), // rook promo
+        MOVE(B7, B8, MV_PRM_QUEEN , MV_FALSE, MV_FALSE), // queen promo
         0
     };
     if (test_make_move_ex(promo_fen, &promo_moves[0]) != 0) {
@@ -653,26 +653,26 @@ void test_undo_move() {
     printf("Running undo move tests...\n");
     const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";    
     move start_pos_moves[] = {
-        MOVE(A2, A3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(A2, A4, SM_FALSE, SM_FALSE, SM_FALSE),        
-        MOVE(B2, B3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(B2, B4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(C2, C3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(C2, C4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(D2, D3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(D2, D4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(E2, E3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(E2, E4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(F2, F3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(F2, F4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(G2, G3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(G2, G4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(H2, H3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(H2, H4, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(B1, A3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(B1, C3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(G1, F3, SM_FALSE, SM_FALSE, SM_FALSE),
-        MOVE(G1, H3, SM_FALSE, SM_FALSE, SM_FALSE),
+        MOVE(A2, A3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(A2, A4, MV_FALSE, MV_FALSE, MV_FALSE),        
+        MOVE(B2, B3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B2, B4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(C2, C3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(C2, C4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(D2, D3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(D2, D4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(E2, E3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(E2, E4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(F2, F3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(F2, F4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G2, G3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G2, G4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(H2, H3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(H2, H4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B1, A3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B1, C3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G1, F3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G1, H3, MV_FALSE, MV_FALSE, MV_FALSE),
         0
     };
     if (test_undo_move_ex(start_pos_fen, &start_pos_moves[0]) != 0) {
@@ -682,14 +682,14 @@ void test_undo_move() {
 
     const char *kiwi_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
     move kiwi_moves[] = {
-        MOVE(E2, A6, SM_FALSE, SM_FALSE, SM_FALSE), // bishop captures bishop
-        MOVE(G2, H3, SM_FALSE, SM_FALSE, SM_FALSE), // pawn captures pawn
-        MOVE(D2, G5, SM_FALSE, SM_FALSE, SM_FALSE), // bishop move
-        MOVE(E1, G1, SM_FALSE, SM_FALSE, SM_TRUE ), // castle king side
-        MOVE(E1, C1, SM_FALSE, SM_FALSE, SM_TRUE ), // castle queen side
-        MOVE(F3, H3, SM_FALSE, SM_FALSE, SM_FALSE), // queen captures pawn
-        MOVE(H1, F1, SM_FALSE, SM_FALSE, SM_FALSE), // rook move
-        MOVE(E1, F1, SM_FALSE, SM_FALSE, SM_FALSE), // king move (not castling)
+        MOVE(E2, A6, MV_FALSE, MV_FALSE, MV_FALSE), // bishop captures bishop
+        MOVE(G2, H3, MV_FALSE, MV_FALSE, MV_FALSE), // pawn captures pawn
+        MOVE(D2, G5, MV_FALSE, MV_FALSE, MV_FALSE), // bishop move
+        MOVE(E1, G1, MV_FALSE, MV_FALSE, MV_TRUE ), // castle king side
+        MOVE(E1, C1, MV_FALSE, MV_FALSE, MV_TRUE ), // castle queen side
+        MOVE(F3, H3, MV_FALSE, MV_FALSE, MV_FALSE), // queen captures pawn
+        MOVE(H1, F1, MV_FALSE, MV_FALSE, MV_FALSE), // rook move
+        MOVE(E1, F1, MV_FALSE, MV_FALSE, MV_FALSE), // king move (not castling)
         0
     };
     if (test_undo_move_ex(kiwi_fen, &kiwi_moves[0]) != 0) {
@@ -699,7 +699,7 @@ void test_undo_move() {
 
     const char *ep_fen = "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6";
     move ep_moves[] = {
-        MOVE(E5, D6, SM_FALSE, SM_TRUE, SM_FALSE),
+        MOVE(E5, D6, MV_FALSE, MV_TRUE, MV_FALSE),
         0
     };
     if (test_undo_move_ex(ep_fen, &ep_moves[0]) != 0) {
@@ -709,10 +709,10 @@ void test_undo_move() {
 
     const char *promo_fen = "8/1Pp5/7r/8/KR1p1p1k/8/4P1P1/8 w - -";
     move promo_moves[] = {
-        MOVE(B7, B8, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE), // knight promo
-        MOVE(B7, B8, SM_PRM_BISHOP, SM_FALSE, SM_FALSE), // bishop promo
-        MOVE(B7, B8, SM_PRM_ROOK  , SM_FALSE, SM_FALSE), // rook promo
-        MOVE(B7, B8, SM_PRM_QUEEN , SM_FALSE, SM_FALSE), // queen promo
+        MOVE(B7, B8, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE), // knight promo
+        MOVE(B7, B8, MV_PRM_BISHOP, MV_FALSE, MV_FALSE), // bishop promo
+        MOVE(B7, B8, MV_PRM_ROOK  , MV_FALSE, MV_FALSE), // rook promo
+        MOVE(B7, B8, MV_PRM_QUEEN , MV_FALSE, MV_FALSE), // queen promo
         0
     };
     if (test_undo_move_ex(promo_fen, &promo_moves[0]) != 0) {
@@ -815,7 +815,7 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             (attacks(pos, contraside, F1) == 0) &&
             (attacks(pos, contraside, G1) == 0)) {
             assert(pos->sqtopc[H1] == PC(WHITE,ROOK));
-            moves[nmove++] = MOVE(E1, G1, SM_FALSE, SM_FALSE, SM_TRUE);
+            moves[nmove++] = MOVE(E1, G1, MV_FALSE, MV_FALSE, MV_TRUE);
         }
         if ((castle & WQUEENSD) != 0   &&
             (from == E1)               &&
@@ -826,7 +826,7 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             (attacks(pos, contraside, D1) == 0) &&
             (attacks(pos, contraside, C1) == 0)) {
             assert(pos->sqtopc[A1] == PC(WHITE,ROOK));
-            moves[nmove++] = MOVE(E1, C1, SM_FALSE, SM_FALSE, SM_TRUE);
+            moves[nmove++] = MOVE(E1, C1, MV_FALSE, MV_FALSE, MV_TRUE);
         }
     } else {
         if ((castle & BKINGSD) != 0    &&
@@ -837,7 +837,7 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             (attacks(pos, contraside, F8) == 0) &&
             (attacks(pos, contraside, G8) == 0)) {
             assert(pos->sqtopc[H8] == PC(BLACK,ROOK));
-            moves[nmove++] = MOVE(E8, G8, SM_FALSE, SM_FALSE, SM_TRUE);
+            moves[nmove++] = MOVE(E8, G8, MV_FALSE, MV_FALSE, MV_TRUE);
         }
         if ((castle & BQUEENSD) != 0   &&
             (from == E8)               &&
@@ -848,7 +848,7 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             (attacks(pos, contraside, D8) == 0) &&
             (attacks(pos, contraside, C8) == 0)) {
             assert(pos->sqtopc[A8] == PC(BLACK,ROOK));
-            moves[nmove++] = MOVE(E8, C8, SM_FALSE, SM_FALSE, SM_TRUE);
+            moves[nmove++] = MOVE(E8, C8, MV_FALSE, MV_FALSE, MV_TRUE);
         }
     }
 
@@ -911,10 +911,10 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             from = side == WHITE ? to - 8 : to + 8;
             assert(pos->sqtopc[from] == PC(side,PAWN));
             if (to >= A8 || to <= H1) { // promotion
-                moves[nmove++] = MOVE(from, to, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE);
-                moves[nmove++] = MOVE(from, to, SM_PRM_BISHOP, SM_FALSE, SM_FALSE);
-                moves[nmove++] = MOVE(from, to, SM_PRM_ROOK  , SM_FALSE, SM_FALSE);
-                moves[nmove++] = MOVE(from, to, SM_PRM_QUEEN , SM_FALSE, SM_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_BISHOP, MV_FALSE, MV_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_ROOK  , MV_FALSE, MV_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_QUEEN , MV_FALSE, MV_FALSE);
             } else {
                 moves[nmove++] = SIMPLEMOVE(from, to);
             }
@@ -947,10 +947,10 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             assert(pos->sqtopc[from] == PC(side,PAWN));
             assert(pos->sqtopc[to] != EMPTY);
             if (to >= A8 || to <= H1) { // last rank => promotion
-                moves[nmove++] = MOVE(from, to, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE);
-                moves[nmove++] = MOVE(from, to, SM_PRM_BISHOP, SM_FALSE, SM_FALSE);
-                moves[nmove++] = MOVE(from, to, SM_PRM_ROOK  , SM_FALSE, SM_FALSE);
-                moves[nmove++] = MOVE(from, to, SM_PRM_QUEEN , SM_FALSE, SM_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_BISHOP, MV_FALSE, MV_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_ROOK  , MV_FALSE, MV_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_QUEEN , MV_FALSE, MV_FALSE);
             } else {
                 moves[nmove++] = SIMPLEMOVE(from, to);
             }
@@ -967,10 +967,10 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             assert(pos->sqtopc[from] == PC(side,PAWN));
             assert(pos->sqtopc[to] != EMPTY);
             if (to >= A8 || to <= H1) { // last rank => promotion
-                moves[nmove++] = MOVE(from, to, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE);
-                moves[nmove++] = MOVE(from, to, SM_PRM_BISHOP, SM_FALSE, SM_FALSE);
-                moves[nmove++] = MOVE(from, to, SM_PRM_ROOK  , SM_FALSE, SM_FALSE);
-                moves[nmove++] = MOVE(from, to, SM_PRM_QUEEN , SM_FALSE, SM_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_BISHOP, MV_FALSE, MV_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_ROOK  , MV_FALSE, MV_FALSE);
+                moves[nmove++] = MOVE(from, to, MV_PRM_QUEEN , MV_FALSE, MV_FALSE);
             } else {
                 moves[nmove++] = SIMPLEMOVE(from, to);
             }            
@@ -997,7 +997,7 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
                     assert(pos->sqtopc[from] == PC(side,PAWN));
                     assert(pos->sqtopc[epsq] == PC(contraside,PAWN));
                     assert(pos->sqtopc[to] == EMPTY);
-                    moves[nmove++] = MOVE(from, to, SM_FALSE, SM_TRUE, SM_FALSE);
+                    moves[nmove++] = MOVE(from, to, MV_FALSE, MV_TRUE, MV_FALSE);
                 }
             }
         }
@@ -1018,7 +1018,7 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
                     assert(pos->sqtopc[from] == PC(side,PAWN));
                     assert(pos->sqtopc[epsq] == PC(contraside,PAWN));
                     assert(pos->sqtopc[to] == EMPTY);
-                    moves[nmove++] = MOVE(from, to, SM_FALSE, SM_TRUE, SM_FALSE);
+                    moves[nmove++] = MOVE(from, to, MV_FALSE, MV_TRUE, MV_FALSE);
                 }
             }
         }

@@ -4,25 +4,25 @@
 #include "types.h"
 
 const uint16_t _sm_translation[5] = {
-    SM_PRM_NONE,
-    SM_PRM_KNIGHT-1,
-    SM_PRM_BISHOP-1,
-    SM_PRM_ROOK-1,
-    SM_PRM_QUEEN-1
+    MV_PRM_NONE,
+    MV_PRM_KNIGHT-1,
+    MV_PRM_BISHOP-1,
+    MV_PRM_ROOK-1,
+    MV_PRM_QUEEN-1
 };
 
 #ifndef NDEBUG
 move MOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl) {
-    assert(ep  == SM_TRUE || ep  == SM_FALSE);
-    assert(csl == SM_TRUE || csl == SM_FALSE);
-    assert(prm == SM_PRM_NONE   ||
-           prm == SM_PRM_KNIGHT ||
-           prm == SM_PRM_BISHOP ||
-           prm == SM_PRM_ROOK   ||
-           prm == SM_PRM_QUEEN);
-    assert(ep == SM_FALSE  || (prm == SM_FALSE && csl == SM_FALSE));
-    assert(prm == SM_FALSE || (ep  == SM_FALSE && csl == SM_FALSE));
-    assert(csl == SM_FALSE || (ep  == SM_FALSE && prm == SM_FALSE));
+    assert(ep  == MV_TRUE || ep  == MV_FALSE);
+    assert(csl == MV_TRUE || csl == MV_FALSE);
+    assert(prm == MV_PRM_NONE   ||
+           prm == MV_PRM_KNIGHT ||
+           prm == MV_PRM_BISHOP ||
+           prm == MV_PRM_ROOK   ||
+           prm == MV_PRM_QUEEN);
+    assert(ep == MV_FALSE  || (prm == MV_FALSE && csl == MV_FALSE));
+    assert(prm == MV_FALSE || (ep  == MV_FALSE && csl == MV_FALSE));
+    assert(csl == MV_FALSE || (ep  == MV_FALSE && prm == MV_FALSE));
 
     #if 0    
     const uint16_t flags = ((!!(ep))*1 + (!!(prm))*2 + (!!(csl))*3);    

@@ -3,13 +3,13 @@
 
 #include <stdint.h>
 
-#define SM_TRUE       1
-#define SM_FALSE      0
-#define SM_PRM_NONE   (SM_FALSE)
-#define SM_PRM_KNIGHT 1
-#define SM_PRM_BISHOP 2
-#define SM_PRM_ROOK   3
-#define SM_PRM_QUEEN  4
+#define MV_TRUE       1
+#define MV_FALSE      0
+#define MV_PRM_NONE   (MV_FALSE)
+#define MV_PRM_KNIGHT 1
+#define MV_PRM_BISHOP 2
+#define MV_PRM_ROOK   3
+#define MV_PRM_QUEEN  4
 typedef uint16_t move;
 // TODO(plesslie): make CSLMOVE(), EPMOVE()
 extern const uint16_t _sm_translation[5];
