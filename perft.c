@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "perft.h"
 #include <stdio.h>
 #include <assert.h>
@@ -6,6 +7,7 @@
 #include "types.h"
 #include "movegen.h"
 #include "read_fen.h"
+#include <time.h>
 
 uint64_t checks     = 0;
 uint64_t captures   = 0;
@@ -299,4 +301,35 @@ void test_perft() {
     } else {
         fputs("Success.\n", stdout);
     }    
+}
+
+void deep_perft() {
+    const int max_depth = 8;
+    int depth;
+    uint64_t nodes;
+    struct position pos;
+    struct timespec start, end;
+    uint64_t nanos;
+
+    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+    if (read_fen(&pos, fen, 0) != 0) {
+        fputs("Failed to read FEN for position!", stderr);
+        return;
+    }    
+
+    for (depth = 0; depth < max_depth; ++depth) {
+        reset_counts();
+        clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+        nodes = perft(depth, &pos, 0, EMPTY);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+        nanos = (((end.tv_sec * 1000000000ull) + end.tv_nsec) -
+                 ((start.tv_sec   * 1000000000ull) + start.tv_nsec));
+        
+        printf("Perft(%u): Nodes(%" PRIu64 ") Captures(%" PRIu64 ") "
+               "E.p.(%" PRIu64 ") Castles(%" PRIu64 ") "
+               "Promotions(%" PRIu64 ") Checks(%" PRIu64 ") "
+               "Checkmates(%" PRIu64 "). Nanos = %" PRIu64 "\n",
+               depth, nodes, captures, enpassants, castles, promotions,
+               checks, checkmates, nanos);
+    }
 }

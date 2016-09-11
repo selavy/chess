@@ -22,6 +22,6 @@ extern void test_perft();
 
 extern uint64_t perft(int depth, struct position *const restrict pos, move pmove, int cap);
 
-extern void test_new_perft();
+extern void deep_perft();
 
 #endif // PERFT__H_
