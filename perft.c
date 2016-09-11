@@ -87,12 +87,12 @@ uint64_t perft_bulk(int depth, struct position * const restrict pos) {
     uint32_t nmoves;
     uint64_t nodes = 0;
     struct saveposex sp;
-    move moves[MAX_MOVES];
+    smove_t moves[MAX_MOVES];
 
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
     }
-    nmoves = generate_moves(pos, &moves[0]);
+    nmoves = generate_moves_ex(pos, &moves[0]);
 
     if (depth > 0) {
         for (i = 0; i < nmoves; ++i) {
