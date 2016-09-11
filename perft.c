@@ -203,7 +203,8 @@ static int perft_count_test_ex(const char *name, const char *fen, const struct e
     for (depth = 0; depth < max_depth; ++depth) {
         printf("Beginning depth %d...", depth);
         reset_counts();
-        nodes = perft(depth, &pos, 0);
+        //nodes = perft(depth, &pos, 0);
+        nodes = perft_ex(depth, &pos, 0, EMPTY);
         e = &expected[depth];
         if (nodes != e->nodes) {
             printf("Failed nodes!\n");
