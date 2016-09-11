@@ -10,7 +10,7 @@
 #define SM_PRM_BISHOP 2
 #define SM_PRM_ROOK   3
 #define SM_PRM_QUEEN  4
-typedef uint16_t smove_t;
+typedef uint16_t move;
 // TODO(plesslie): make CSLMOVE(), EPMOVE()
 extern const uint16_t _sm_translation[5];
 #define SIMPLEMOVE(from, to) (((to) << 0) | ((from) << 6))
@@ -23,7 +23,7 @@ extern const uint16_t _sm_translation[5];
 #ifdef NDEBUG
     #define SMALLMOVE _SMALLMOVE
 #else
-    smove_t SMALLMOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl);
+    move SMALLMOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl);
 #endif
 
 #define SM_TO(m)       (((m) >>  0) & 0x3f)
@@ -36,6 +36,6 @@ extern const uint16_t _sm_translation[5];
 #define SM_PROMO  2
 #define SM_CASTLE 3
 
-void smove_print(smove_t mv);
+void smove_print(move mv);
 
 #endif // MOVE__H_

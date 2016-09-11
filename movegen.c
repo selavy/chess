@@ -7,7 +7,7 @@
 
 //#define EXTRA_INFO
 
-void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *restrict sp) {
+void make_move_ex(struct position *restrict p, move m, struct saveposex *restrict sp) {
     // --- loads ---
     const uint8_t  side    = p->wtm;
     const uint8_t  contra  = FLIP(side);    
@@ -282,7 +282,7 @@ static int test_move_creation() {
 
     printf("Testing move creation...\n");
     for (i = 0; i < (sizeof(tests)/sizeof(tests[0])); ++i) {
-        const smove_t mv = SMALLMOVE(tests[i].from,
+        const move mv = SMALLMOVE(tests[i].from,
                                      tests[i].to,
                                      tests[i].prm,
                                      tests[i].ep,
@@ -327,7 +327,7 @@ static int test_move_creation() {
     return 0;
 }
 
-int test_make_move_ex(const char *fen, const smove_t *moves) {
+int test_make_move_ex(const char *fen, const move *moves) {
     struct position pos;
     struct position tmp;
     struct saveposex sp;
@@ -338,7 +338,7 @@ int test_make_move_ex(const char *fen, const smove_t *moves) {
     }
     memcpy(&tmp, &pos, sizeof(tmp));
 
-    const smove_t *m = moves;
+    const move *m = moves;
     while (*m) {
         #ifdef EXTRA_INFO
         printf("Testing: "); smove_print(*m);
@@ -364,7 +364,7 @@ void test_make_move() {
 
     printf("Running make move tests...\n");
     const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";    
-    smove_t start_pos_moves[] = {
+    move start_pos_moves[] = {
         SMALLMOVE(A2, A3, SM_FALSE, SM_FALSE, SM_FALSE),
         SMALLMOVE(A2, A4, SM_FALSE, SM_FALSE, SM_FALSE),        
         SMALLMOVE(B2, B3, SM_FALSE, SM_FALSE, SM_FALSE),
@@ -393,7 +393,7 @@ void test_make_move() {
     }
 
     const char *kiwi_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
-    smove_t kiwi_moves[] = {
+    move kiwi_moves[] = {
         SMALLMOVE(E2, A6, SM_FALSE, SM_FALSE, SM_FALSE), // bishop captures bishop
         SMALLMOVE(G2, H3, SM_FALSE, SM_FALSE, SM_FALSE), // pawn captures pawn
         SMALLMOVE(D2, G5, SM_FALSE, SM_FALSE, SM_FALSE), // bishop move
@@ -410,7 +410,7 @@ void test_make_move() {
     }
 
     const char *ep_fen = "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6";
-    smove_t ep_moves[] = {
+    move ep_moves[] = {
         SMALLMOVE(E5, D6, SM_FALSE, SM_TRUE, SM_FALSE),
         0
     };
@@ -420,7 +420,7 @@ void test_make_move() {
     }
 
     const char *promo_fen = "8/1Pp5/7r/8/KR1p1p1k/8/4P1P1/8 w - -";
-    smove_t promo_moves[] = {
+    move promo_moves[] = {
         SMALLMOVE(B7, B8, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE), // knight promo
         SMALLMOVE(B7, B8, SM_PRM_BISHOP, SM_FALSE, SM_FALSE), // bishop promo
         SMALLMOVE(B7, B8, SM_PRM_ROOK  , SM_FALSE, SM_FALSE), // rook promo
@@ -435,7 +435,7 @@ void test_make_move() {
     printf("Succeeded.\n");
 }
 
-void undo_move_ex(struct position * restrict p, smove_t m, const struct saveposex * restrict sp) {
+void undo_move_ex(struct position * restrict p, move m, const struct saveposex * restrict sp) {
     const uint8_t  side   = FLIP(p->wtm);    
     const uint32_t fromsq = SM_FROM(m);
     const uint32_t tosq   = SM_TO(m);
@@ -606,7 +606,7 @@ void undo_move_ex(struct position * restrict p, smove_t m, const struct savepose
     assert(p->sqtopc[H8] != PC(BLACK,PAWN));
 }
 
-int test_undo_move_ex(const char *fen, const smove_t *moves) {
+int test_undo_move_ex(const char *fen, const move *moves) {
     struct position pos;
     struct position tmp;
     struct saveposex sp;
@@ -617,7 +617,7 @@ int test_undo_move_ex(const char *fen, const smove_t *moves) {
     }
     memcpy(&tmp, &pos, sizeof(tmp));
 
-    const smove_t *m = moves;
+    const move *m = moves;
     while (*m) {
         #ifdef EXTRA_INFO
         printf("Testing: "); smove_print(*m);
@@ -652,7 +652,7 @@ int test_undo_move_ex(const char *fen, const smove_t *moves) {
 void test_undo_move() {
     printf("Running undo move tests...\n");
     const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";    
-    smove_t start_pos_moves[] = {
+    move start_pos_moves[] = {
         SMALLMOVE(A2, A3, SM_FALSE, SM_FALSE, SM_FALSE),
         SMALLMOVE(A2, A4, SM_FALSE, SM_FALSE, SM_FALSE),        
         SMALLMOVE(B2, B3, SM_FALSE, SM_FALSE, SM_FALSE),
@@ -681,7 +681,7 @@ void test_undo_move() {
     }
 
     const char *kiwi_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
-    smove_t kiwi_moves[] = {
+    move kiwi_moves[] = {
         SMALLMOVE(E2, A6, SM_FALSE, SM_FALSE, SM_FALSE), // bishop captures bishop
         SMALLMOVE(G2, H3, SM_FALSE, SM_FALSE, SM_FALSE), // pawn captures pawn
         SMALLMOVE(D2, G5, SM_FALSE, SM_FALSE, SM_FALSE), // bishop move
@@ -698,7 +698,7 @@ void test_undo_move() {
     }
 
     const char *ep_fen = "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6";
-    smove_t ep_moves[] = {
+    move ep_moves[] = {
         SMALLMOVE(E5, D6, SM_FALSE, SM_TRUE, SM_FALSE),
         0
     };
@@ -708,7 +708,7 @@ void test_undo_move() {
     }
 
     const char *promo_fen = "8/1Pp5/7r/8/KR1p1p1k/8/4P1P1/8 w - -";
-    smove_t promo_moves[] = {
+    move promo_moves[] = {
         SMALLMOVE(B7, B8, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE), // knight promo
         SMALLMOVE(B7, B8, SM_PRM_BISHOP, SM_FALSE, SM_FALSE), // bishop promo
         SMALLMOVE(B7, B8, SM_PRM_ROOK  , SM_FALSE, SM_FALSE), // rook promo
@@ -760,7 +760,7 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
     return attacks(pos, FLIP(side), kingloc);
 }
 
-uint32_t generate_moves_ex(const struct position *const restrict pos, smove_t *restrict moves) {
+uint32_t generate_moves_ex(const struct position *const restrict pos, move *restrict moves) {
     uint32_t from;
     uint32_t to;
     uint64_t pcs;

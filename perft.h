@@ -20,7 +20,7 @@ extern int perft_count_test();
 
 extern void test_perft();
 
-extern uint64_t perft(int depth, struct position *const restrict pos, smove_t pmove, int cap);
+extern uint64_t perft(int depth, struct position *const restrict pos, move pmove, int cap);
 
 extern void test_new_perft();
 

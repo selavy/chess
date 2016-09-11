@@ -23,12 +23,12 @@ void reset_counts() {
     checkmates = 0;
 }
 
-uint64_t perft(int depth, struct position *const restrict pos, smove_t pmove, int cap) {
+uint64_t perft(int depth, struct position *const restrict pos, move pmove, int cap) {
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
     struct saveposex sp;
-    smove_t moves[MAX_MOVES];
+    move moves[MAX_MOVES];
     #if 0
     struct position tmp;
     #endif
@@ -87,7 +87,7 @@ uint64_t perft_bulk(int depth, struct position * const restrict pos) {
     uint32_t nmoves;
     uint64_t nodes = 0;
     struct saveposex sp;
-    smove_t moves[MAX_MOVES];
+    move moves[MAX_MOVES];
 
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
