@@ -349,6 +349,13 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
         s2p[fromsq]      = EMPTY;
         if (topc != EMPTY) { // capture
             p->brd[topc] &= ~to;
+            switch (tosq) {
+            case A1: p->castle &= ~WQUEENSD; break;
+            case H1: p->castle &= ~WKINGSD;  break;
+            case A8: p->castle &= ~BQUEENSD; break;
+            case H8: p->castle &= ~BKINGSD;  break;
+            default: break;
+            }
         }
     } else if (flags == SM_CASTLE) {
         assert(pc == PC(side,KING));
@@ -468,6 +475,10 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
     assert(p->sqtopc[H8] != PC(BLACK,PAWN));
     
     // either "cant castle"              OR "king and rook are still on original squares"
+    if (!(((p->castle & WQUEENSD) == 0) || (p->sqtopc[A1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)))) {
+        full_position_print(p);
+        smove_print(m);
+    }
     assert(((p->castle & WQUEENSD) == 0) || (p->sqtopc[A1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)));        
     assert(((p->castle & WKINGSD)  == 0) || (p->sqtopc[H1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)));
     assert(((p->castle & BQUEENSD) == 0) || (p->sqtopc[A8] == PC(BLACK,ROOK) && p->sqtopc[E8] == PC(BLACK,KING)));

@@ -340,7 +340,7 @@ void test_new_perft() {
         return;
     }
     printf("Running test for %s\n", name);
-    for (depth = 0; depth < max_depth; ++depth) {
+    for (depth = 6; depth < max_depth; ++depth) {
         printf("Beginning depth %d...", depth);
         reset_counts();
         nodes = perft_ex(depth, &pos, 0, EMPTY);
