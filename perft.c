@@ -325,7 +325,7 @@ void test_perft() {
 }
 
 void test_new_perft() {
-    const int max_depth = 5;
+    const int max_depth = 7;
     int depth;
     uint64_t nodes;
     struct position pos;

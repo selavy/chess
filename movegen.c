@@ -236,17 +236,18 @@ void make_move(struct position * restrict p, move m, struct savepos * restrict s
 
 void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *restrict sp) {
     // --- loads ---
-    const uint32_t fromsq = SM_FROM(m);
-    const uint32_t tosq   = SM_TO(m);
-    const uint32_t promo  = PROMOPC[SM_PROMO_PC(m)]; // only valid if promo flag set
-    const uint32_t flags  = SM_FLAGS(m);
-    const uint8_t  side   = p->wtm;
-    const uint8_t  contra = FLIP(side);
-    const uint32_t pc     = p->sqtopc[fromsq];
-    const uint32_t topc   = p->sqtopc[tosq];
-    const uint64_t from   = MASK(fromsq);
-    const uint64_t to     = MASK(tosq);
-    const uint32_t epsq   = p->enpassant + 23;       // only valid if ep flag set
+    const uint8_t  side    = p->wtm;
+    const uint8_t  contra  = FLIP(side);    
+    const uint32_t fromsq  = SM_FROM(m);
+    const uint32_t tosq    = SM_TO(m);
+    const uint32_t promo   = PROMOPC[SM_PROMO_PC(m)]; // only valid if promo flag set
+    const uint32_t promopc = PC(side,promo);
+    const uint32_t flags   = SM_FLAGS(m);
+    const uint32_t pc      = p->sqtopc[fromsq];
+    const uint32_t topc    = p->sqtopc[tosq];
+    const uint64_t from    = MASK(fromsq);
+    const uint64_t to      = MASK(tosq);
+    const uint32_t epsq    = p->enpassant + 23;       // only valid if ep flag set
 
     uint64_t *restrict pcs = &p->brd[pc];
     uint8_t  *restrict s2p = p->sqtopc;
@@ -261,6 +262,15 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
 
     // --- validate position before ---
     assert(validate_position(p) == 0);
+    assert(fromsq >= A1 && fromsq <= H8);
+    assert(tosq   >= A1 && tosq   <= H8);
+    assert(epsq   >= A1 && epsq   <= H8);
+    assert(side   == WHITE || side   == BLACK);
+    assert(contra == WHITE || contra == BLACK);
+    assert(flags >= SM_NONE && flags <= SM_CASTLE);
+    assert(pc   >= PC(WHITE,PAWN) && pc   <= EMPTY);
+    assert(topc >= PC(WHITE,PAWN) && topc <= EMPTY);
+    assert(promo != SM_PROMO || (promopc >= PC(side,KNIGHT) && promopc <= PC(side,QUEEN)));
 
     // --- update saveposex ---
     sp->halfmoves   = p->halfmoves;
@@ -333,7 +343,6 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
             s2p[tosq] = PC(BLACK,PAWN);            
         }
     } else if (flags == SM_PROMO) {
-        const uint32_t promopc = PC(side,promo);
         *pcs            &= ~from;
         p->brd[promopc] |= to;
         s2p[tosq]        = promopc;
@@ -753,18 +762,30 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
 }
 
 void undo_move_ex(struct position * restrict p, smove_t m, const struct saveposex * restrict sp) {
+    const uint8_t  side   = FLIP(p->wtm);    
     const uint32_t fromsq = SM_FROM(m);
     const uint32_t tosq   = SM_TO(m);
     const uint32_t promo  = PROMOPC[SM_PROMO_PC(m)]; // only valid if promo flag set
+    const uint32_t promopc = PC(side,promo);        
     const uint32_t flags  = SM_FLAGS(m);
-    const uint8_t  side   = FLIP(p->wtm);
     const uint32_t pc     = p->sqtopc[tosq];
     const uint32_t cappc  = sp->captured_pc;
     const uint64_t from   = MASK(fromsq);
     const uint64_t to     = MASK(tosq);
+    const uint32_t epsq   = sp->enpassant + 23;      // only valid if ep flag set    
 
     uint64_t *restrict pcs = &p->brd[pc];
     uint8_t  *restrict s2p = p->sqtopc;
+
+    // --- validate position before ---
+    assert(validate_position(p) == 0);
+    assert(fromsq >= A1 && fromsq <= H8);
+    assert(tosq   >= A1 && tosq   <= H8);
+    assert(side == WHITE || side == BLACK);
+    assert(flags >= SM_NONE && flags <= SM_CASTLE);
+    assert(pc    >= PC(WHITE,PAWN) && pc    <= EMPTY);
+    assert(cappc >= PC(WHITE,PAWN) && cappc <= EMPTY);
+    assert(promo != SM_PROMO || (promopc >= PC(side,KNIGHT) && promopc <= PC(side,QUEEN)));
     
     p->halfmoves = sp->halfmoves;
     p->enpassant = sp->enpassant;
@@ -787,14 +808,15 @@ void undo_move_ex(struct position * restrict p, smove_t m, const struct savepose
         *pcs &= ~to;
         s2p[tosq] = EMPTY;
         if (side == WHITE) {
-            assert(tosq >= A6 && tosq <= H6);
-            const int epsq = tosq - 8;
+            assert(epsq == (tosq - 8));
             s2p[epsq] = PC(BLACK,PAWN);
             p->brd[PC(BLACK,PAWN)] |= MASK(epsq);
         } else {
+            assert(epsq == (tosq + 8));            
+            s2p[epsq] = PC(BLACK,PAWN);
+            p->brd[PC(BLACK,PAWN)] |= MASK(epsq);            
         }
     } else if (flags == SM_PROMO) {
-        const uint32_t promopc = PC(side,promo);        
         p->brd[PC(side,PAWN)] |= from;
         p->brd[promopc] &= ~to;
         s2p[tosq] = cappc;        
@@ -871,6 +893,43 @@ void undo_move_ex(struct position * restrict p, smove_t m, const struct savepose
     } else {
         assert(0);
     }
+
+    // --- validate position after ---
+    assert(validate_position(p) == 0);
+    
+    // no pawns on 1st or 8th ranks
+    assert(p->sqtopc[A1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[B1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[C1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[D1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[E1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[F1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[G1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[H1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[A1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[B1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[C1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[D1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[E1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[F1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[G1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[H1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[A8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[B8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[C8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[D8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[E8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[F8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[G8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[H8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[A8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[B8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[C8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[D8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[E8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[F8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[G8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[H8] != PC(BLACK,PAWN));
 }
 
 int test_undo_move_ex(const char *fen, const smove_t *moves) {
@@ -986,7 +1045,8 @@ void test_undo_move() {
         printf("Failed test for moves from promo position!\n");
         return;
     }
-    
+
+    printf("Success.\n");
 }
 
 // returns 1 if a piece from `side` attacks `square`
@@ -1304,7 +1364,6 @@ uint32_t generate_moves(const struct position * const restrict pos, move * restr
 uint32_t generate_moves_ex(const struct position *const restrict pos, smove_t *restrict moves) {
     uint32_t from;
     uint32_t to;
-    uint32_t pc;
     uint64_t pcs;
     uint64_t msk;
     uint64_t posmoves;
@@ -1320,7 +1379,6 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, smove_t *r
     // knight moves
     pcs = PIECES(*pos, side, KNIGHT);
     if (pcs != 0) {
-        pc = PC(side, KNIGHT);
         for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
             if ((pcs & 0x01) != 0) {
                 posmoves = knight_attacks[from] & opp_or_empty;
@@ -1337,10 +1395,9 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, smove_t *r
     // king moves
     pcs = PIECES(*pos, side, KING);
     assert(pcs != 0);
-    pc = PC(side, KING);
     for (from = 0; from < 64 && (pcs & 0x01) == 0; ++from, pcs >>= 1);
     assert(from < 64 && from >= 0);
-    assert(pos->sqtopc[from] == pc);
+    assert(pos->sqtopc[from] == PC(side,KING));
     posmoves = king_attacks[from] & opp_or_empty;
     for (to = 0; posmoves; ++to, posmoves >>= 1) {
         msk = MASK(to);
@@ -1399,7 +1456,6 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, smove_t *r
     // bishop moves
     pcs = PIECES(*pos, side, BISHOP);
     if (pcs != 0) {
-        pc = PC(side, BISHOP);
         for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
             if ((pcs & 0x01) != 0) {
                 posmoves = bishop_attacks(from, occupied);
@@ -1416,7 +1472,6 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, smove_t *r
     // rook moves
     pcs = PIECES(*pos, side, ROOK);
     if (pcs != 0) {
-        pc = PC(side, ROOK);
         for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
             if ((pcs & 0x01) != 0) {
                 posmoves = rook_attacks(from, occupied);
@@ -1433,7 +1488,6 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, smove_t *r
     // queen moves
     pcs = PIECES(*pos, side, QUEEN);
     if (pcs != 0) {
-        pc = PC(side, QUEEN);
         for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
             if ((pcs & 0x01) != 0) {
                 posmoves = queen_attacks(from, occupied);
@@ -1448,7 +1502,6 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, smove_t *r
     }
 
     // pawn moves
-    pc = PC(side, PAWN);
     pcs = PIECES(*pos, side, PAWN);
 
     // forward 1 square
