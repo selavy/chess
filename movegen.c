@@ -276,8 +276,30 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
         s2p[tosq]   = pc;        
         if (topc != EMPTY) { // capture
             p->brd[topc] &= ~to;
+            if (tosq == A8) {
+                p->castle &= ~BQUEENSD;
+            } else if (tosq == H8) {
+                p->castle &= ~BKINGSD;
+            } else if (tosq == A1) {
+                p->castle &= ~WQUEENSD;
+            } else if (tosq == H1) {
+                p->castle &= ~WKINGSD;
+            }
         } else if (pc == PC(side,PAWN) && (from & RANK2(side)) && (to & EP_SQUARES(side))) {
             p->enpassant = tosq - 23;
+        }
+        if (pc == PC(side,KING)) {
+            p->castle &= ~CSL(side);
+        } else if (pc == PC(side,ROOK)) {
+            if (fromsq == A1) {
+                p->castle &= ~WQUEENSD;
+            } else if (fromsq == H1) {
+                p->castle &= ~WKINGSD;
+            } else if (fromsq == A8) {
+                p->castle &= ~BQUEENSD;
+            } else if (fromsq == H8) {
+                p->castle &= ~BKINGSD;
+            }
         }
     } else if (flags == SM_EP) {
         sp->was_ep = 1;
@@ -399,6 +421,47 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
 
     // --- validate position after ---
     assert(validate_position(p) == 0);
+    assert((p->enpassant == NO_ENPASSANT) || (pc == PC(WHITE,PAWN) || pc == PC(BLACK,PAWN)));
+    
+    // no pawns on 1st or 8th ranks
+    assert(p->sqtopc[A1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[B1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[C1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[D1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[E1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[F1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[G1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[H1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[A1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[B1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[C1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[D1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[E1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[F1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[G1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[H1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[A8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[B8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[C8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[D8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[E8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[F8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[G8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[H8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[A8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[B8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[C8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[D8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[E8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[F8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[G8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[H8] != PC(BLACK,PAWN));
+    
+    // either "cant castle"              OR "king and rook are still on original squares"
+    assert(((p->castle & WQUEENSD) == 0) || (p->sqtopc[A1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)));        
+    assert(((p->castle & WKINGSD)  == 0) || (p->sqtopc[H1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)));
+    assert(((p->castle & BQUEENSD) == 0) || (p->sqtopc[A8] == PC(BLACK,ROOK) && p->sqtopc[E8] == PC(BLACK,KING)));
+    assert(((p->castle & BKINGSD)  == 0) || (p->sqtopc[H8] == PC(BLACK,ROOK) && p->sqtopc[E8] == PC(BLACK,KING)));
 }
 
 static int test_move_creation() {

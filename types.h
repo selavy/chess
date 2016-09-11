@@ -55,7 +55,7 @@ enum {
     WKINGSD  = (1<<0), WQUEENSD = (1<<1),
     BKINGSD  = (1<<2), BQUEENSD = (1<<3),
 };
-
+#define CSL(side) ((side) == WHITE ? (WKINGSD|WQUEENSD) : (BKINGSD|BQUEENSD))
 struct position {
     uint64_t brd[NPIECES*2];  // 8 * 12 = 96B
     uint8_t  sqtopc[SQUARES]; // 1 * 64 = 64B
