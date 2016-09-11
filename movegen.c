@@ -5,7 +5,7 @@
 #include "types.h"
 #include "read_fen.h"
 
-#define EXTRA_INFO
+//#define EXTRA_INFO
 
 void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
     uint32_t pc = PIECE(m);
