@@ -11,11 +11,11 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
     // --- loads ---
     const uint8_t  side    = p->wtm;
     const uint8_t  contra  = FLIP(side);    
-    const uint32_t fromsq  = SM_FROM(m);
-    const uint32_t tosq    = SM_TO(m);
-    const uint32_t promo   = PROMOPC[SM_PROMO_PC(m)]; // only valid if promo flag set
+    const uint32_t fromsq  = FROM(m);
+    const uint32_t tosq    = TO(m);
+    const uint32_t promo   = PROMOPC[PROMO_PC(m)]; // only valid if promo flag set
     const uint32_t promopc = PC(side,promo);
-    const uint32_t flags   = SM_FLAGS(m);
+    const uint32_t flags   = FLAGS(m);
     const uint32_t pc      = p->sqtopc[fromsq];
     const uint32_t topc    = p->sqtopc[tosq];
     const uint64_t from    = MASK(fromsq);
@@ -287,10 +287,10 @@ static int test_move_creation() {
                                      tests[i].prm,
                                      tests[i].ep,
                                      tests[i].csl);
-        const uint32_t to    = SM_TO(mv);
-        const uint32_t from  = SM_FROM(mv);
-        const uint32_t prm   = SM_PROMO_PC(mv);
-        const uint32_t flags = SM_FLAGS(mv);
+        const uint32_t to    = TO(mv);
+        const uint32_t from  = FROM(mv);
+        const uint32_t prm   = PROMO_PC(mv);
+        const uint32_t flags = FLAGS(mv);
 
         if (to != tests[i].to) {
             printf("to(%u) != tests[i].to(%u)\n", to, tests[i].to);
@@ -437,11 +437,11 @@ void test_make_move() {
 
 void undo_move_ex(struct position * restrict p, move m, const struct saveposex * restrict sp) {
     const uint8_t  side   = FLIP(p->wtm);    
-    const uint32_t fromsq = SM_FROM(m);
-    const uint32_t tosq   = SM_TO(m);
-    const uint32_t promo  = PROMOPC[SM_PROMO_PC(m)]; // only valid if promo flag set
+    const uint32_t fromsq = FROM(m);
+    const uint32_t tosq   = TO(m);
+    const uint32_t promo  = PROMOPC[PROMO_PC(m)]; // only valid if promo flag set
     const uint32_t promopc = PC(side,promo);        
-    const uint32_t flags  = SM_FLAGS(m);
+    const uint32_t flags  = FLAGS(m);
     const uint32_t pc     = p->sqtopc[tosq];
     const uint32_t cappc  = sp->captured_pc;
     const uint64_t from   = MASK(fromsq);

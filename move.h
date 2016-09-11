@@ -26,10 +26,10 @@ extern const uint16_t _sm_translation[5];
     move SMALLMOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl);
 #endif
 
-#define SM_TO(m)       (((m) >>  0) & 0x3f)
-#define SM_FROM(m)     (((m) >>  6) & 0x3f)
-#define SM_PROMO_PC(m) ((((m) >> 12) & 0x03)+1)
-#define SM_FLAGS(m)    (((m) >> 14))
+#define TO(m)       (((m) >>  0) & 0x3f)
+#define FROM(m)     (((m) >>  6) & 0x3f)
+#define PROMO_PC(m) ((((m) >> 12) & 0x03)+1)
+#define FLAGS(m)    (((m) >> 14))
 
 #define SM_NONE   0
 #define SM_EP     1

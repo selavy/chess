@@ -44,12 +44,12 @@ uint64_t perft(int depth, struct position *const restrict pos, move pmove, int c
             if (cap != EMPTY) {
                 ++captures;
             }
-            if (SM_FLAGS(pmove) == SM_CASTLE) {
+            if (FLAGS(pmove) == SM_CASTLE) {
                 ++castles;
-            } else if (SM_FLAGS(pmove) == SM_EP) {
+            } else if (FLAGS(pmove) == SM_EP) {
                 ++enpassants;
                 ++captures; // e.p. don't set the sp->captured_pc flag
-            } else if (SM_FLAGS(pmove) == SM_PROMO) {
+            } else if (FLAGS(pmove) == SM_PROMO) {
                 ++promotions;
             }
         }
