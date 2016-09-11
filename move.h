@@ -14,16 +14,16 @@ typedef uint16_t move;
 // TODO(plesslie): make CSLMOVE(), EPMOVE()
 extern const uint16_t _sm_translation[5];
 #define SIMPLEMOVE(from, to) (((to) << 0) | ((from) << 6))
-#define _SMALLMOVE(from, to, prm, ep, csl)              \
+#define _MOVE(from, to, prm, ep, csl)              \
     (((to)    <<  0) |                                  \
      ((from)  <<  6) |                                  \
      (_sm_translation[prm] << 12) |                     \
      (((!!(ep))*1 + (!!(prm))*2 + (!!(csl))*3) << 14))
 
 #ifdef NDEBUG
-    #define SMALLMOVE _SMALLMOVE
+    #define MOVE _MOVE
 #else
-    move SMALLMOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl);
+    move MOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl);
 #endif
 
 #define TO(m)       (((m) >>  0) & 0x3f)
