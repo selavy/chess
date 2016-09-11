@@ -23,50 +23,7 @@ void reset_counts() {
     checkmates = 0;
 }
 
-uint64_t perft(int depth, struct position * const restrict pos, move pmove) {
-    uint32_t i;
-    uint32_t nmoves;
-    uint64_t nodes = 0;
-    struct savepos sp;
-    move moves[MAX_MOVES];
-    
-    if (in_check(pos, FLIP(pos->wtm))) {
-        return 0;
-    }
-    if (depth == 0) {
-        if (pmove != 0) {
-            if (in_check(pos, pos->wtm) != 0) {
-                ++checks;
-            }
-            if (is_castle(pmove) != 0) {
-                ++castles;
-            }
-            if (CAPTURE(pmove) != NO_CAPTURE) {
-                ++captures;
-                if (ENPASSANT(pmove) != 0) {
-                    ++enpassants;
-                }
-            }
-            if (PROMOTE(pmove) != NO_PROMOTION) {
-                ++promotions;
-            }
-        }
-        return 1;
-    }
-    
-    nmoves = generate_moves(pos, &moves[0]);
-    for (i = 0; i < nmoves; ++i) {
-        make_move(pos, moves[i], &sp);
-        assert(validate_position(pos) == 0);
-        nodes += perft(depth - 1, pos, moves[i]);
-        undo_move(pos, moves[i], &sp);
-        assert(validate_position(pos) == 0);
-    }
-
-    return nodes;
-}
-
-uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove, int cap) {
+uint64_t perft(int depth, struct position *const restrict pos, smove_t pmove, int cap) {
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
@@ -106,7 +63,7 @@ uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove,
     for (i = 0; i < nmoves; ++i) {
         make_move_ex(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
-        nodes += perft_ex(depth - 1, pos, moves[i], sp.captured_pc);
+        nodes += perft(depth - 1, pos, moves[i], sp.captured_pc);
         undo_move_ex(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
         #if 0
@@ -129,7 +86,7 @@ uint64_t perft_bulk(int depth, struct position * const restrict pos) {
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
-    struct savepos sp;
+    struct saveposex sp;
     move moves[MAX_MOVES];
 
     if (in_check(pos, FLIP(pos->wtm))) {
@@ -139,10 +96,10 @@ uint64_t perft_bulk(int depth, struct position * const restrict pos) {
 
     if (depth > 0) {
         for (i = 0; i < nmoves; ++i) {
-            make_move(pos, moves[i], &sp);
+            make_move_ex(pos, moves[i], &sp);
             assert(validate_position(pos) == 0);
-            nodes += perft(depth - 1, pos, moves[i]);
-            undo_move(pos, moves[i], &sp);
+            nodes += perft(depth - 1, pos, moves[i], sp.captured_pc);
+            undo_move_ex(pos, moves[i], &sp);
             assert(validate_position(pos) == 0);
         }
     }
@@ -164,7 +121,7 @@ static int perft_bulk_test_ex(const char *name, const char *fen, const uint64_t 
     for (depth = 0; depth < max_depth; ++depth) {
         printf("Beginning depth %d...", depth);
         reset_counts();
-        nodes = perft(depth, &pos, 0);
+        nodes = perft(depth, &pos, 0, EMPTY);
         if (nodes != expected[depth]) {
             printf("Failed nodes!\n");
             printf("Expected = %" PRIu64 ", Actual = %" PRIu64 "\n",
@@ -203,8 +160,7 @@ static int perft_count_test_ex(const char *name, const char *fen, const struct e
     for (depth = 0; depth < max_depth; ++depth) {
         printf("Beginning depth %d...", depth);
         reset_counts();
-        //nodes = perft(depth, &pos, 0);
-        nodes = perft_ex(depth, &pos, 0, EMPTY);
+        nodes = perft(depth, &pos, 0, EMPTY);
         e = &expected[depth];
         if (nodes != e->nodes) {
             printf("Failed nodes!\n");
@@ -343,30 +299,4 @@ void test_perft() {
     } else {
         fputs("Success.\n", stdout);
     }    
-}
-
-void test_new_perft() {
-    const int max_depth = 8;
-    int depth;
-    uint64_t nodes;
-    struct position pos;
-    const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
-    const char *name = "starting position";
-
-
-    const char *fen = start_pos_fen;
-    if (read_fen(&pos, fen, 0) != 0) {
-        fputs("Failed to read FEN for position!", stderr);
-        return;
-    }
-    printf("Running test for %s\n", name);
-    for (depth = 0; depth < max_depth; ++depth) {
-        printf("Beginning depth %d...", depth);
-        reset_counts();
-        nodes = perft_ex(depth, &pos, 0, EMPTY);
-        printf("Perft(%u): Nodes(%" PRIu64 ") Captures(%" PRIu64 ") E.p.(%" PRIu64 ") "
-               "Castles(%" PRIu64 ") Promotions(%" PRIu64 ") Checks(%" PRIu64 ") "
-               "Checkmates(%" PRIu64 ")\n",
-               depth, nodes, captures, enpassants, castles, promotions, checks, checkmates);
-    }
 }

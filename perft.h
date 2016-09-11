@@ -14,15 +14,13 @@ extern uint64_t checkmates;
 
 extern void reset_counts();
 
-extern uint64_t perft(int depth, struct position * const restrict pos, move pmove);
-
 extern uint64_t perft_bulk(int depth, struct position * const restrict pos);
 
 extern int perft_count_test();
 
 extern void test_perft();
 
-extern uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove, int cap);
+extern uint64_t perft(int depth, struct position *const restrict pos, smove_t pmove, int cap);
 
 extern void test_new_perft();
 
