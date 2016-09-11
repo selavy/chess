@@ -248,7 +248,7 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
     // either "cant castle"              OR "king and rook are still on original squares"
     if (!(((p->castle & WQUEENSD) == 0) || (p->sqtopc[A1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)))) {
         full_position_print(p);
-        smove_print(m);
+        move_print(m);
     }
     assert(((p->castle & WQUEENSD) == 0) || (p->sqtopc[A1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)));        
     assert(((p->castle & WKINGSD)  == 0) || (p->sqtopc[H1] == PC(WHITE,ROOK) && p->sqtopc[E1] == PC(WHITE,KING)));
@@ -341,7 +341,7 @@ int test_make_move_ex(const char *fen, const move *moves) {
     const move *m = moves;
     while (*m) {
         #ifdef EXTRA_INFO
-        printf("Testing: "); smove_print(*m);
+        printf("Testing: "); move_print(*m);
         #endif
         
         make_move_ex(&pos, *m, &sp);
@@ -620,7 +620,7 @@ int test_undo_move_ex(const char *fen, const move *moves) {
     const move *m = moves;
     while (*m) {
         #ifdef EXTRA_INFO
-        printf("Testing: "); smove_print(*m);
+        printf("Testing: "); move_print(*m);
         #endif
         
         make_move_ex(&pos, *m, &sp);

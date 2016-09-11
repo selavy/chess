@@ -73,7 +73,7 @@ uint64_t perft(int depth, struct position *const restrict pos, move pmove, int c
             printf("\n\nAfter undo move:\n");
             full_position_print(pos);
             printf("\nMove:\n");
-            smove_print(moves[i]);
+            move_print(moves[i]);
             assert(0);
         }
         #endif

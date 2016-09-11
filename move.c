@@ -42,7 +42,7 @@ move SMALLMOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t c
 }
 #endif
 
-void smove_print(move mv) {
+void move_print(move mv) {
     const uint32_t to    = TO(mv);
     const uint32_t from  = FROM(mv);
     const uint32_t prm   = PROMO_PC(mv);
