@@ -72,7 +72,9 @@ uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove,
     uint64_t nodes = 0;
     struct saveposex sp;
     smove_t moves[MAX_MOVES];
+    #if 0
     struct position tmp;
+    #endif
     
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
@@ -96,8 +98,10 @@ uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove,
         }
         return 1;
     }
-    
+
+    #if 0
     memcpy(&tmp, pos, sizeof(tmp));
+    #endif
     nmoves = generate_moves_ex(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
         make_move_ex(pos, moves[i], &sp);
@@ -105,7 +109,7 @@ uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove,
         nodes += perft_ex(depth - 1, pos, moves[i], sp.captured_pc);
         undo_move_ex(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
-        //assert(memcmp(&tmp, pos, sizeof(tmp)) == 0);
+        #if 0
         if (memcmp(&tmp, pos, sizeof(tmp)) != 0) {
             printf("Original position:\n");
             full_position_print(&tmp);
@@ -115,6 +119,7 @@ uint64_t perft_ex(int depth, struct position *const restrict pos, smove_t pmove,
             smove_print(moves[i]);
             assert(0);
         }
+        #endif
     }
 
     return nodes;
@@ -340,7 +345,7 @@ void test_perft() {
 }
 
 void test_new_perft() {
-    const int max_depth = 7;
+    const int max_depth = 8;
     int depth;
     uint64_t nodes;
     struct position pos;
@@ -354,7 +359,7 @@ void test_new_perft() {
         return;
     }
     printf("Running test for %s\n", name);
-    for (depth = 6; depth < max_depth; ++depth) {
+    for (depth = 0; depth < max_depth; ++depth) {
         printf("Beginning depth %d...", depth);
         reset_counts();
         nodes = perft_ex(depth, &pos, 0, EMPTY);
