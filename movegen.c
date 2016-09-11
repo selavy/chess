@@ -5,7 +5,7 @@
 #include "types.h"
 #include "read_fen.h"
 
-#define EXTRA_INFO
+//#define EXTRA_INFO
 
 void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
     uint32_t pc = PIECE(m);
@@ -251,9 +251,9 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
     #ifdef EXTRA_INFO
     printf("make_move_ex: fromsq(%s) tosq(%s) promo(%u) flags(%u) side(%s) "
            "contra(%s) pc(%c) topc(%c) from(0x%08" PRIX64 ") to(0x%08" PRIX64 ") "
-           "epsq(%u)\n",
+           "epsq(%s)\n",
            sq_to_str[fromsq], sq_to_str[tosq], promo, flags, side==WHITE?"WHITE":"BLACK",
-           contra==WHITE?"WHITE":"BLACK", vpcs[pc], vpcs[topc], from, to, epsq);
+           contra==WHITE?"WHITE":"BLACK", vpcs[pc], vpcs[topc], from, to, sq_to_str[epsq]);
     #endif
     
     uint64_t *restrict pcs = &p->brd[pc];
@@ -285,7 +285,7 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
             assert(epsq != NO_ENPASSANT);
             assert(s2p[epsq] == PC(BLACK,PAWN));
             assert(epsq == (tosq - 8));
-            *pcs &= from;
+            *pcs &= ~from;
             *pcs |= to;
             p->brd[PC(BLACK,PAWN)] &= ~MASK(epsq);
             s2p[epsq] = EMPTY;
@@ -297,7 +297,7 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
             assert(epsq != NO_ENPASSANT);
             assert(s2p[epsq] == PC(WHITE,PAWN));
             assert(epsq == (tosq + 8));
-            *pcs &= from;
+            *pcs &= ~from;
             *pcs |= to;
             p->brd[PC(WHITE,PAWN)] &= ~MASK(epsq);            
             s2p[epsq] = EMPTY;
@@ -306,7 +306,7 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
         }
     } else if (flags == SM_PROMO) {
         const uint32_t promopc = PC(side,promo);
-        *pcs &= from;
+        *pcs &= ~from;
         p->brd[promopc] |= to;
         s2p[to]   = promopc;        
         s2p[from] = EMPTY;
@@ -537,8 +537,11 @@ void test_make_move() {
         SMALLMOVE(E2, A6, SM_FALSE, SM_FALSE, SM_FALSE), // bishop captures bishop
         SMALLMOVE(G2, H3, SM_FALSE, SM_FALSE, SM_FALSE), // pawn captures pawn
         SMALLMOVE(D2, G5, SM_FALSE, SM_FALSE, SM_FALSE), // bishop move
-        SMALLMOVE(E1, G1, SM_FALSE, SM_FALSE, SM_TRUE), // castle king side
-        SMALLMOVE(E1, C1, SM_FALSE, SM_FALSE, SM_TRUE), // castle queen side
+        SMALLMOVE(E1, G1, SM_FALSE, SM_FALSE, SM_TRUE ), // castle king side
+        SMALLMOVE(E1, C1, SM_FALSE, SM_FALSE, SM_TRUE ), // castle queen side
+        SMALLMOVE(F3, H3, SM_FALSE, SM_FALSE, SM_FALSE), // queen captures pawn
+        SMALLMOVE(H1, F1, SM_FALSE, SM_FALSE, SM_FALSE), // rook move
+        SMALLMOVE(E1, F1, SM_FALSE, SM_FALSE, SM_FALSE), // king move (not castling)
         0
     };
     if (test_make_move_ex(kiwi_fen, &kiwi_moves[0]) != 0) {
@@ -546,6 +549,16 @@ void test_make_move() {
         return;
     }
 
+    const char *ep_fen = "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6";
+    smove_t ep_moves[] = {
+        SMALLMOVE(E5, D6, SM_FALSE, SM_TRUE, SM_FALSE),
+        0
+    };
+    if (test_make_move_ex(ep_fen, &ep_moves[0]) != 0) {
+        printf("Failed test for moves from e.p. position!\n");
+        return;
+    }
+    
     printf("Succeeded.\n");
 }
 

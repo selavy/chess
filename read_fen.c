@@ -126,10 +126,11 @@ int read_fen(struct position * restrict pos, const char * const fen, int print) 
         if ((sq >= A3 && sq <= H3) || (sq >= A6 && sq <= H6)) {
             // I store the square the pawn moved to, FEN gives the square behind the pawn
             if (pos->wtm == WHITE) {
-                pos->enpassant = sq + 8 - 23;
-            } else {
                 pos->enpassant = sq - 8 - 23;
+            } else {
+                pos->enpassant = sq + 8 - 23;
             }
+            //printf("pos->enpassant = %d -> %s\n", pos->enpassant, sq_to_str[pos->enpassant+23]);
         } else {
             fprintf(stderr, "Invalid enpassant square: %d\n", sq);
             return 1;
