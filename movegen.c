@@ -248,6 +248,9 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
     const uint64_t to     = MASK(tosq);
     const uint32_t epsq   = p->enpassant + 23;       // only valid if ep flag set
 
+    uint64_t *restrict pcs = &p->brd[pc];
+    uint8_t  *restrict s2p = p->sqtopc;
+    
     #ifdef EXTRA_INFO
     printf("make_move_ex: fromsq(%s) tosq(%s) promo(%c) flags(%u) side(%s) "
            "contra(%s) pc(%c) topc(%c) from(0x%08" PRIX64 ") to(0x%08" PRIX64 ") "
@@ -255,18 +258,16 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
            sq_to_str[fromsq], sq_to_str[tosq], flags==SM_PROMO?vpcs[promo]:' ', flags, side==WHITE?"WHITE":"BLACK",
            contra==WHITE?"WHITE":"BLACK", vpcs[pc], vpcs[topc], from, to, sq_to_str[epsq]);
     #endif
-    
-    uint64_t *restrict pcs = &p->brd[pc];
-    uint8_t  *restrict s2p = p->sqtopc;
 
     // --- validate position before ---
     assert(validate_position(p) == 0);
 
     // --- update saveposex ---
-    sp->halfmoves = p->halfmoves;
-    sp->enpassant = p->enpassant;
-    sp->castle    = p->castle;
-    sp->was_ep    = SM_FALSE;
+    sp->halfmoves   = p->halfmoves;
+    sp->enpassant   = p->enpassant;
+    sp->castle      = p->castle;
+    sp->was_ep      = SM_FALSE;
+    sp->captured_pc = topc;
 
     // TODO(plesslie): make this a jump table? (or switch)
     if (flags == SM_NONE) { // normal case
@@ -752,9 +753,235 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
 }
 
 void undo_move_ex(struct position * restrict p, smove_t m, const struct saveposex * restrict sp) {
+    const uint32_t fromsq = SM_FROM(m);
+    const uint32_t tosq   = SM_TO(m);
+    const uint32_t promo  = PROMOPC[SM_PROMO_PC(m)]; // only valid if promo flag set
+    const uint32_t flags  = SM_FLAGS(m);
+    const uint8_t  side   = FLIP(p->wtm);
+    const uint32_t pc     = p->sqtopc[tosq];
+    const uint32_t cappc  = sp->captured_pc;
+    const uint64_t from   = MASK(fromsq);
+    const uint64_t to     = MASK(tosq);
+
+    uint64_t *restrict pcs = &p->brd[pc];
+    uint8_t  *restrict s2p = p->sqtopc;
+    
+    p->halfmoves = sp->halfmoves;
+    p->enpassant = sp->enpassant;
+    p->castle = sp->castle;
+    p->wtm = side;
+    --p->nmoves;
+
+    // TODO(plesslie): make this a jump table? (or switch)
+    if (flags == SM_NONE) {
+        s2p[fromsq] = pc;
+        *pcs |= from;
+        *pcs &= ~to;
+        s2p[tosq] = cappc;
+        if (cappc != EMPTY) {
+            p->brd[cappc] |= MASK(tosq);
+        }
+    } else if (flags == SM_EP) {
+        s2p[fromsq] = pc;
+        *pcs |= from;
+        *pcs &= ~to;
+        s2p[tosq] = EMPTY;
+        if (side == WHITE) {
+            assert(tosq >= A6 && tosq <= H6);
+            const int epsq = tosq - 8;
+            s2p[epsq] = PC(BLACK,PAWN);
+            p->brd[PC(BLACK,PAWN)] |= MASK(epsq);
+        } else {
+        }
+    } else if (flags == SM_PROMO) {
+        s2p[fromsq] = pc;
+        *pcs |= from;
+        *pcs &= ~to;
+        s2p[tosq] = cappc;
+        if (cappc != EMPTY) {
+            p->brd[cappc] |= MASK(tosq);
+        }
+        p->brd[promo] &= ~to;
+    } else if (flags == SM_CASTLE) {
+        assert(pc == PC(side,KING));
+        // TODO(plesslie): switch statement?
+        if (tosq == C1) {
+            assert(fromsq == E1);
+            assert(s2p[A1] == EMPTY);
+            assert(s2p[B1] == EMPTY);
+            assert(s2p[C1] == PC(WHITE,KING));
+            assert(s2p[D1] == PC(WHITE,ROOK));
+            assert(s2p[E1] == EMPTY);
+            s2p[A1] = PC(WHITE,ROOK);
+            s2p[B1] = EMPTY;
+            s2p[C1] = EMPTY;
+            s2p[D1] = EMPTY;
+            s2p[E1] = PC(WHITE,KING);
+            p->brd[PC(WHITE,ROOK)] &= ~MASK(D1);
+            p->brd[PC(WHITE,ROOK)] |= MASK(A1);
+            p->brd[PC(WHITE,KING)] &= ~MASK(C1);
+            p->brd[PC(WHITE,KING)] |= MASK(E1);
+        } else if (tosq == G1) {
+            assert(fromsq == E1);
+            assert(s2p[E1] == EMPTY);
+            assert(s2p[F1] == PC(WHITE,ROOK));
+            assert(s2p[G1] == PC(WHITE,KING));
+            assert(s2p[H1] == EMPTY);
+            s2p[E1] = PC(WHITE,KING);
+            s2p[F1] = EMPTY;
+            s2p[G1] = EMPTY;
+            s2p[H1] = PC(WHITE,ROOK);
+            p->brd[PC(WHITE,KING)] &= ~MASK(G1);
+            p->brd[PC(WHITE,KING)] |= MASK(E1);
+            p->brd[PC(WHITE,ROOK)] &= ~MASK(F1);
+            p->brd[PC(WHITE,ROOK)] |= MASK(H1);
+        } else if (tosq == C8) {
+            assert(fromsq == E8);
+            assert(s2p[A8] == EMPTY);
+            assert(s2p[B8] == EMPTY);
+            assert(s2p[C8] == PC(BLACK,KING));
+            assert(s2p[D8] == PC(BLACK,ROOK));
+            assert(s2p[E8] == EMPTY);
+            s2p[A8] = PC(BLACK,ROOK);
+            s2p[B8] = EMPTY;
+            s2p[C8] = EMPTY;
+            s2p[D8] = EMPTY;
+            s2p[E8] = PC(BLACK,KING);
+            p->brd[PC(BLACK,ROOK)] &= ~MASK(D8);
+            p->brd[PC(BLACK,ROOK)] |= MASK(A8);
+            p->brd[PC(BLACK,KING)] &= ~MASK(C8);
+            p->brd[PC(BLACK,KING)] |= MASK(E8);
+        } else if (tosq == G8) {
+            assert(fromsq == E8);
+            assert(s2p[E8] == EMPTY);
+            assert(s2p[F8] == PC(BLACK,ROOK));
+            assert(s2p[G8] == PC(BLACK,KING));
+            assert(s2p[H8] == EMPTY);
+            s2p[E8] = PC(BLACK,KING);
+            s2p[F8] = EMPTY;
+            s2p[G8] = EMPTY;
+            s2p[H8] = PC(BLACK,ROOK);
+            p->brd[PC(BLACK,KING)] &= ~MASK(G8);
+            p->brd[PC(BLACK,KING)] |= MASK(E8);
+            p->brd[PC(BLACK,ROOK)] &= ~MASK(F8);
+            p->brd[PC(BLACK,ROOK)] |= MASK(H8);            
+        } else {
+            assert(0);
+        }
+    } else {
+        assert(0);
+    }
+}
+
+int test_undo_move_ex(const char *fen, const smove_t *moves) {
+    struct position pos;
+    struct position tmp;
+    struct saveposex sp;
+
+    if (read_fen(&pos, fen, 0) != 0) {
+        fputs("Failed to read FEN for position!", stderr);
+        return 1;
+    }
+    memcpy(&tmp, &pos, sizeof(tmp));
+
+    const smove_t *m = moves;
+    while (*m) {
+        #ifdef EXTRA_INFO
+        printf("Testing: "); smove_print(*m);
+        #endif
+        
+        make_move_ex(&pos, *m, &sp);
+        if (validate_position(&pos) != 0) {
+            fputs("Failed to make move!\n", stderr);
+            return 1;
+        }
+        
+        // restore pos
+        undo_move_ex(&pos, *m, &sp);
+        if (validate_position(&pos) != 0) {
+            fputs("Failed to undo move!\n", stderr);
+            return 1;
+        }
+        if (memcmp(&pos, &tmp, sizeof(tmp)) != 0) {
+            fputs("memcmp failed after undo_move()\n", stderr);
+        }
+        ++m;
+    }
+
+    return 0;    
 }
 
 void test_undo_move() {
+    printf("Running undo move tests...\n");
+    const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";    
+    smove_t start_pos_moves[] = {
+        SMALLMOVE(A2, A3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(A2, A4, SM_FALSE, SM_FALSE, SM_FALSE),        
+        SMALLMOVE(B2, B3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(B2, B4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(C2, C3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(C2, C4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(D2, D3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(D2, D4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(E2, E3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(E2, E4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(F2, F3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(F2, F4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(G2, G3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(G2, G4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(H2, H3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(H2, H4, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(B1, A3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(B1, C3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(G1, F3, SM_FALSE, SM_FALSE, SM_FALSE),
+        SMALLMOVE(G1, H3, SM_FALSE, SM_FALSE, SM_FALSE),
+        0
+    };
+    if (test_undo_move_ex(start_pos_fen, &start_pos_moves[0]) != 0) {
+        printf("Failed test for moves from starting position!\n");
+        return;
+    }
+
+    const char *kiwi_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+    smove_t kiwi_moves[] = {
+        SMALLMOVE(E2, A6, SM_FALSE, SM_FALSE, SM_FALSE), // bishop captures bishop
+        SMALLMOVE(G2, H3, SM_FALSE, SM_FALSE, SM_FALSE), // pawn captures pawn
+        SMALLMOVE(D2, G5, SM_FALSE, SM_FALSE, SM_FALSE), // bishop move
+        SMALLMOVE(E1, G1, SM_FALSE, SM_FALSE, SM_TRUE ), // castle king side
+        SMALLMOVE(E1, C1, SM_FALSE, SM_FALSE, SM_TRUE ), // castle queen side
+        SMALLMOVE(F3, H3, SM_FALSE, SM_FALSE, SM_FALSE), // queen captures pawn
+        SMALLMOVE(H1, F1, SM_FALSE, SM_FALSE, SM_FALSE), // rook move
+        SMALLMOVE(E1, F1, SM_FALSE, SM_FALSE, SM_FALSE), // king move (not castling)
+        0
+    };
+    if (test_undo_move_ex(kiwi_fen, &kiwi_moves[0]) != 0) {
+        printf("Failed test for moves from kiwi position!\n");
+        return;
+    }
+
+    const char *ep_fen = "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6";
+    smove_t ep_moves[] = {
+        SMALLMOVE(E5, D6, SM_FALSE, SM_TRUE, SM_FALSE),
+        0
+    };
+    if (test_undo_move_ex(ep_fen, &ep_moves[0]) != 0) {
+        printf("Failed test for moves from e.p. position!\n");
+        return;
+    }
+
+    const char *promo_fen = "8/1Pp5/7r/8/KR1p1p1k/8/4P1P1/8 w - -";
+    smove_t promo_moves[] = {
+        SMALLMOVE(B7, B8, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE), // knight promo
+        SMALLMOVE(B7, B8, SM_PRM_BISHOP, SM_FALSE, SM_FALSE), // bishop promo
+        SMALLMOVE(B7, B8, SM_PRM_ROOK  , SM_FALSE, SM_FALSE), // rook promo
+        SMALLMOVE(B7, B8, SM_PRM_QUEEN , SM_FALSE, SM_FALSE), // queen promo
+        0
+    };
+    if (test_undo_move_ex(promo_fen, &promo_moves[0]) != 0) {
+        printf("Failed test for moves from e.p. position!\n");
+        return;
+    }
+    
 }
 
 // returns 1 if a piece from `side` attacks `square`

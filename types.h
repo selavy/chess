@@ -78,7 +78,7 @@ struct saveposex {
     uint8_t enpassant;
     uint8_t castle;
     uint8_t was_ep;
-    uint8_t was_capture;
+    uint8_t captured_pc; // EMPTY if no capture
 };
 
 extern const char *vpcs;
