@@ -269,12 +269,15 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
     sp->was_ep      = SM_FALSE;
     sp->captured_pc = topc;
 
+    p->enpassant = NO_ENPASSANT;
+            
     // TODO(plesslie): make this a jump table? (or switch)
     if (flags == SM_NONE) { // normal case
         *pcs &= ~from;
         *pcs |= to;
         s2p[fromsq] = EMPTY;
-        s2p[tosq]   = pc;        
+        s2p[tosq]   = pc;
+
         if (topc != EMPTY) { // capture
             p->brd[topc] &= ~to;
             if (tosq == A8) {
@@ -329,7 +332,6 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
             s2p[fromsq] = EMPTY;            
             s2p[tosq] = PC(BLACK,PAWN);            
         }
-        p->enpassant = NO_ENPASSANT;
     } else if (flags == SM_PROMO) {
         const uint32_t promopc = PC(side,promo);
         *pcs            &= ~from;
@@ -339,7 +341,6 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
         if (topc != EMPTY) { // capture
             p->brd[topc] &= ~to;
         }
-        p->enpassant = NO_ENPASSANT;
     } else if (flags == SM_CASTLE) {
         assert(pc == PC(side,KING));
         uint64_t *restrict rooks = &p->brd[PC(side,ROOK)];
@@ -410,7 +411,6 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
             }
             p->castle &= ~(BQUEENSD | BKINGSD);
         }
-        p->enpassant = NO_ENPASSANT;
     } else {
         assert(0);
     }
@@ -422,7 +422,7 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
 
     // --- validate position after ---
     assert(validate_position(p) == 0);
-    assert((p->enpassant == NO_ENPASSANT) || (pc == PC(WHITE,PAWN) || pc == PC(BLACK,PAWN)));
+    assert(p->enpassant == NO_ENPASSANT || pc == PC(side,PAWN));
     
     // no pawns on 1st or 8th ranks
     assert(p->sqtopc[A1] != PC(WHITE,PAWN));
