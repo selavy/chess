@@ -5,7 +5,7 @@
 #include "types.h"
 #include "read_fen.h"
 
-//#define EXTRA_INFO
+#define EXTRA_INFO
 
 void make_move(struct position * restrict p, move m, struct savepos * restrict sp) {
     uint32_t pc = PIECE(m);
@@ -249,10 +249,10 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
     const uint32_t epsq   = p->enpassant + 23;       // only valid if ep flag set
 
     #ifdef EXTRA_INFO
-    printf("make_move_ex: fromsq(%s) tosq(%s) promo(%u) flags(%u) side(%s) "
+    printf("make_move_ex: fromsq(%s) tosq(%s) promo(%c) flags(%u) side(%s) "
            "contra(%s) pc(%c) topc(%c) from(0x%08" PRIX64 ") to(0x%08" PRIX64 ") "
            "epsq(%s)\n",
-           sq_to_str[fromsq], sq_to_str[tosq], promo, flags, side==WHITE?"WHITE":"BLACK",
+           sq_to_str[fromsq], sq_to_str[tosq], flags==SM_PROMO?vpcs[promo]:' ', flags, side==WHITE?"WHITE":"BLACK",
            contra==WHITE?"WHITE":"BLACK", vpcs[pc], vpcs[topc], from, to, sq_to_str[epsq]);
     #endif
     
@@ -306,10 +306,10 @@ void make_move_ex(struct position *restrict p, smove_t m, struct saveposex *rest
         }
     } else if (flags == SM_PROMO) {
         const uint32_t promopc = PC(side,promo);
-        *pcs &= ~from;
+        *pcs            &= ~from;
         p->brd[promopc] |= to;
-        s2p[to]   = promopc;        
-        s2p[from] = EMPTY;
+        s2p[tosq]        = promopc;        
+        s2p[fromsq]      = EMPTY;
         if (topc != EMPTY) { // capture
             p->brd[topc] &= ~to;
         }
@@ -555,6 +555,19 @@ void test_make_move() {
         0
     };
     if (test_make_move_ex(ep_fen, &ep_moves[0]) != 0) {
+        printf("Failed test for moves from e.p. position!\n");
+        return;
+    }
+
+    const char *promo_fen = "8/1Pp5/7r/8/KR1p1p1k/8/4P1P1/8 w - -";
+    smove_t promo_moves[] = {
+        SMALLMOVE(B7, B8, SM_PRM_KNIGHT, SM_FALSE, SM_FALSE), // knight promo
+        SMALLMOVE(B7, B8, SM_PRM_BISHOP, SM_FALSE, SM_FALSE), // bishop promo
+        SMALLMOVE(B7, B8, SM_PRM_ROOK  , SM_FALSE, SM_FALSE), // rook promo
+        SMALLMOVE(B7, B8, SM_PRM_QUEEN , SM_FALSE, SM_FALSE), // queen promo
+        0
+    };
+    if (test_make_move_ex(promo_fen, &promo_moves[0]) != 0) {
         printf("Failed test for moves from e.p. position!\n");
         return;
     }
