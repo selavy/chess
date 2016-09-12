@@ -761,10 +761,13 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
 }
 
 uint32_t generate_moves_ex(const struct position *const restrict pos, move *restrict moves) {
+    #define FAST_VERSION    
     uint32_t from;
     uint32_t to;
     uint64_t pcs;
+    #ifndef FAST_VERSION
     uint64_t msk;
+    #endif
     uint64_t posmoves;
     uint32_t nmove = 0;    
     uint8_t side = pos->wtm;
@@ -776,6 +779,21 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
     uint8_t castle = pos->castle;
     
     // knight moves
+#ifdef FAST_VERSION
+    pcs = PIECES(*pos, side, KNIGHT);
+    while (pcs) {
+        from = __builtin_ctzll(pcs);
+        posmoves = knight_attacks[from] & opp_or_empty;
+        while (posmoves) {
+            to = __builtin_ctzll(posmoves);
+            if ((MASK(to) & same) == 0) {
+                moves[nmove++] = SIMPLEMOVE(from, to);
+            }
+            posmoves &= (posmoves - 1);            
+        }
+        pcs &= (pcs - 1);
+    }
+#else
     pcs = PIECES(*pos, side, KNIGHT);
     if (pcs != 0) {
         for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
@@ -790,8 +808,27 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             }
         }
     }
+#endif
 
     // king moves
+#ifdef FAST_VERSION
+    pcs = PIECES(*pos, side, KING);
+    assert(pcs != 0);
+    while (pcs) {
+        from = __builtin_ctzll(pcs);
+        assert(from < 64 && from >= 0);
+        assert(pos->sqtopc[from] == PC(side,KING));
+        posmoves = king_attacks[from] & opp_or_empty;
+        while (posmoves) {
+            to = __builtin_ctzll(posmoves);
+            if ((MASK(to) & same) == 0) {
+                moves[nmove++] = SIMPLEMOVE(from, to);
+            }
+            posmoves &= (posmoves - 1);
+        }
+        pcs &= (pcs - 1);
+    }
+#else
     pcs = PIECES(*pos, side, KING);
     assert(pcs != 0);
     for (from = 0; from < 64 && (pcs & 0x01) == 0; ++from, pcs >>= 1);
@@ -804,6 +841,7 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             moves[nmove++] = SIMPLEMOVE(from, to);
         }
     }
+#endif
 
     // castling
     if (side == WHITE) {
@@ -853,6 +891,21 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
     }
 
     // bishop moves
+#ifdef FAST_VERSION
+    pcs = PIECES(*pos, side, BISHOP);
+    while (pcs) {
+        from = __builtin_ctzll(pcs);
+        posmoves = bishop_attacks(from, occupied);
+        while (posmoves) {
+            to = __builtin_ctzll(posmoves);
+            if ((MASK(to) & same) == 0) {
+                moves[nmove++] = SIMPLEMOVE(from, to);
+            }
+            posmoves &= (posmoves - 1);
+        }
+        pcs &= (pcs - 1);
+    }
+#else
     pcs = PIECES(*pos, side, BISHOP);
     if (pcs != 0) {
         for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
@@ -867,8 +920,24 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             }
         }
     }
+#endif
 
     // rook moves
+#ifdef FAST_VERSION
+    pcs = PIECES(*pos, side, ROOK);
+    while (pcs) {
+        from = __builtin_ctzll(pcs);
+        posmoves = rook_attacks(from, occupied);
+        while (posmoves) {
+            to = __builtin_ctzll(posmoves);
+            if ((MASK(to) & same) == 0) {
+                moves[nmove++] = SIMPLEMOVE(from, to);
+            }
+            posmoves &= (posmoves - 1);
+        }
+        pcs &= (pcs - 1);
+    }
+#else
     pcs = PIECES(*pos, side, ROOK);
     if (pcs != 0) {
         for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
@@ -883,8 +952,24 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             }
         }
     }
+#endif
 
     // queen moves
+#ifdef FAST_VERSION
+    pcs = PIECES(*pos, side, QUEEN);
+    while (pcs) {
+        from = __builtin_ctzll(pcs);
+        posmoves = queen_attacks(from, occupied);
+        while (posmoves) {
+            to = __builtin_ctzll(posmoves);
+            if ((MASK(to) & same) == 0) {
+                moves[nmove++] = SIMPLEMOVE(from, to);
+            }
+            posmoves &= (posmoves - 1);
+        }
+        pcs &= (pcs - 1);
+    }
+#else
     pcs = PIECES(*pos, side, QUEEN);
     if (pcs != 0) {
         for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
@@ -899,6 +984,7 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
             }
         }
     }
+#endif
 
     // pawn moves
     pcs = PIECES(*pos, side, PAWN);

@@ -42,6 +42,18 @@ void print_usage() {
     printf("\n");
 }
 
+int PopCnt(uint64_t x) {
+    int c;
+    for (c = 0; x; c++) {
+        x &= x - 1;
+    }
+    return c;
+}
+
+int LSB(uint64_t arg1) {
+    return __builtin_ffsll(arg1);
+}
+
 int main(int argc, char **argv) {
     g_prog = argv[0];
 #ifdef NDEBUG
@@ -49,6 +61,15 @@ int main(int argc, char **argv) {
 #else
     printf("Built in `debug' mode\n");
 #endif
+
+    /* uint32_t from; */
+    /* uint64_t bbrd = MASK(60) | MASK(10); */
+    /* while (bbrd) { */
+    /*     from = __builtin_ctzll(bbrd); */
+    /*     printf("%u\n", from); */
+    /*     bbrd &= (bbrd - 1); */
+    /* } */
+    /* return 0; */
 
     if (argc < 2) {
         print_usage();
