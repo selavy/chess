@@ -303,8 +303,8 @@ void test_perft(int argc, char **argv) {
     }    
 }
 
-void deep_perft() {
-    const int max_depth = 8;
+void deep_perft(int argc, char **argv) {
+    const int max_depth = argc == 1 ? 8 : atoi(argv[2]);
     int depth;
     uint64_t nodes;
     struct position pos;
@@ -317,7 +317,7 @@ void deep_perft() {
         return;
     }    
 
-    for (depth = 7; depth < max_depth; ++depth) {
+    for (depth = 0; depth < max_depth; ++depth) {
         reset_counts();
         clock_gettime(CLOCK_MONOTONIC_RAW, &start);
         nodes = perft(depth, &pos, 0, EMPTY);

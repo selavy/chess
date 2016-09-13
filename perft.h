@@ -22,6 +22,6 @@ extern void test_perft(int argc, char **argv);
 
 extern uint64_t perft(int depth, struct position *const restrict pos, move pmove, int cap);
 
-extern void deep_perft();
+extern void deep_perft(int argc, char **argv);
 
 #endif // PERFT__H_
