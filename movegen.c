@@ -761,13 +761,9 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
 }
 
 uint32_t generate_moves_ex(const struct position *const restrict pos, move *restrict moves) {
-    #define FAST_VERSION    
     uint32_t from;
     uint32_t to;
     uint64_t pcs;
-    #ifndef FAST_VERSION
-    uint64_t msk;
-    #endif
     uint64_t posmoves;
     uint32_t nmove = 0;    
     uint8_t side = pos->wtm;
@@ -779,7 +775,6 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
     uint8_t castle = pos->castle;
     
     // knight moves
-#ifdef FAST_VERSION
     pcs = PIECES(*pos, side, KNIGHT);
     while (pcs) {
         from = __builtin_ctzll(pcs);
@@ -793,25 +788,8 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
         }
         pcs &= (pcs - 1);
     }
-#else
-    pcs = PIECES(*pos, side, KNIGHT);
-    if (pcs != 0) {
-        for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
-            if ((pcs & 0x01) != 0) {
-                posmoves = knight_attacks[from] & opp_or_empty;
-                for (to = 0; posmoves; ++to, posmoves >>= 1) {
-                    msk = MASK(to);
-                    if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
-                        moves[nmove++] = SIMPLEMOVE(from, to);
-                    }
-                }
-            }
-        }
-    }
-#endif
 
     // king moves
-#ifdef FAST_VERSION
     pcs = PIECES(*pos, side, KING);
     assert(pcs != 0);
     while (pcs) {
@@ -828,20 +806,6 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
         }
         pcs &= (pcs - 1);
     }
-#else
-    pcs = PIECES(*pos, side, KING);
-    assert(pcs != 0);
-    for (from = 0; from < 64 && (pcs & 0x01) == 0; ++from, pcs >>= 1);
-    assert(from < 64 && from >= 0);
-    assert(pos->sqtopc[from] == PC(side,KING));
-    posmoves = king_attacks[from] & opp_or_empty;
-    for (to = 0; posmoves; ++to, posmoves >>= 1) {
-        msk = MASK(to);
-        if ((posmoves & 0x1) != 0 && (msk & same) == 0) {
-            moves[nmove++] = SIMPLEMOVE(from, to);
-        }
-    }
-#endif
 
     // castling
     if (side == WHITE) {
@@ -891,7 +855,6 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
     }
 
     // bishop moves
-#ifdef FAST_VERSION
     pcs = PIECES(*pos, side, BISHOP);
     while (pcs) {
         from = __builtin_ctzll(pcs);
@@ -905,25 +868,8 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
         }
         pcs &= (pcs - 1);
     }
-#else
-    pcs = PIECES(*pos, side, BISHOP);
-    if (pcs != 0) {
-        for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
-            if ((pcs & 0x01) != 0) {
-                posmoves = bishop_attacks(from, occupied);
-                for (to = 0; posmoves; ++to , posmoves >>= 1) {
-                    msk = MASK(to);
-                    if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
-                        moves[nmove++] = SIMPLEMOVE(from, to);
-                    }
-                }
-            }
-        }
-    }
-#endif
 
     // rook moves
-#ifdef FAST_VERSION
     pcs = PIECES(*pos, side, ROOK);
     while (pcs) {
         from = __builtin_ctzll(pcs);
@@ -937,25 +883,8 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
         }
         pcs &= (pcs - 1);
     }
-#else
-    pcs = PIECES(*pos, side, ROOK);
-    if (pcs != 0) {
-        for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
-            if ((pcs & 0x01) != 0) {
-                posmoves = rook_attacks(from, occupied);
-                for (to = 0; posmoves; ++to, posmoves >>= 1) {
-                    msk = MASK(to);
-                    if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
-                        moves[nmove++] = SIMPLEMOVE(from, to);
-                    }
-                }
-            }
-        }
-    }
-#endif
 
     // queen moves
-#ifdef FAST_VERSION
     pcs = PIECES(*pos, side, QUEEN);
     while (pcs) {
         from = __builtin_ctzll(pcs);
@@ -969,29 +898,11 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
         }
         pcs &= (pcs - 1);
     }
-#else
-    pcs = PIECES(*pos, side, QUEEN);
-    if (pcs != 0) {
-        for (from = 0; from < 64 && pcs; ++from, pcs >>= 1) {
-            if ((pcs & 0x01) != 0) {
-                posmoves = queen_attacks(from, occupied);
-                for (to = 0; posmoves; ++to, posmoves >>= 1) {
-                    msk = MASK(to);
-                    if ((posmoves & 0x01) != 0 && (msk & same) == 0) {
-                        moves[nmove++] = SIMPLEMOVE(from, to);
-                    }
-                }
-            }
-        }
-    }
-#endif
 
     // pawn moves
     pcs = PIECES(*pos, side, PAWN);
 
     // forward 1 square
-
-#ifdef FAST_VERSION
     posmoves = side == WHITE ? pcs << 8 : pcs >> 8;
     posmoves &= ~occupied;
     while (posmoves) {
@@ -1008,27 +919,8 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
         }        
         posmoves &= (posmoves - 1);
     }
-#else
-    posmoves = side == WHITE ? pcs << 8 : pcs >> 8;
-    posmoves &= ~occupied;
-    for (to = 0; posmoves; ++to, posmoves >>= 1) {
-        if ((posmoves & 0x01) != 0) {
-            from = side == WHITE ? to - 8 : to + 8;
-            assert(pos->sqtopc[from] == PC(side,PAWN));
-            if (to >= A8 || to <= H1) { // promotion
-                moves[nmove++] = MOVE(from, to, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE);
-                moves[nmove++] = MOVE(from, to, MV_PRM_BISHOP, MV_FALSE, MV_FALSE);
-                moves[nmove++] = MOVE(from, to, MV_PRM_ROOK  , MV_FALSE, MV_FALSE);
-                moves[nmove++] = MOVE(from, to, MV_PRM_QUEEN , MV_FALSE, MV_FALSE);
-            } else {
-                moves[nmove++] = SIMPLEMOVE(from, to);
-            }
-        }
-    }
-#endif
 
     // forward 2 squares
-#ifdef FAST_VERSION
     posmoves = pcs & RANK2(side);
     posmoves = side == WHITE ? posmoves << 16 : posmoves >> 16;
     posmoves &= ~occupied;
@@ -1043,25 +935,8 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
         }        
         posmoves &= (posmoves - 1);
     }
-#else
-    posmoves = pcs & RANK2(side);
-    posmoves = side == WHITE ? posmoves << 16 : posmoves >> 16;
-    posmoves &= ~occupied;
-    for (to = 0; posmoves; ++to, posmoves >>= 1) {
-        if ((posmoves & 0x01) != 0) {
-            from = side == WHITE ? to - 16 : to + 16;
-            assert(pos->sqtopc[from] == PC(side,PAWN));            
-            // TODO: do this with the bitmasks?
-            if (pos->sqtopc[side == WHITE ? to - 8 : to + 8] != EMPTY) {
-                continue;
-            }
-            moves[nmove++] = SIMPLEMOVE(from, to);
-        }
-    }
-#endif
 
     // capture left
-#ifdef FAST_VERSION
     posmoves = pcs & ~A_FILE;
     posmoves = side == WHITE ? posmoves << 7 : posmoves >> 9;
     posmoves &= contra;
@@ -1080,29 +955,8 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
         }
         posmoves &= (posmoves - 1);
     }
-#else
-    posmoves = pcs & ~A_FILE;
-    posmoves = side == WHITE ? posmoves << 7 : posmoves >> 9;
-    posmoves &= contra;
-    for (to = 0; posmoves; ++to, posmoves >>= 1) {
-        if ((posmoves & 0x01) != 0) {
-            from = side == WHITE ? to - 7 : to + 9;
-            assert(pos->sqtopc[from] == PC(side,PAWN));
-            assert(pos->sqtopc[to] != EMPTY);
-            if (to >= A8 || to <= H1) { // last rank => promotion
-                moves[nmove++] = MOVE(from, to, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE);
-                moves[nmove++] = MOVE(from, to, MV_PRM_BISHOP, MV_FALSE, MV_FALSE);
-                moves[nmove++] = MOVE(from, to, MV_PRM_ROOK  , MV_FALSE, MV_FALSE);
-                moves[nmove++] = MOVE(from, to, MV_PRM_QUEEN , MV_FALSE, MV_FALSE);
-            } else {
-                moves[nmove++] = SIMPLEMOVE(from, to);
-            }
-        }
-    }
-#endif
 
     // capture right
-#ifdef FAST_VERSION
     posmoves = pcs & ~H_FILE;
     posmoves = side == WHITE ? posmoves << 9 : posmoves >> 7;
     posmoves &= contra;
@@ -1121,26 +975,6 @@ uint32_t generate_moves_ex(const struct position *const restrict pos, move *rest
         }
         posmoves &= (posmoves - 1);
     }    
-#else
-    posmoves = pcs & ~H_FILE;
-    posmoves = side == WHITE ? posmoves << 9 : posmoves >> 7;
-    posmoves &= contra;
-    for (to = 0; posmoves; ++to, posmoves >>= 1) {
-        if ((posmoves & 0x01) != 0) {
-            from = side == WHITE ? to - 9 : to + 7;
-            assert(pos->sqtopc[from] == PC(side,PAWN));
-            assert(pos->sqtopc[to] != EMPTY);
-            if (to >= A8 || to <= H1) { // last rank => promotion
-                moves[nmove++] = MOVE(from, to, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE);
-                moves[nmove++] = MOVE(from, to, MV_PRM_BISHOP, MV_FALSE, MV_FALSE);
-                moves[nmove++] = MOVE(from, to, MV_PRM_ROOK  , MV_FALSE, MV_FALSE);
-                moves[nmove++] = MOVE(from, to, MV_PRM_QUEEN , MV_FALSE, MV_FALSE);
-            } else {
-                moves[nmove++] = SIMPLEMOVE(from, to);
-            }            
-        }
-    }
-#endif
 
     // en passant
     if (pos->enpassant != NO_ENPASSANT) {
