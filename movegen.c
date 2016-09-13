@@ -7,7 +7,7 @@
 
 //#define EXTRA_INFO
 
-void make_move_ex(struct position *restrict p, move m, struct saveposex *restrict sp) {
+void make_move(struct position *restrict p, move m, struct saveposex *restrict sp) {
     // --- loads ---
     const uint8_t  side    = p->wtm;
     const uint8_t  contra  = FLIP(side);    
@@ -26,7 +26,7 @@ void make_move_ex(struct position *restrict p, move m, struct saveposex *restric
     uint8_t  *restrict s2p = p->sqtopc;
     
     #ifdef EXTRA_INFO
-    printf("make_move_ex: fromsq(%s) tosq(%s) promo(%c) flags(%u) side(%s) "
+    printf("make_move: fromsq(%s) tosq(%s) promo(%c) flags(%u) side(%s) "
            "contra(%s) pc(%c) topc(%c) from(0x%08" PRIX64 ") to(0x%08" PRIX64 ") "
            "epsq(%s)\n",
            sq_to_str[fromsq], sq_to_str[tosq], flags==FLG_PROMO?vpcs[promo]:' ', flags, side==WHITE?"WHITE":"BLACK",
@@ -327,7 +327,7 @@ static int test_move_creation() {
     return 0;
 }
 
-int test_make_move_ex(const char *fen, const move *moves) {
+static int test_make_move_ex(const char *fen, const move *moves) {
     struct position pos;
     struct position tmp;
     struct saveposex sp;
@@ -344,7 +344,7 @@ int test_make_move_ex(const char *fen, const move *moves) {
         printf("Testing: "); move_print(*m);
         #endif
         
-        make_move_ex(&pos, *m, &sp);
+        make_move(&pos, *m, &sp);
         if (validate_position(&pos) != 0) {
             fputs("Failed to make move!\n", stderr);
             return 1;
@@ -435,7 +435,7 @@ void test_make_move() {
     printf("Succeeded.\n");
 }
 
-void undo_move_ex(struct position * restrict p, move m, const struct saveposex * restrict sp) {
+void undo_move(struct position * restrict p, move m, const struct saveposex * restrict sp) {
     const uint8_t  side   = FLIP(p->wtm);    
     const uint32_t fromsq = FROM(m);
     const uint32_t tosq   = TO(m);
@@ -606,7 +606,7 @@ void undo_move_ex(struct position * restrict p, move m, const struct saveposex *
     assert(p->sqtopc[H8] != PC(BLACK,PAWN));
 }
 
-int test_undo_move_ex(const char *fen, const move *moves) {
+static int test_undo_move_ex(const char *fen, const move *moves) {
     struct position pos;
     struct position tmp;
     struct saveposex sp;
@@ -623,14 +623,14 @@ int test_undo_move_ex(const char *fen, const move *moves) {
         printf("Testing: "); move_print(*m);
         #endif
         
-        make_move_ex(&pos, *m, &sp);
+        make_move(&pos, *m, &sp);
         if (validate_position(&pos) != 0) {
             fputs("Failed to make move!\n", stderr);
             return 1;
         }
         
         // restore pos
-        undo_move_ex(&pos, *m, &sp);
+        undo_move(&pos, *m, &sp);
         if (validate_position(&pos) != 0) {
             fputs("validate_position failed after calling undo move!\n", stderr);
             return 1;
@@ -760,7 +760,7 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
     return attacks(pos, FLIP(side), kingloc);
 }
 
-uint32_t generate_moves_ex(const struct position *const restrict pos, move *restrict moves) {
+uint32_t generate_moves(const struct position *const restrict pos, move *restrict moves) {
     uint32_t from;
     uint32_t to;
     uint64_t pcs;

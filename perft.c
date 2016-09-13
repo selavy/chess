@@ -61,12 +61,12 @@ uint64_t perft(int depth, struct position *const restrict pos, move pmove, int c
     #if 0
     memcpy(&tmp, pos, sizeof(tmp));
     #endif
-    nmoves = generate_moves_ex(pos, &moves[0]);
+    nmoves = generate_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
-        make_move_ex(pos, moves[i], &sp);
+        make_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
         nodes += perft(depth - 1, pos, moves[i], sp.captured_pc);
-        undo_move_ex(pos, moves[i], &sp);
+        undo_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
         #if 0
         if (memcmp(&tmp, pos, sizeof(tmp)) != 0) {
@@ -94,14 +94,14 @@ uint64_t perft_bulk(int depth, struct position * const restrict pos) {
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
     }
-    nmoves = generate_moves_ex(pos, &moves[0]);
+    nmoves = generate_moves(pos, &moves[0]);
 
     if (depth > 0) {
         for (i = 0; i < nmoves; ++i) {
-            make_move_ex(pos, moves[i], &sp);
+            make_move(pos, moves[i], &sp);
             assert(validate_position(pos) == 0);
             nodes += perft(depth - 1, pos, moves[i], sp.captured_pc);
-            undo_move_ex(pos, moves[i], &sp);
+            undo_move(pos, moves[i], &sp);
             assert(validate_position(pos) == 0);
         }
     }
