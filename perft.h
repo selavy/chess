@@ -18,7 +18,7 @@ extern uint64_t perft_bulk(int depth, struct position * const restrict pos);
 
 extern int perft_count_test();
 
-extern void test_perft();
+extern void test_perft(int argc, char **argv);
 
 extern uint64_t perft(int depth, struct position *const restrict pos, move pmove, int cap);
 

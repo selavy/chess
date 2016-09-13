@@ -357,7 +357,7 @@ static int test_make_move_ex(const char *fen, const move *moves) {
     return 0;
 }
 
-void test_make_move() {
+void test_make_move(int argc, char **argv) {
     if (test_move_creation() != 0) {
         return;
     }
@@ -649,7 +649,7 @@ static int test_undo_move_ex(const char *fen, const move *moves) {
     return 0;    
 }
 
-void test_undo_move() {
+void test_undo_move(int argc, char **argv) {
     printf("Running undo move tests...\n");
     const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";    
     move start_pos_moves[] = {

@@ -15,11 +15,9 @@
 void print_usage();
 void do_perft();
 
-const char *g_prog = 0;
-
 struct command_t {
     const char *name;
-    void (*func)();
+    void (*func)(int argc, char **argv);
     const char *desc;
 };
 struct command_t commands[] = {
@@ -31,10 +29,9 @@ struct command_t commands[] = {
     { 0, 0, 0 }
 };
 
-void print_usage() {
+void print_usage(int argc, char **argv) {
     struct command_t *cmd = &commands[0];
-
-    printf("Usage: %s <MODE>\n", g_prog);
+    printf("Usage: %s <MODE>\n", argv[0]);
     while (cmd->name) {
         printf("\t%s -- %s\n", cmd->name, cmd->desc);
         ++cmd;
@@ -42,37 +39,15 @@ void print_usage() {
     printf("\n");
 }
 
-int PopCnt(uint64_t x) {
-    int c;
-    for (c = 0; x; c++) {
-        x &= x - 1;
-    }
-    return c;
-}
-
-int LSB(uint64_t arg1) {
-    return __builtin_ffsll(arg1);
-}
-
 int main(int argc, char **argv) {
-    g_prog = argv[0];
 #ifdef NDEBUG
     printf("Built in `release' mode\n");
 #else
     printf("Built in `debug' mode\n");
 #endif
 
-    /* uint32_t from; */
-    /* uint64_t bbrd = MASK(60) | MASK(10); */
-    /* while (bbrd) { */
-    /*     from = __builtin_ctzll(bbrd); */
-    /*     printf("%u\n", from); */
-    /*     bbrd &= (bbrd - 1); */
-    /* } */
-    /* return 0; */
-
     if (argc < 2) {
-        print_usage();
+        print_usage(argc, argv);
     } else {
         void (*func)() = print_usage;
         struct command_t *cmd = &commands[0];
@@ -83,7 +58,7 @@ int main(int argc, char **argv) {
             }
             ++cmd;
         }
-        func();
+        func(argc, argv);
     }
 
     return 0;

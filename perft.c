@@ -295,7 +295,7 @@ int perft_count_test() {
     return 0;
 }
 
-void test_perft() {
+void test_perft(int argc, char **argv) {
     if (perft_count_test() != 0) {
         fputs("FAILURE!!\n", stderr);
     } else {
@@ -317,7 +317,7 @@ void deep_perft() {
         return;
     }    
 
-    for (depth = 0; depth < max_depth; ++depth) {
+    for (depth = 7; depth < max_depth; ++depth) {
         reset_counts();
         clock_gettime(CLOCK_MONOTONIC_RAW, &start);
         nodes = perft(depth, &pos, 0, EMPTY);
