@@ -7,6 +7,8 @@
 
 //#define EXTRA_INFO
 
+#include "first.c"
+
 void make_move(struct position *restrict p, move m, struct saveposex *restrict sp) {
     // --- loads ---
     const uint8_t  side    = p->wtm;
@@ -761,6 +763,11 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
 }
 
 uint32_t generate_moves(const struct position *const restrict pos, move *restrict moves) {
+    return pos->wtm == WHITE ? gen_move_white(pos, moves) : gen_move_black(pos, moves);	
+}
+
+#if 0
+uint32_t generate_moves(const struct position *const restrict pos, move *restrict moves) {
     uint32_t from;
     uint32_t to;
     uint64_t pcs;
@@ -769,7 +776,7 @@ uint32_t generate_moves(const struct position *const restrict pos, move *restric
     uint8_t side = pos->wtm;
     uint8_t contraside = FLIP(pos->wtm);
     uint64_t same = FULLSIDE(*pos, side);
-    uint64_t contra = FULLSIDE(*pos, FLIP(side));
+    uint64_t contra = FULLSIDE(*pos, contraside);
     uint64_t occupied = same | contra;
     uint64_t opp_or_empty = ~same;
     uint8_t castle = pos->castle;
@@ -1025,3 +1032,4 @@ uint32_t generate_moves(const struct position *const restrict pos, move *restric
 
     return nmove;
 }
+#endif
