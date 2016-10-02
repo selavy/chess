@@ -1,5 +1,6 @@
 CC=gcc
 OBJS=main.o
+CFLAGS=-g -O0
 TARGET=experiment
 
 $(TARGET): $(OBJS)
