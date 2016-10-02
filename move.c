@@ -63,3 +63,21 @@ void move_print(move mv) {
     }
     printf("\n");
 }
+
+const char * xboard_move_print(move mv) {
+	// max move length is "e7e8q", most moves are "e7e8"
+	static char buffer[6];
+	const char *pcs = " nbrq";
+	const uint32_t to = TO(mv);
+	const uint32_t from = FROM(mv);
+	const uint32_t flags = FLAGS(mv);
+
+	sprintf(&buffer[0], "%s%s", sq_to_small[from], sq_to_small[to]);
+	if (flags == FLG_PROMO) {
+		buffer[5] = pcs[PROMOPC[PROMO_PC(mv)]];
+		buffer[6] = 0;
+	} else {
+		buffer[5] = 0;
+	}
+	return &buffer[0];
+}

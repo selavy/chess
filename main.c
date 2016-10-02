@@ -72,11 +72,16 @@ void sighandler(int signum) {
     // mask sigint signal until i get pondering
 }
 
+FILE *ostream;
+
 void xboard_main() {
     FILE *istream;
     char *line = 0;
     size_t len = 0;
     ssize_t read = 0;
+
+    // TODO(plesslie): until I implement actual move selection algo
+    srand(0);
 
     //printf("entering xboard mode...\n");
 
@@ -85,10 +90,17 @@ void xboard_main() {
     signal(SIGINT, &sighandler);
 
     istream = fdopen(STDIN_FILENO, "rb");
+    if (istream == 0) {
+	    exit(EXIT_FAILURE);
+    }
+    ostream = fopen("/tmp/output.txt", "w");
 
     // turn off i/o buffering
     setbuf(stdout , NULL);
     setbuf(istream, NULL);
+    setbuf(ostream, NULL);
+
+    fprintf(ostream, "Starting up myengine...\n");
 
     while ((read = getline(&line, &len, istream)) > 0) {
         line[read-1] = 0;
@@ -100,57 +112,83 @@ void xboard_main() {
     printf("Bye.\n");
     free(line);
     fclose(istream);
+    fclose(ostream);
 }
 
 #define XSTRNCMP(X,Y) strncmp(X, Y, strlen(Y))
 int handle_xboard_input(const char * const line, size_t bytes) {
+    enum { INIT, PLAYING };
+    static int state = INIT;
+    static struct position position;
+    static move moves[MAX_MOVES];
+    static struct saveposex sp;
 
-    if (strcmp(line, "xboard") == 0) {
-        // no-op
-    } else if (XSTRNCMP(line, "protover") == 0) {
-        if (line[9] != '2') {
-            fprintf(stderr, "Unrecognized protocol version:\n");
+    fprintf(ostream, "Received command: '%s'\n", line);
+
+    if (state == INIT) {
+        if (strcmp(line, "xboard") == 0) {
+            // no-op
+        } else if (XSTRNCMP(line, "protover") == 0) {
+            if (line[9] != '2') {
+                fprintf(stderr, "Unrecognized protocol version:\n");
+                return 1;
+            }
+            printf("feature myname=\"experiment\"\n");
+            printf("feature reuse=0\n");
+            printf("feature analyze=0\n");
+            printf("feature done=1\n");
+        } else if (strcmp(line, "new") == 0) {
+            // no-op
+        } else if (strcmp(line, "random") == 0) {
+            // no-op
+        } else if (XSTRNCMP(line, "level") == 0) {
+            // TODO(plesslie): parse time control
+        } else if (strcmp(line, "post") == 0) {
+            // TODO(plesslie):
+            // turn on thinking/pondering output
+            // thinking output should be in the format "ply score time nodes pv"
+            // E.g. "9 156 1084 48000 Nf3 Nc6 Nc3 Nf6" ==> 
+            // "9 ply, score=1.56, time = 10.84 seconds, nodes=48000, PV = "Nf3 Nc6 Nc3 Nf6""
+        } else if (XSTRNCMP(line, "accepted") == 0) {
+            // no-op
+        } else if (strcmp(line, "hard") == 0) {
+            // no-op
+        } else if (strcmp(line, "easy") == 0) {
+            // no-op
+        } else if (strcmp(line, "white") == 0) {
+            // TODO(plesslie): setup side
+        } else if (strcmp(line, "black") == 0) {
+            // TODO(plesslie): setup side
+        } else if (XSTRNCMP(line, "time") == 0) {
+            // no-op
+        } else if (XSTRNCMP(line, "otim") == 0) {
+            // no-op
+        } else if (strcmp(line, "force") == 0) {
+            // no-op
+            // stop thinking about the current position
+        } else if (strcmp(line, "go") == 0) {
+            // TODO(plesslie):
+            // begin game, if white, make first move
+	    set_initial_position(&position);
+	    state = PLAYING;
+        } else {
+            printf("Error (unknown command: %.*s\n", (int)bytes, line);
             return 1;
         }
-        printf("feature myname=\"experiment\"\n");
-        printf("feature reuse=0\n");
-        printf("feature analyze=0\n");
-        printf("feature done=1\n");
-    } else if (strcmp(line, "new") == 0) {
-        // no-op
-    } else if (strcmp(line, "random") == 0) {
-        // no-op
-    } else if (XSTRNCMP(line, "level") == 0) {
-        // TODO(plesslie): parse time control
-    } else if (strcmp(line, "post") == 0) {
-        // TODO(plesslie):
-        // turn on thinking/pondering output
-        // thinking output should be in the format "ply score time nodes pv"
-        // E.g. "9 156 1084 48000 Nf3 Nc6 Nc3 Nf6" ==> 
-        // "9 ply, score=1.56, time = 10.84 seconds, nodes=48000, PV = "Nf3 Nc6 Nc3 Nf6""
-    } else if (XSTRNCMP(line, "accepted") == 0) {
-        // no-op
-    } else if (strcmp(line, "hard") == 0) {
-        // no-op
-    } else if (strcmp(line, "easy") == 0) {
-        // no-op
-    } else if (strcmp(line, "white") == 0) {
-        // TODO(plesslie): setup side
-    } else if (strcmp(line, "black") == 0) {
-        // TODO(plesslie): setup side
-    } else if (XSTRNCMP(line, "time") == 0) {
-        // no-op
-    } else if (XSTRNCMP(line, "otim") == 0) {
-        // no-op
-    } else if (strcmp(line, "force") == 0) {
-        // no-op
-        // stop thinking about the current position
-    } else if (strcmp(line, "go") == 0) {
-        // TODO(plesslie):
-        // begin game, if white, make first move
-    } else {
-        printf("Error (unknown command: %.*s\n", (int)bytes, line);
-        return 1;
+    }
+
+    if (state == PLAYING) {
+	    const uint32_t nmoves = generate_moves(&position, &moves[0]);
+	    if (nmoves == 0) {
+		    // TODO(plesslie): send correct end of game state
+		    printf("resign\n");
+	    } else {
+		    const uint32_t r = rand() % nmoves;
+		    make_move(&position, moves[r], &sp);
+		    const char *movestr = xboard_move_print(moves[r]);		    
+		    fprintf(ostream, "Trying to make move: %s\n", movestr);
+		    printf("move %s\n", movestr);
+	    }
     }
     
     return 0;
