@@ -136,6 +136,7 @@ int handle_xboard_input(const char * const line, size_t bytes) {
             printf("feature myname=\"experiment\"\n");
             printf("feature reuse=0\n");
             printf("feature analyze=0\n");
+	    printf("feature time=0\n");
             printf("feature done=1\n");
         } else if (strcmp(line, "new") == 0) {
             // no-op
@@ -172,9 +173,24 @@ int handle_xboard_input(const char * const line, size_t bytes) {
 	    set_initial_position(&position);
 	    state = PLAYING;
         } else {
-            printf("Error (unknown command: %.*s\n", (int)bytes, line);
+            printf("Error (unknown command): %.*s\n", (int)bytes, line);
             return 1;
         }
+    } else if (state == PLAYING) {
+	    // read move from input
+	    if (bytes == 4) {
+		    const uint32_t from = (line[1]-'1')*8 + (line[0]-'a');
+		    const uint32_t to   = (line[3]-'1')*8 + (line[2]-'a');
+		    fprintf(ostream, "Parsed move as %u -> %u, %s -> %s\n",
+			    to, from, sq_to_small[from], sq_to_small[to]);
+		    const move m = SIMPLEMOVE(from, to);
+		    make_move(&position, m, &sp);
+	    } else if (bytes == 5) { // promotion
+		    // TODO(plesslie):
+	    } else {
+		    printf("Error (bad move): %s\n", line);
+		    return 1;
+	    }
     }
 
     if (state == PLAYING) {
