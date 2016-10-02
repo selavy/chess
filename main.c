@@ -194,7 +194,8 @@ int handle_xboard_input(const char * const line, size_t bytes) {
     }
 
     if (state == PLAYING) {
-	    const uint32_t nmoves = generate_moves(&position, &moves[0]);
+	    //const uint32_t nmoves = generate_moves(&position, &moves[0]);
+	    const uint32_t nmoves = gen_legal_moves(&position, &moves[0]);
 	    if (nmoves == 0) {
 		    // TODO(plesslie): send correct end of game state
 		    printf("resign\n");
