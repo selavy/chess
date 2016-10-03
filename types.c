@@ -36,16 +36,20 @@ const uint32_t PROMOPC[5] = {
 };
 
 void position_print(const uint8_t * const restrict sqtopc) {
+	position_print_ex(sqtopc, stdout);
+}
+
+void position_print_ex(const uint8_t * const restrict sqtopc, FILE *ostream) {
     char v;
     int sq, r, c;
-    fputs("---------------------------------\n", stdout);
+    fputs("---------------------------------\n", ostream);
     for (r = (RANKS - 1); r >= 0; --r) {
         for (c = 0; c < COLS; ++c) {
             sq = SQ(c, r);
             v = vpcs[sqtopc[sq]];
-            fprintf(stdout, "| %c ", v);
+            fprintf(ostream, "| %c ", v);
         }
-        fputs("|\n---------------------------------\n", stdout);
+        fputs("|\n---------------------------------\n", ostream);
     }
 }
 

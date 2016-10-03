@@ -1,6 +1,7 @@
 #ifndef TYPES__H_
 #define TYPES__H_
 
+#include <stdio.h>
 #include <inttypes.h>
 #include "magic_tables.h"
 
@@ -87,6 +88,7 @@ extern const char *sq_to_str[64];
 extern const char *sq_to_small[64];
 extern const uint32_t PROMOPC[5];
 extern void position_print(const uint8_t * const restrict sqtopc);
+extern void position_print_ex(const uint8_t * const restrict sqtopc, FILE *ostream);
 extern void full_position_print(const struct position *p);
 extern int validate_position(const struct position * const restrict p);
 extern void set_initial_position(struct position * restrict p);

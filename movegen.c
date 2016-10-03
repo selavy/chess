@@ -1038,17 +1038,18 @@ uint32_t gen_legal_moves(const struct position *const restrict pos, move *restri
 	struct saveposex sp;
 	uint32_t ret = 0;
 	uint32_t i = 0;
+	const uint8_t side = pos->wtm;
 	move tmp[MAX_MOVES];
 	const uint32_t nmoves = generate_moves(pos, &tmp[0]);
 	struct position p;
-
 	memcpy(&p, pos, sizeof(p));
+	
 	for (i = 0; i < nmoves; ++i) {
 		make_move(&p, tmp[i], &sp);
-		if (in_check(&p, FLIP(p.wtm)) == 0) {
+		if (in_check(&p, side) == 0) {
 			moves[ret++] = tmp[i];
 		}
-		undo_move(&p, moves[i], &sp);
+		undo_move(&p, tmp[i], &sp);
 	}
 	
 	return ret;

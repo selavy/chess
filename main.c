@@ -178,15 +178,33 @@ int handle_xboard_input(const char * const line, size_t bytes) {
         }
     } else if (state == PLAYING) {
 	    // read move from input
-	    if (bytes == 4) {
+	    if (bytes == 4 || bytes == 5) {
 		    const uint32_t from = (line[1]-'1')*8 + (line[0]-'a');
 		    const uint32_t to   = (line[3]-'1')*8 + (line[2]-'a');
 		    fprintf(ostream, "Parsed move as %u -> %u, %s -> %s\n",
 			    to, from, sq_to_small[from], sq_to_small[to]);
-		    const move m = SIMPLEMOVE(from, to);
+		    move m;
+		    if (bytes == 4) {
+			    m = SIMPLEMOVE(from, to);
+		    } else { // promotion
+			    uint32_t prm;
+			    switch (line[4]) {
+			    case 'q': prm = MV_PRM_QUEEN ; break;
+			    case 'n': prm = MV_PRM_KNIGHT; break;
+			    case 'b': prm = MV_PRM_BISHOP; break;
+			    case 'r': prm = MV_PRM_ROOK  ; break;
+			    default:
+				    printf("Invalid move: %s\n", line);
+				    return 1;
+			    }
+			    m = MOVE(from, to, prm, MV_FALSE, MV_FALSE);
+		    }
+		    
+		    fprintf(ostream, "Position before:\n");
+		    position_print_ex(position.sqtopc, ostream);
 		    make_move(&position, m, &sp);
-	    } else if (bytes == 5) { // promotion
-		    // TODO(plesslie):
+		    fprintf(ostream, "Position after:\n");
+		    position_print_ex(position.sqtopc, ostream);
 	    } else {
 		    printf("Error (bad move): %s\n", line);
 		    return 1;
@@ -196,13 +214,19 @@ int handle_xboard_input(const char * const line, size_t bytes) {
     if (state == PLAYING) {
 	    //const uint32_t nmoves = generate_moves(&position, &moves[0]);
 	    const uint32_t nmoves = gen_legal_moves(&position, &moves[0]);
+	    fprintf(ostream, "Found %d legal moves\n", nmoves);
+	    int zz = nmoves < 10 ? nmoves : 10;
+	    for (int ii = 0; ii < zz; ++ii) {
+		    fprintf(ostream, "\t%s\n", xboard_move_print(moves[ii]));
+	    }
 	    if (nmoves == 0) {
 		    // TODO(plesslie): send correct end of game state
 		    printf("resign\n");
 	    } else {
 		    const uint32_t r = rand() % nmoves;
 		    make_move(&position, moves[r], &sp);
-		    const char *movestr = xboard_move_print(moves[r]);		    
+		    const char *movestr = xboard_move_print(moves[r]);
+
 		    fprintf(ostream, "Trying to make move: %s\n", movestr);
 		    printf("move %s\n", movestr);
 	    }
