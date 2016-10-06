@@ -2,7 +2,9 @@
 #define PLCHESS__H_
 
 #include "types.h"
-#include "move.h"
+
+// TODO: move this out of interface
+typedef uint16_t move;
 
 // --- Interface Functions ---
 

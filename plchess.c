@@ -9,7 +9,6 @@
 #include <signal.h>
 #include <unistd.h>
 #include "types.h"
-#include "move.h"
 
 // --- Macros ---
 /* #define BOOLSTR(x) ((x)?"TRUE":"FALSE") */
@@ -43,6 +42,30 @@
 /* #define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING]) */
 /* #define SIDESTR(side) ((side)==WHITE?"WHITE":"BLACK") */
 /* #define CSL(side) ((side) == WHITE ? (WKINGSD|WQUEENSD) : (BKINGSD|BQUEENSD)) */
+#define MV_TRUE       1
+#define MV_FALSE      0
+#define MV_PRM_NONE   (MV_FALSE)
+#define MV_PRM_KNIGHT 1
+#define MV_PRM_BISHOP 2
+#define MV_PRM_ROOK   3
+#define MV_PRM_QUEEN  4
+#define SIMPLEMOVE(from, to) (((to) << 0) | ((from) << 6))
+#define _MOVE(from, to, prm, ep, csl)              \
+    (((to)    <<  0) |                                  \
+     ((from)  <<  6) |                                  \
+     (_sm_translation[prm] << 12) |                     \
+     (((!!(ep))*1 + (!!(prm))*2 + (!!(csl))*3) << 14))
+
+
+#define TO(m)       (((m) >>  0) & 0x3f)
+#define FROM(m)     (((m) >>  6) & 0x3f)
+#define PROMO_PC(m) ((((m) >> 12) & 0x03)+1)
+#define FLAGS(m)    (((m) >> 14))
+
+#define FLG_NONE   0
+#define FLG_EP     1
+#define FLG_PROMO  2
+#define FLG_CASTLE 3
 
 /* // --- Enums --- */
 enum xboard_state { IDLE, SETUP, PLAYING };
@@ -66,6 +89,8 @@ enum xboard_state { IDLE, SETUP, PLAYING };
 /*     WKINGSD  = (1<<0), WQUEENSD = (1<<1), */
 /*     BKINGSD  = (1<<2), BQUEENSD = (1<<3), */
 /* }; */
+
+// --- TypeDefs ---
 
 /* // --- Structs --- */
 /* struct position { */
@@ -100,6 +125,13 @@ struct xboard_settings {
 
 // --- Global Data ---
 /* const char *vpcs = "PNBRQKpnbrqk "; */
+static const uint16_t _sm_translation[5] = {
+    MV_PRM_NONE,
+    MV_PRM_KNIGHT-1,
+    MV_PRM_BISHOP-1,
+    MV_PRM_ROOK-1,
+    MV_PRM_QUEEN-1
+};
 
 /* const uint32_t PROMOPC[5] = { 0, KNIGHT, BISHOP, ROOK, QUEEN }; */
 
@@ -113,6 +145,11 @@ static int handle_xboard_input(const char * const line, size_t bytes, struct xbo
 static void sighandler(int signum);
 static void move_print(move mv);
 static const char * xboard_move_print(move mv);
+#ifdef NDEBUG
+    #define MOVE _MOVE
+#else
+    static move MOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl);
+#endif
 
 // --- Interface Functions ---
 uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves) {
@@ -1250,6 +1287,34 @@ static const char * xboard_move_print(move mv) {
 	}
 	return &buffer[0];
 }
+
+#ifndef NDEBUG
+static move MOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl) {
+    assert(ep  == MV_TRUE || ep  == MV_FALSE);
+    assert(csl == MV_TRUE || csl == MV_FALSE);
+    assert(prm == MV_PRM_NONE   ||
+           prm == MV_PRM_KNIGHT ||
+           prm == MV_PRM_BISHOP ||
+           prm == MV_PRM_ROOK   ||
+           prm == MV_PRM_QUEEN);
+    assert(ep == MV_FALSE  || (prm == MV_FALSE && csl == MV_FALSE));
+    assert(prm == MV_FALSE || (ep  == MV_FALSE && csl == MV_FALSE));
+    assert(csl == MV_FALSE || (ep  == MV_FALSE && prm == MV_FALSE));
+
+    #if 0    
+    const uint16_t flags = ((!!(ep))*1 + (!!(prm))*2 + (!!(csl))*3);    
+    printf("to(%u), from(%u), prm(%u), ep(%u), csl(%u), flags(%u)\n",
+           to, from, prm, ep, csl, flags);
+    const uint16_t tmsk = to << 0;
+    const uint16_t fmsk = from << 6;
+    const uint16_t pmsk = _sm_translation[prm] << 12;
+    const uint16_t gmsk = flags << 14;
+    #endif
+    
+    return _MOVE(from, to, prm, ep, csl);
+}
+#endif
+
 
 //================================================================================
 // Tests
