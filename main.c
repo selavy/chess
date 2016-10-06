@@ -151,10 +151,10 @@ int handle_xboard_input(const char * const line, size_t bytes, struct xboard_set
 	    }
 		    
 	    fprintf(settings->log, "Position before:\n");
-	    position_print_ex(position.sqtopc, settings->log);
+	    position_print(position.sqtopc, settings->log);
 	    make_move(&position, m, &sp);
 	    fprintf(settings->log, "Position after:\n");
-	    position_print_ex(position.sqtopc, settings->log);
+	    position_print(position.sqtopc, settings->log);
 	} else {
 	    printf("Error (bad move): %s\n", line);
 	    return 1;
