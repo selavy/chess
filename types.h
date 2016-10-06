@@ -85,7 +85,4 @@ extern void full_position_print(const struct position *p);
 extern int validate_position(const struct position * const restrict p);
 extern void set_initial_position(struct position * restrict p);
 
-// TODO: delete
-extern int position_cmp(const struct position *restrict l, const struct position *restrict r);
-
 #endif // TYPES__H_
