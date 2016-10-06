@@ -8,40 +8,39 @@
 #include <time.h>
 #include <signal.h>
 #include <unistd.h>
-#include "types.h"
+#include "magic_tables.h"
 
 // --- Macros ---
-/* #define BOOLSTR(x) ((x)?"TRUE":"FALSE") */
-/* #define FLIP(side) ((side)^1) */
-/* #define COLS 8 */
-/* #define RANKS 8 */
-/* #define SQUARES 64 */
-/* #define MAX_MOVES 256 */
-/* #define MASK(x) ((uint64_t)1 << x) */
-/* #define SQ(c,r) ((r)*COLS+(c)) */
-/* #define FORWARD_ONE_RANK(wtm, sq) ((wtm) == WHITE ? (sq) + 8 : (sq) - 8) */
-/* #define BACKWARD_ONE_RANK(wtm, sq) ((wtm) == WHITE ? (sq) - 8 : (sq) + 8) */
-/* #define pawn_attacks(side, sq) ((side) == WHITE ? wpawn_attacks[sq] : bpawn_attacks[sq]) */
-/* #define PC(side, type) (((side)*NPIECES)+(type)) */
-/* #define PIECES(p, side, type) (p).brd[PC(side, type)] */
-/* #define WHITE_ENPASSANT_SQUARES 0x00000000ff000000 */
-/* #define BLACK_ENPASSANT_SQUARES 0x000000ff00000000 */
-/* #define EP_SQUARES(side) ((side)==WHITE ? WHITE_ENPASSANT_SQUARES : BLACK_ENPASSANT_SQUARES) */
-/* #define SECOND_RANK 0xff00ull */
-/* #define SEVENTH_RANK 0xff000000000000ull */
-/* #define RANK7(side) ((side) == WHITE ? SEVENTH_RANK : SECOND_RANK) */
-/* #define A_FILE 0x101010101010101ULL */
-/* #define H_FILE   0x8080808080808080ULL */
-/* #define RANK2(side) ((side) == WHITE ? SECOND_RANK : SEVENTH_RANK) */
-/* #define THIRD_RANK 0xff0000ULL */
-/* #define SIXTH_RANK 0xff0000000000ULL */
-/* #define RANK3(side) ((side) == WHITE ? THIRD_RANK : SIXTH_RANK) */
-/* #define NO_PROMOTION 0 */
-/* #define NO_CAPTURE EMPTY */
-/* #define NO_ENPASSANT 0 */
-/* #define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING]) */
-/* #define SIDESTR(side) ((side)==WHITE?"WHITE":"BLACK") */
-/* #define CSL(side) ((side) == WHITE ? (WKINGSD|WQUEENSD) : (BKINGSD|BQUEENSD)) */
+#define BOOLSTR(x) ((x)?"TRUE":"FALSE")
+#define FLIP(side) ((side)^1)
+#define COLS 8
+#define RANKS 8
+#define SQUARES 64
+#define MAX_MOVES 256
+#define MASK(x) ((uint64_t)1 << x)
+#define SQ(c,r) ((r)*COLS+(c))
+#define FORWARD_ONE_RANK(wtm, sq) ((wtm) == WHITE ? (sq) + 8 : (sq) - 8)
+#define BACKWARD_ONE_RANK(wtm, sq) ((wtm) == WHITE ? (sq) - 8 : (sq) + 8)
+#define pawn_attacks(side, sq) ((side) == WHITE ? wpawn_attacks[sq] : bpawn_attacks[sq])
+#define PC(side, type) (((side)*NPIECES)+(type))
+#define PIECES(p, side, type) (p).brd[PC(side, type)]
+#define WHITE_ENPASSANT_SQUARES 0x00000000ff000000
+#define BLACK_ENPASSANT_SQUARES 0x000000ff00000000
+#define EP_SQUARES(side) ((side)==WHITE ? WHITE_ENPASSANT_SQUARES : BLACK_ENPASSANT_SQUARES)
+#define SECOND_RANK 0xff00ull
+#define SEVENTH_RANK 0xff000000000000ull
+#define RANK7(side) ((side) == WHITE ? SEVENTH_RANK : SECOND_RANK)
+#define A_FILE 0x101010101010101ULL
+#define H_FILE   0x8080808080808080ULL
+#define RANK2(side) ((side) == WHITE ? SECOND_RANK : SEVENTH_RANK)
+#define THIRD_RANK 0xff0000ULL
+#define SIXTH_RANK 0xff0000000000ULL
+#define RANK3(side) ((side) == WHITE ? THIRD_RANK : SIXTH_RANK)
+#define NO_PROMOTION 0
+#define NO_CAPTURE EMPTY
+#define NO_ENPASSANT 0
+#define FULLSIDE(b, s) ((b).brd[(s)*NPIECES+PAWN]|(b).brd[(s)*NPIECES+KNIGHT]|(b).brd[(s)*NPIECES+BISHOP]|(b).brd[(s)*NPIECES+ROOK]|(b).brd[(s)*NPIECES+QUEEN]|(b).brd[(s)*NPIECES+KING])
+#define SIDESTR(side) ((side)==WHITE?"WHITE":"BLACK")
 #define MV_TRUE       1
 #define MV_FALSE      0
 #define MV_PRM_NONE   (MV_FALSE)
@@ -55,76 +54,68 @@
      ((from)  <<  6) |                                  \
      (_sm_translation[prm] << 12) |                     \
      (((!!(ep))*1 + (!!(prm))*2 + (!!(csl))*3) << 14))
-
-
 #define TO(m)       (((m) >>  0) & 0x3f)
 #define FROM(m)     (((m) >>  6) & 0x3f)
 #define PROMO_PC(m) ((((m) >> 12) & 0x03)+1)
 #define FLAGS(m)    (((m) >> 14))
-
 #define FLG_NONE   0
 #define FLG_EP     1
 #define FLG_PROMO  2
 #define FLG_CASTLE 3
+#define CSL(side) ((side) == WHITE ? (WKINGSD|WQUEENSD) : (BKINGSD|BQUEENSD))
 
 /* // --- Enums --- */
+enum {
+    WHITE=0, BLACK
+};
+
+enum {
+    PAWN=0, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2)
+};
+
+enum {
+    A1, B1, C1, D1, E1, F1, G1, H1,
+    A2, B2, C2, D2, E2, F2, G2, H2,
+    A3, B3, C3, D3, E3, F3, G3, H3,
+    A4, B4, C4, D4, E4, F4, G4, H4,
+    A5, B5, C5, D5, E5, F5, G5, H5,
+    A6, B6, C6, D6, E6, F6, G6, H6,
+    A7, B7, C7, D7, E7, F7, G7, H7,
+    A8, B8, C8, D8, E8, F8, G8, H8,
+};
+
+enum {
+    WKINGSD  = (1<<0), WQUEENSD = (1<<1),
+    BKINGSD  = (1<<2), BQUEENSD = (1<<3),
+};
+
 enum xboard_state { IDLE, SETUP, PLAYING };
 
-/* enum { WHITE=0, BLACK }; */
-
-/* enum { PAWN=0, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2) }; */
-
-/* enum { */
-/*     A1, B1, C1, D1, E1, F1, G1, H1, */
-/*     A2, B2, C2, D2, E2, F2, G2, H2, */
-/*     A3, B3, C3, D3, E3, F3, G3, H3, */
-/*     A4, B4, C4, D4, E4, F4, G4, H4, */
-/*     A5, B5, C5, D5, E5, F5, G5, H5, */
-/*     A6, B6, C6, D6, E6, F6, G6, H6, */
-/*     A7, B7, C7, D7, E7, F7, G7, H7, */
-/*     A8, B8, C8, D8, E8, F8, G8, H8, */
-/* }; */
-
-/* enum { */
-/*     WKINGSD  = (1<<0), WQUEENSD = (1<<1), */
-/*     BKINGSD  = (1<<2), BQUEENSD = (1<<3), */
-/* }; */
-
-// --- TypeDefs ---
-
-/* // --- Structs --- */
-/* struct position { */
-/*     uint64_t brd[NPIECES*2];  // 8 * 12 = 96B */
-/*     uint8_t  sqtopc[SQUARES]; // 1 * 64 = 64B */
-/*     uint16_t nmoves;          // 2 *  1 =  2B */
-/*     uint8_t  wtm;             // 1 *  1 =  1B */
-/*     uint8_t  halfmoves;       // 1 *  1 =  1B */
-/*     uint8_t  castle;          // 1 *  1 =  1B */
-/*     uint8_t  enpassant;       // 1 *  1 =  1B */
-/* };                            // Total:  164B */
-
-/* struct savepos { */
-/*     uint8_t halfmoves; */
-/*     uint8_t enpassant; */
-/*     uint8_t castle; */
-/*     uint8_t was_ep; */
-/* }; */
-
-/* struct savepos { */
-/*     uint8_t halfmoves; */
-/*     uint8_t enpassant; */
-/*     uint8_t castle; */
-/*     uint8_t was_ep; */
-/*     uint8_t captured_pc; // EMPTY if no capture */
-/* }; */
-
+// --- Types ---
 struct xboard_settings {
     int state;
     FILE *log;
 };
 
+struct position {
+    uint64_t brd[NPIECES*2];  // 8 * 12 = 96B
+    uint8_t  sqtopc[SQUARES]; // 1 * 64 = 64B
+    uint16_t nmoves;          // 2 *  1 =  2B
+    uint8_t  wtm;             // 1 *  1 =  1B
+    uint8_t  halfmoves;       // 1 *  1 =  1B
+    uint8_t  castle;          // 1 *  1 =  1B
+    uint8_t  enpassant;       // 1 *  1 =  1B
+};                            // Total:  164B
+
+struct savepos {
+    uint8_t halfmoves;
+    uint8_t enpassant;
+    uint8_t castle;
+    uint8_t was_ep;
+    uint8_t captured_pc; // EMPTY if no capture
+};
+
 // --- Global Data ---
-/* const char *vpcs = "PNBRQKpnbrqk "; */
 static const uint16_t _sm_translation[5] = {
     MV_PRM_NONE,
     MV_PRM_KNIGHT-1,
@@ -133,7 +124,20 @@ static const uint16_t _sm_translation[5] = {
     MV_PRM_QUEEN-1
 };
 
-/* const uint32_t PROMOPC[5] = { 0, KNIGHT, BISHOP, ROOK, QUEEN }; */
+const char *vpcs = "PNBRQKpnbrqk ";
+
+const char *sq_to_str[64] = {
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
+};
+
+const uint32_t PROMOPC[5] = { 0, KNIGHT, BISHOP, ROOK, QUEEN };
 
 // --- Static Function Prototypes ---
 static int read_fen(struct position * restrict pos, const char * const fen, int print);
@@ -150,6 +154,10 @@ static const char * xboard_move_print(move mv);
 #else
     static move MOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl);
 #endif
+static void position_print(const uint8_t * const restrict sqtopc, FILE *ostream);
+static void full_position_print(const struct position *p);
+static int validate_position(const struct position * const restrict p);
+static void set_initial_position(struct position * restrict p);
 
 // --- Interface Functions ---
 uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves) {
@@ -1315,6 +1323,129 @@ static move MOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t
 }
 #endif
 
+static void position_print(const uint8_t * const restrict sqtopc, FILE *ostream) {
+    char v;
+    int sq, r, c;
+    fputs("---------------------------------\n", ostream);
+    for (r = (RANKS - 1); r >= 0; --r) {
+        for (c = 0; c < COLS; ++c) {
+            sq = SQ(c, r);
+            v = vpcs[sqtopc[sq]];
+            fprintf(ostream, "| %c ", v);
+        }
+        fputs("|\n---------------------------------\n", ostream);
+    }
+}
+
+static void full_position_print(const struct position *p) {
+    position_print(&p->sqtopc[0], stdout);
+    printf("%s\n", p->wtm == WHITE ? "WHITE":"BLACK");
+    printf("Full moves: %d\n", p->nmoves);
+    printf("Half moves: %d\n", p->halfmoves);
+    printf("Castle: 0x%02X\n", p->castle);
+    printf("Castling: ");
+    if ((p->castle & WKINGSD) != 0) {
+        printf("K");
+    }
+    if ((p->castle & WQUEENSD) != 0) {
+        printf("Q");
+    }
+    if ((p->castle & BKINGSD) != 0) {
+        printf("k");
+    }
+    if ((p->castle & BQUEENSD) != 0) {
+        printf("q");
+    }
+    printf("\n");
+    printf("E.P.: %d\n", p->enpassant);
+}
+
+static int validate_position(const struct position * const restrict p) {
+    int i;
+    int pc;
+    uint64_t msk;
+    uint8_t found;
+    // white king present
+    if (p->brd[PC(WHITE,KING)] == 0) {
+        fputs("No white king present", stderr);
+        return 1;
+    }
+    // black king present
+    if (p->brd[PC(BLACK,KING)] == 0) {
+        fputs("No black king present", stderr);
+        return 2;
+    }
+    if (__builtin_popcountll(p->brd[PC(WHITE,KING)]) != 1) {
+        fputs("Too many white kings present", stderr);
+    }
+    if (__builtin_popcountll(p->brd[PC(BLACK,KING)]) != 1) {
+        fputs("Too many black kings present", stderr);
+    }
+    for (i = 0; i < SQUARES; ++i) {
+        msk = MASK(i);
+        found = 0;
+        for (pc = PC(WHITE,PAWN); pc <= PC(BLACK,KING); ++pc) {
+            if ((p->brd[pc] & msk) != 0) {
+                if (p->sqtopc[i] != pc) {
+                    fprintf(stderr, "p->brd[%c] != p->sqtopc[%s] = %c, found = %d\n",
+                            vpcs[pc],
+                            sq_to_str[i],
+                            vpcs[p->sqtopc[i]],
+                            found);
+                    return 3;
+                }
+                found = 1;
+            }
+        }
+        if (found == 0 && p->sqtopc[i] != EMPTY) {
+            fprintf(stderr, "ERROR on square(%d)\n", i);
+            fprintf(stderr, "Value at p->sqtopc[i] = %d\n", p->sqtopc[i]);
+            fprintf(stderr, "bitboards = EMPTY but sqtopc[%s] == %c\n",
+                    sq_to_str[i], vpcs[p->sqtopc[i]]);
+            return 4;
+        }
+    }
+    return 0;
+}
+
+static void set_initial_position(struct position * restrict p) {
+    int i;
+    p->wtm = WHITE;
+    p->nmoves = 0;
+    p->halfmoves = 0;
+    p->castle = WKINGSD | WQUEENSD | BKINGSD | BQUEENSD;
+    PIECES(*p, WHITE, PAWN  ) = 0x0000ff00ULL;
+    for (i = A2; i <= H2; ++i) p->sqtopc[i] = PC(WHITE, PAWN);
+    PIECES(*p, WHITE, KNIGHT) = 0x00000042ULL;
+    p->sqtopc[B1] = PC(WHITE, KNIGHT);
+    p->sqtopc[G1] = PC(WHITE, KNIGHT);
+    PIECES(*p, WHITE, BISHOP) = 0x00000024ULL;
+    p->sqtopc[C1] = PC(WHITE, BISHOP);
+    p->sqtopc[F1] = PC(WHITE, BISHOP);
+    PIECES(*p, WHITE, ROOK  ) = 0x00000081ULL;
+    p->sqtopc[A1] = PC(WHITE, ROOK);
+    p->sqtopc[H1] = PC(WHITE, ROOK);
+    PIECES(*p, WHITE, QUEEN ) = 0x00000008ULL;
+    p->sqtopc[D1] = PC(WHITE, QUEEN);
+    PIECES(*p, WHITE, KING  ) = 0x00000010ULL;
+    p->sqtopc[E1] = PC(WHITE, KING);
+    PIECES(*p, BLACK, PAWN  ) = 0xff000000000000ULL;
+    for (i = A7; i <= H7; ++i) p->sqtopc[i] = PC(BLACK, PAWN);
+    PIECES(*p, BLACK, KNIGHT) = 0x4200000000000000ULL;
+    p->sqtopc[B8] = PC(BLACK, KNIGHT);
+    p->sqtopc[G8] = PC(BLACK, KNIGHT);
+    PIECES(*p, BLACK, BISHOP) = 0x2400000000000000ULL;
+    p->sqtopc[C8] = PC(BLACK, BISHOP);
+    p->sqtopc[F8] = PC(BLACK, BISHOP);
+    PIECES(*p, BLACK, ROOK  ) = 0x8100000000000000ULL;
+    p->sqtopc[A8] = PC(BLACK, ROOK);
+    p->sqtopc[H8] = PC(BLACK, ROOK);
+    PIECES(*p, BLACK, QUEEN ) = 0x800000000000000ULL;
+    p->sqtopc[D8] = PC(BLACK, QUEEN);
+    PIECES(*p, BLACK, KING  ) = 0x1000000000000000ULL;
+    p->sqtopc[E8] = PC(BLACK, KING);
+    for (i = A3; i < A7; ++i) p->sqtopc[i] = EMPTY;
+}
 
 //================================================================================
 // Tests

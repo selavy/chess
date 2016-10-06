@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <assert.h>
 #include <sys/types.h>
-#include "types.h"
 #include "plchess.h"
 
 static void print_usage();

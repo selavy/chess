@@ -1,10 +1,13 @@
 #ifndef PLCHESS__H_
 #define PLCHESS__H_
 
-#include "types.h"
+#include <stdint.h>
 
 // TODO: move this out of interface
 typedef uint16_t move;
+struct position;
+struct savepos;
+struct xboard_settings;
 
 // --- Interface Functions ---
 
