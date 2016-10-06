@@ -9,7 +9,6 @@
 #include <signal.h>
 #include "types.h"
 #include "move.h"
-#include "movegen.h"
 #include "plchess.h"
 
 void print_usage();

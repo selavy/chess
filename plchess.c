@@ -8,7 +8,6 @@
 #include <time.h>
 #include "types.h"
 #include "move.h"
-#include "movegen.h"
 
 // --- Macros ---
 /* #define BOOLSTR(x) ((x)?"TRUE":"FALSE") */
@@ -95,6 +94,11 @@
 /* const char *vpcs = "PNBRQKpnbrqk "; */
 
 /* const uint32_t PROMOPC[5] = { 0, KNIGHT, BISHOP, ROOK, QUEEN }; */
+
+// --- Static Function Prototypes ---
+static int read_fen(struct position * restrict pos, const char * const fen, int print);
+static int attacks(const struct position * const restrict pos, uint8_t side, int square);
+static int in_check(const struct position * const restrict pos, uint8_t side);
 
 // --- Interface Functions ---
 uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves) {
@@ -804,9 +808,6 @@ uint32_t generate_moves(const struct position *const restrict pos, move *restric
     return nmove;
 }
 
-// --- Static Function Prototypes ---
-static int read_fen(struct position * restrict pos, const char * const fen, int print);
-
 // --- Static Function Definitions ---
 static int read_fen(struct position * restrict pos, const char * const fen, int print) {
     int row;
@@ -976,6 +977,44 @@ static int read_fen(struct position * restrict pos, const char * const fen, int 
 
     return 0;
 }
+
+// returns 1 if a piece from `side` attacks `square`
+static int attacks(const struct position * const restrict pos, uint8_t side, int square) {
+    uint64_t pcs;
+    uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
+    pcs = pos->brd[PC(side,ROOK)] | pos->brd[PC(side,QUEEN)];
+    if ((rook_attacks(square, occupied) & pcs) != 0) {
+        return 1;
+    }
+    pcs = pos->brd[PC(side,BISHOP)] | pos->brd[PC(side,QUEEN)];
+    if ((bishop_attacks(square, occupied) & pcs) != 0) {
+        return 1;
+    }
+    pcs = pos->brd[PC(side,KNIGHT)];
+    if ((knight_attacks[square] & pcs) != 0) {
+        return 1;
+    }
+    pcs = pos->brd[PC(side,PAWN)];
+    if ((pawn_attacks(FLIP(side), square) & pcs) != 0) {
+        return 1;
+    }
+    pcs = pos->brd[PC(side,KING)];
+    if ((king_attacks[square] & pcs) != 0) {
+        return 1;
+    }
+    return 0;
+}
+
+static int in_check(const struct position * const restrict pos, uint8_t side) {
+    // find `side`'s king
+    uint64_t kings = pos->brd[PC(side,KING)];
+    int kingloc = 0;
+    assert(kings != 0); // there should be a king...
+    for (; (kings & ((uint64_t)1 << kingloc)) == 0; ++kingloc);
+    // check if the other side attacks the king location
+    return attacks(pos, FLIP(side), kingloc);
+}
+
 
 //================================================================================
 // Tests
