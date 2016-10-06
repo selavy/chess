@@ -367,13 +367,181 @@ void make_move(struct position *restrict p, move m, struct savepos *restrict sp)
     assert(((p->castle & BKINGSD)  == 0) || (p->sqtopc[H8] == PC(BLACK,ROOK) && p->sqtopc[E8] == PC(BLACK,KING)));
 }
 
+void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
+    const uint8_t  side   = FLIP(p->wtm);    
+    const uint32_t fromsq = FROM(m);
+    const uint32_t tosq   = TO(m);
+    const uint32_t promo  = PROMOPC[PROMO_PC(m)]; // only valid if promo flag set
+    const uint32_t promopc = PC(side,promo);        
+    const uint32_t flags  = FLAGS(m);
+    const uint32_t pc     = p->sqtopc[tosq];
+    const uint32_t cappc  = sp->captured_pc;
+    const uint64_t from   = MASK(fromsq);
+    const uint64_t to     = MASK(tosq);
+    const uint32_t epsq   = sp->enpassant + 23;      // only valid if ep flag set    
+
+    uint64_t *restrict pcs = &p->brd[pc];
+    uint8_t  *restrict s2p = p->sqtopc;
+
+    // --- validate position before ---
+    assert(validate_position(p) == 0);
+    assert(fromsq >= A1 && fromsq <= H8);
+    assert(tosq   >= A1 && tosq   <= H8);
+    assert(side == WHITE || side == BLACK);
+    assert(flags >= FLG_NONE && flags <= FLG_CASTLE);
+    assert(pc    >= PC(WHITE,PAWN) && pc    <= EMPTY);
+    assert(cappc >= PC(WHITE,PAWN) && cappc <= EMPTY);
+    assert(promo != FLG_PROMO || (promopc >= PC(side,KNIGHT) && promopc <= PC(side,QUEEN)));
+    
+    p->halfmoves = sp->halfmoves;
+    p->enpassant = sp->enpassant;
+    p->castle = sp->castle;
+    p->wtm = side;
+    --p->nmoves;
+
+    // TODO(plesslie): make this a jump table? (or switch)
+    if (flags == FLG_NONE) {
+        s2p[fromsq] = pc;
+        *pcs |= from;
+        *pcs &= ~to;
+        s2p[tosq] = cappc;
+        if (cappc != EMPTY) {
+            p->brd[cappc] |= MASK(tosq);
+        }
+    } else if (flags == FLG_EP) {
+        s2p[fromsq] = pc;
+        *pcs |= from;
+        *pcs &= ~to;
+        s2p[tosq] = EMPTY;
+        if (side == WHITE) {
+            assert(epsq == (tosq - 8));
+            s2p[epsq] = PC(BLACK,PAWN);
+            p->brd[PC(BLACK,PAWN)] |= MASK(epsq);
+        } else {
+            assert(epsq == (tosq + 8));            
+            s2p[epsq] = PC(WHITE,PAWN);
+            p->brd[PC(WHITE,PAWN)] |= MASK(epsq);            
+        }
+    } else if (flags == FLG_PROMO) {
+        p->brd[PC(side,PAWN)] |= from;
+        p->brd[promopc] &= ~to;
+        s2p[tosq] = cappc;        
+        s2p[fromsq] = PC(side,PAWN);
+        if (cappc != EMPTY) {
+            p->brd[cappc] |= to;
+        }
+    } else if (flags == FLG_CASTLE) {
+        assert(pc == PC(side,KING));
+        // TODO(plesslie): switch statement?
+        if (tosq == C1) {
+            assert(fromsq == E1);
+            assert(s2p[A1] == EMPTY);
+            assert(s2p[B1] == EMPTY);
+            assert(s2p[C1] == PC(WHITE,KING));
+            assert(s2p[D1] == PC(WHITE,ROOK));
+            assert(s2p[E1] == EMPTY);
+            s2p[A1] = PC(WHITE,ROOK);
+            s2p[B1] = EMPTY;
+            s2p[C1] = EMPTY;
+            s2p[D1] = EMPTY;
+            s2p[E1] = PC(WHITE,KING);
+            p->brd[PC(WHITE,ROOK)] &= ~MASK(D1);
+            p->brd[PC(WHITE,ROOK)] |= MASK(A1);
+            p->brd[PC(WHITE,KING)] &= ~MASK(C1);
+            p->brd[PC(WHITE,KING)] |= MASK(E1);
+        } else if (tosq == G1) {
+            assert(fromsq == E1);
+            assert(s2p[E1] == EMPTY);
+            assert(s2p[F1] == PC(WHITE,ROOK));
+            assert(s2p[G1] == PC(WHITE,KING));
+            assert(s2p[H1] == EMPTY);
+            s2p[E1] = PC(WHITE,KING);
+            s2p[F1] = EMPTY;
+            s2p[G1] = EMPTY;
+            s2p[H1] = PC(WHITE,ROOK);
+            p->brd[PC(WHITE,KING)] &= ~MASK(G1);
+            p->brd[PC(WHITE,KING)] |= MASK(E1);
+            p->brd[PC(WHITE,ROOK)] &= ~MASK(F1);
+            p->brd[PC(WHITE,ROOK)] |= MASK(H1);
+        } else if (tosq == C8) {
+            assert(fromsq == E8);
+            assert(s2p[A8] == EMPTY);
+            assert(s2p[B8] == EMPTY);
+            assert(s2p[C8] == PC(BLACK,KING));
+            assert(s2p[D8] == PC(BLACK,ROOK));
+            assert(s2p[E8] == EMPTY);
+            s2p[A8] = PC(BLACK,ROOK);
+            s2p[B8] = EMPTY;
+            s2p[C8] = EMPTY;
+            s2p[D8] = EMPTY;
+            s2p[E8] = PC(BLACK,KING);
+            p->brd[PC(BLACK,ROOK)] &= ~MASK(D8);
+            p->brd[PC(BLACK,ROOK)] |= MASK(A8);
+            p->brd[PC(BLACK,KING)] &= ~MASK(C8);
+            p->brd[PC(BLACK,KING)] |= MASK(E8);
+        } else if (tosq == G8) {
+            assert(fromsq == E8);
+            assert(s2p[E8] == EMPTY);
+            assert(s2p[F8] == PC(BLACK,ROOK));
+            assert(s2p[G8] == PC(BLACK,KING));
+            assert(s2p[H8] == EMPTY);
+            s2p[E8] = PC(BLACK,KING);
+            s2p[F8] = EMPTY;
+            s2p[G8] = EMPTY;
+            s2p[H8] = PC(BLACK,ROOK);
+            p->brd[PC(BLACK,KING)] &= ~MASK(G8);
+            p->brd[PC(BLACK,KING)] |= MASK(E8);
+            p->brd[PC(BLACK,ROOK)] &= ~MASK(F8);
+            p->brd[PC(BLACK,ROOK)] |= MASK(H8);            
+        } else {
+            assert(0);
+        }
+    } else {
+        assert(0);
+    }
+
+    // --- validate position after ---
+    assert(validate_position(p) == 0);
+    
+    // no pawns on 1st or 8th ranks
+    assert(p->sqtopc[A1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[B1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[C1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[D1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[E1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[F1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[G1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[H1] != PC(WHITE,PAWN));
+    assert(p->sqtopc[A1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[B1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[C1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[D1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[E1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[F1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[G1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[H1] != PC(BLACK,PAWN));
+    assert(p->sqtopc[A8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[B8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[C8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[D8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[E8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[F8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[G8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[H8] != PC(WHITE,PAWN));
+    assert(p->sqtopc[A8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[B8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[C8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[D8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[E8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[F8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[G8] != PC(BLACK,PAWN));
+    assert(p->sqtopc[H8] != PC(BLACK,PAWN));
+}
+
 // --- Static Function Prototypes ---
-//static void make_move(struct position *restrict p, move m, struct savepos *restrict sp);
-//static uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves);
 static int read_fen(struct position * restrict pos, const char * const fen, int print);
 
 // --- Static Function Definitions ---
-
 static int read_fen(struct position * restrict pos, const char * const fen, int print) {
     int row;
     int col;
