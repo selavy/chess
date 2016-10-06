@@ -15,6 +15,9 @@ extern void make_move(struct position *restrict p, move m, struct savepos *restr
 // TODO: move this out of interface
 extern void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp);
 
+// TODO: move this out of interface
+extern uint32_t generate_moves(const struct position *const restrict pos, move *restrict moves);
+
 // --- Test Functions ---
 
 extern void test_perft(int argc, char **argv);
