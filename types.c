@@ -165,8 +165,6 @@ int position_cmp(const struct position *restrict l, const struct position *restr
         if (l->brd[i] != r->brd[i]) {
             fprintf(stderr, "l->brd[%c] != r->brd[%c] 0x%08" PRIX64 " != 0x%08" PRIX64 "\n",
                     vpcs[i], vpcs[i], l->brd[i], r->brd[i]);
-            pbbrd(l->brd[i]);
-            pbbrd(r->brd[i]);
             return 1;
         }
     }
@@ -202,17 +200,4 @@ int position_cmp(const struct position *restrict l, const struct position *restr
     }
 
     return 0;
-}
-
-void pbbrd(uint64_t bb) {
-    int r, c;
-    uint64_t msk;
-    fputs("---------------------------------\n", stdout);    
-    for (r = 7; r >= 0; --r) {
-        for (c = 0; c < 8; ++c) {
-            msk = MASK(SQ(c,r));
-            fprintf(stdout, "| %c ", (bb&msk)?'*': ' ');
-        }
-        fputs("|\n---------------------------------\n", stdout);        
-    }
 }

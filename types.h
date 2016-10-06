@@ -87,6 +87,5 @@ extern void set_initial_position(struct position * restrict p);
 
 // TODO: delete
 extern int position_cmp(const struct position *restrict l, const struct position *restrict r);
-extern void pbbrd(uint64_t bb);
 
 #endif // TYPES__H_
