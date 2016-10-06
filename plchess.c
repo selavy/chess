@@ -121,6 +121,10 @@ static int perft_count_test();
 static int perft_count_test_ex(const char *name, const char *fen, const struct expected_t *expected, int max_depth);
 static int perft_bulk_test_ex(const char *name, const char *fen, const uint64_t *expected, int max_depth);
 static uint64_t perft(int depth, struct position *const restrict pos, move pmove, int cap);
+static int test_make_move_ex(const char *fen, const move *moves);
+static int test_undo_move_ex(const char *fen, const move *moves);
+static int test_move_creation();
+static int position_cmp(const struct position *restrict l, const struct position *restrict r);
 
 // --- Test Functions ---
 void reset_counts() {
@@ -171,7 +175,6 @@ void test_deep_perft(int argc, char **argv) {
     }
 }
 
-// --- Test Delegate Functions
 int perft_count_test() {
     int ret;
     
@@ -405,4 +408,342 @@ uint64_t perft(int depth, struct position *const restrict pos, move pmove, int c
     }
 
     return nodes;
+}
+
+void test_make_move(int argc, char **argv) {
+    if (test_move_creation() != 0) {
+        return;
+    }
+
+    printf("Running make move tests...\n");
+    const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";    
+    move start_pos_moves[] = {
+        MOVE(A2, A3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(A2, A4, MV_FALSE, MV_FALSE, MV_FALSE),        
+        MOVE(B2, B3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B2, B4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(C2, C3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(C2, C4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(D2, D3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(D2, D4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(E2, E3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(E2, E4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(F2, F3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(F2, F4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G2, G3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G2, G4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(H2, H3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(H2, H4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B1, A3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B1, C3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G1, F3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G1, H3, MV_FALSE, MV_FALSE, MV_FALSE),
+        0
+    };
+    if (test_make_move_ex(start_pos_fen, &start_pos_moves[0]) != 0) {
+        printf("Failed test for moves from starting position!\n");
+        return;
+    }
+
+    const char *kiwi_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+    move kiwi_moves[] = {
+        MOVE(E2, A6, MV_FALSE, MV_FALSE, MV_FALSE), // bishop captures bishop
+        MOVE(G2, H3, MV_FALSE, MV_FALSE, MV_FALSE), // pawn captures pawn
+        MOVE(D2, G5, MV_FALSE, MV_FALSE, MV_FALSE), // bishop move
+        MOVE(E1, G1, MV_FALSE, MV_FALSE, MV_TRUE ), // castle king side
+        MOVE(E1, C1, MV_FALSE, MV_FALSE, MV_TRUE ), // castle queen side
+        MOVE(F3, H3, MV_FALSE, MV_FALSE, MV_FALSE), // queen captures pawn
+        MOVE(H1, F1, MV_FALSE, MV_FALSE, MV_FALSE), // rook move
+        MOVE(E1, F1, MV_FALSE, MV_FALSE, MV_FALSE), // king move (not castling)
+        0
+    };
+    if (test_make_move_ex(kiwi_fen, &kiwi_moves[0]) != 0) {
+        printf("Failed test for moves from kiwi position!\n");
+        return;
+    }
+
+    const char *ep_fen = "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6";
+    move ep_moves[] = {
+        MOVE(E5, D6, MV_FALSE, MV_TRUE, MV_FALSE),
+        0
+    };
+    if (test_make_move_ex(ep_fen, &ep_moves[0]) != 0) {
+        printf("Failed test for moves from e.p. position!\n");
+        return;
+    }
+
+    const char *promo_fen = "8/1Pp5/7r/8/KR1p1p1k/8/4P1P1/8 w - -";
+    move promo_moves[] = {
+        MOVE(B7, B8, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE), // knight promo
+        MOVE(B7, B8, MV_PRM_BISHOP, MV_FALSE, MV_FALSE), // bishop promo
+        MOVE(B7, B8, MV_PRM_ROOK  , MV_FALSE, MV_FALSE), // rook promo
+        MOVE(B7, B8, MV_PRM_QUEEN , MV_FALSE, MV_FALSE), // queen promo
+        0
+    };
+    if (test_make_move_ex(promo_fen, &promo_moves[0]) != 0) {
+        printf("Failed test for moves from promo position!\n");
+        return;
+    }
+    
+    printf("Succeeded.\n");
+}
+
+void test_undo_move(int argc, char **argv) {
+    printf("Running undo move tests...\n");
+    const char *start_pos_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";    
+    move start_pos_moves[] = {
+        MOVE(A2, A3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(A2, A4, MV_FALSE, MV_FALSE, MV_FALSE),        
+        MOVE(B2, B3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B2, B4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(C2, C3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(C2, C4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(D2, D3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(D2, D4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(E2, E3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(E2, E4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(F2, F3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(F2, F4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G2, G3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G2, G4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(H2, H3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(H2, H4, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B1, A3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(B1, C3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G1, F3, MV_FALSE, MV_FALSE, MV_FALSE),
+        MOVE(G1, H3, MV_FALSE, MV_FALSE, MV_FALSE),
+        0
+    };
+    if (test_undo_move_ex(start_pos_fen, &start_pos_moves[0]) != 0) {
+        printf("Failed test for moves from starting position!\n");
+        return;
+    }
+
+    const char *kiwi_fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+    move kiwi_moves[] = {
+        MOVE(E2, A6, MV_FALSE, MV_FALSE, MV_FALSE), // bishop captures bishop
+        MOVE(G2, H3, MV_FALSE, MV_FALSE, MV_FALSE), // pawn captures pawn
+        MOVE(D2, G5, MV_FALSE, MV_FALSE, MV_FALSE), // bishop move
+        MOVE(E1, G1, MV_FALSE, MV_FALSE, MV_TRUE ), // castle king side
+        MOVE(E1, C1, MV_FALSE, MV_FALSE, MV_TRUE ), // castle queen side
+        MOVE(F3, H3, MV_FALSE, MV_FALSE, MV_FALSE), // queen captures pawn
+        MOVE(H1, F1, MV_FALSE, MV_FALSE, MV_FALSE), // rook move
+        MOVE(E1, F1, MV_FALSE, MV_FALSE, MV_FALSE), // king move (not castling)
+        0
+    };
+    if (test_undo_move_ex(kiwi_fen, &kiwi_moves[0]) != 0) {
+        printf("Failed test for moves from kiwi position!\n");
+        return;
+    }
+
+    const char *ep_fen = "rnbqkbnr/1pp1pppp/p7/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6";
+    move ep_moves[] = {
+        MOVE(E5, D6, MV_FALSE, MV_TRUE, MV_FALSE),
+        0
+    };
+    if (test_undo_move_ex(ep_fen, &ep_moves[0]) != 0) {
+        printf("Failed test for moves from e.p. position!\n");
+        return;
+    }
+
+    const char *promo_fen = "8/1Pp5/7r/8/KR1p1p1k/8/4P1P1/8 w - -";
+    move promo_moves[] = {
+        MOVE(B7, B8, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE), // knight promo
+        MOVE(B7, B8, MV_PRM_BISHOP, MV_FALSE, MV_FALSE), // bishop promo
+        MOVE(B7, B8, MV_PRM_ROOK  , MV_FALSE, MV_FALSE), // rook promo
+        MOVE(B7, B8, MV_PRM_QUEEN , MV_FALSE, MV_FALSE), // queen promo
+        0
+    };
+    if (test_undo_move_ex(promo_fen, &promo_moves[0]) != 0) {
+        printf("Failed test for moves from promo position!\n");
+        return;
+    }
+
+    printf("Success.\n");
+}
+
+int test_make_move_ex(const char *fen, const move *moves) {
+    struct position pos;
+    struct position tmp;
+    struct savepos sp;
+
+    if (read_fen(&pos, fen, 0) != 0) {
+        fputs("Failed to read FEN for position!", stderr);
+        return 1;
+    }
+    memcpy(&tmp, &pos, sizeof(tmp));
+
+    const move *m = moves;
+    while (*m) {
+        #ifdef EXTRA_INFO
+        printf("Testing: "); move_print(*m);
+        #endif
+        
+        make_move(&pos, *m, &sp);
+        if (validate_position(&pos) != 0) {
+            fputs("Failed to make move!\n", stderr);
+            return 1;
+        }
+        // restore pos
+        memcpy(&pos, &tmp, sizeof(tmp));
+        ++m;
+    }
+
+    return 0;
+}
+
+int test_undo_move_ex(const char *fen, const move *moves) {
+    struct position pos;
+    struct position tmp;
+    struct savepos sp;
+
+    if (read_fen(&pos, fen, 0) != 0) {
+        fputs("Failed to read FEN for position!", stderr);
+        return 1;
+    }
+    memcpy(&tmp, &pos, sizeof(tmp));
+
+    const move *m = moves;
+    while (*m) {
+        #ifdef EXTRA_INFO
+        printf("Testing: "); move_print(*m);
+        #endif
+        
+        make_move(&pos, *m, &sp);
+        if (validate_position(&pos) != 0) {
+            fputs("Failed to make move!\n", stderr);
+            return 1;
+        }
+        
+        // restore pos
+        undo_move(&pos, *m, &sp);
+        if (validate_position(&pos) != 0) {
+            fputs("validate_position failed after calling undo move!\n", stderr);
+            return 1;
+        }
+        if (position_cmp(&pos, &tmp) != 0) {
+            fputs("position_cmp failed after undo_move()\n", stderr);
+            return 1;            
+        }
+        if (memcmp(&pos, &tmp, sizeof(tmp)) != 0) {
+            fputs("memcmp failed after undo_move()\n", stderr);
+            return 1;
+        }
+        ++m;
+    }
+
+    return 0;    
+}
+
+int test_move_creation() {
+    // verify that move creation macro works correctly
+    
+    int i;
+    int ret;
+    struct test_t {
+        uint32_t from;
+        uint32_t to;
+        uint32_t prm;        
+        uint32_t ep;
+        uint32_t csl;
+    } tests[] = {
+        { E2, E4, MV_FALSE     , MV_FALSE, MV_FALSE }, // regular case
+        { E6, D5, MV_FALSE     , MV_TRUE , MV_FALSE }, // ep case
+        { E8, E7, MV_PRM_QUEEN , MV_FALSE, MV_FALSE }, // prm case - white queen
+        { E8, E7, MV_PRM_ROOK  , MV_FALSE, MV_FALSE }, // prm case - white rook
+        { E8, E7, MV_PRM_BISHOP, MV_FALSE, MV_FALSE }, // prm case - white bishop
+        { E8, E7, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE }, // prm case - white knight
+        { E1, E2, MV_PRM_KNIGHT, MV_FALSE, MV_FALSE }, // prm case - black knight
+        { G1, E1, MV_FALSE     , MV_FALSE, MV_TRUE  },
+        { A1, H8, MV_FALSE     , MV_FALSE, MV_FALSE },
+        { A1, B1, MV_FALSE     , MV_FALSE, MV_FALSE }
+    };
+
+    printf("Testing move creation...\n");
+    for (i = 0; i < (sizeof(tests)/sizeof(tests[0])); ++i) {
+        const move mv = MOVE(tests[i].from,
+                                     tests[i].to,
+                                     tests[i].prm,
+                                     tests[i].ep,
+                                     tests[i].csl);
+        const uint32_t to    = TO(mv);
+        const uint32_t from  = FROM(mv);
+        const uint32_t prm   = PROMO_PC(mv);
+        const uint32_t flags = FLAGS(mv);
+
+        if (to != tests[i].to) {
+            printf("to(%u) != tests[i].to(%u)\n", to, tests[i].to);
+            ret = 1;
+        } else if (from != tests[i].from) {
+            printf("from(%u) != tests[i].from(%u)\n", from, tests[i].from);
+            ret = 1;
+        } else if (tests[i].prm != MV_FALSE && flags != FLG_PROMO) {
+            printf("prm != FALSE && flags(%u) != FLG_PROMO\n", flags);
+            ret = 1;
+        } else if (tests[i].prm != MV_FALSE && prm != tests[i].prm) {
+            printf("prm(%u) != tests[i].prm(%u)\n", prm, tests[i].prm);
+            ret = 1;
+        } else if (tests[i].ep == MV_TRUE && flags != FLG_EP) {
+            printf("ep != FALSE && flags(%u) != FLG_EP\n", flags);
+            ret = 1;
+        } else if (tests[i].csl == MV_TRUE && flags != FLG_CASTLE) {
+            printf("csl != FALSE && flags(%u) != FLG_CASTLE\n", flags);
+            ret = 1;
+        } else {
+            ret = 0;
+        }
+
+        if (ret != 0) {
+            printf("Failed on test case: (frm=%s, to=%s, prm=%u, ep=%u, csl=%u) sm = 0x%04" PRIx32 "\n",
+                   sq_to_str[tests[i].from], sq_to_str[tests[i].to], tests[i].prm,
+                   tests[i].ep, tests[i].csl, mv);
+            return ret;
+        }
+                
+    }
+    printf("Success.\n");
+    return 0;
+}
+
+int position_cmp(const struct position *restrict l, const struct position *restrict r) {
+    int i;
+    for (i = PC(WHITE,PAWN); i <= PC(BLACK,KING); ++i) {
+        if (l->brd[i] != r->brd[i]) {
+            fprintf(stderr, "l->brd[%c] != r->brd[%c] 0x%08" PRIX64 " != 0x%08" PRIX64 "\n",
+                    vpcs[i], vpcs[i], l->brd[i], r->brd[i]);
+            return 1;
+        }
+    }
+
+    for (i = 0; i < 64; ++i) {
+        if (l->sqtopc[i] != r->sqtopc[i]) {
+            fprintf(stderr, "(l->sqtopc[%s]=%c) != (r->sqtopc[%s]=%c)\n",
+                    sq_to_str[i], vpcs[l->sqtopc[i]],
+                    sq_to_str[i], vpcs[r->sqtopc[i]]);
+            return 2;
+        }
+    }
+
+    if (l->nmoves != r->nmoves) {
+        fprintf(stderr, "l->nmoves(%u) != r->nmoves(%u)\n", l->nmoves, r->nmoves);
+        return 3;
+    }
+    if (l->wtm != r->wtm) {
+        fprintf(stderr, "l->wtm(%s) != r->wtm(%s)\n", SIDESTR(l->wtm), SIDESTR(r->wtm));
+        return 4;
+    }
+    if (l->halfmoves != r->halfmoves) {
+        fprintf(stderr, "l->halfmoves(%u) != r->halfmoves(%u)\n", l->halfmoves, r->halfmoves);
+        return 5;
+    }
+    if (l->castle != r->castle) {
+        fprintf(stderr, "l->castle(%u) != r->castle(%u)\n", l->castle, r->castle);
+        return 6;
+    }
+    if (l->enpassant != r->enpassant) {
+        fprintf(stderr, "l->enpassant(%u) != r->enpassant(%u)\n", l->enpassant, r->enpassant);
+        return 7;
+    }
+
+    return 0;
 }
