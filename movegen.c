@@ -320,7 +320,6 @@ static int test_move_creation() {
             printf("Failed on test case: (frm=%s, to=%s, prm=%u, ep=%u, csl=%u) sm = 0x%04" PRIx32 "\n",
                    sq_to_str[tests[i].from], sq_to_str[tests[i].to], tests[i].prm,
                    tests[i].ep, tests[i].csl, mv);
-            pbin(mv);
             return ret;
         }
                 

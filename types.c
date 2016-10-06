@@ -159,14 +159,6 @@ void set_initial_position(struct position * restrict p) {
     for (i = A3; i < A7; ++i) p->sqtopc[i] = EMPTY;
 }
 
-void pbin(uint16_t b) {
-        int i;
-    for (i = 15; i >= 0; --i) {
-        printf("%d", (b & (1 << i)) ? 1 : 0); 
-    }
-    printf("\n");
-}
-
 int position_cmp(const struct position *restrict l, const struct position *restrict r) {
     int i;
     for (i = PC(WHITE,PAWN); i <= PC(BLACK,KING); ++i) {

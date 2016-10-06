@@ -32,10 +32,6 @@ move MOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl) {
     const uint16_t fmsk = from << 6;
     const uint16_t pmsk = _sm_translation[prm] << 12;
     const uint16_t gmsk = flags << 14;
-    pbin(tmsk);
-    pbin(fmsk);
-    pbin(pmsk);
-    pbin(gmsk);
     #endif
     
     return _MOVE(from, to, prm, ep, csl);

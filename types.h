@@ -86,7 +86,6 @@ extern int validate_position(const struct position * const restrict p);
 extern void set_initial_position(struct position * restrict p);
 
 // TODO: delete
-extern void pbin(uint16_t b);
 extern int position_cmp(const struct position *restrict l, const struct position *restrict r);
 extern void pbbrd(uint64_t bb);
 
