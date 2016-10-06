@@ -10,7 +10,6 @@
 #include "types.h"
 #include "move.h"
 #include "movegen.h"
-#include "read_fen.h"
 #include "plchess.h"
 
 void print_usage();

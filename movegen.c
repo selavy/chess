@@ -3,11 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "types.h"
-#include "read_fen.h"
 
 //#define EXTRA_INFO
-
-//#include "first.c"
 
 void make_move(struct position *restrict p, move m, struct savepos *restrict sp) {
     // --- loads ---
