@@ -36,7 +36,4 @@ extern const uint16_t _sm_translation[5];
 #define FLG_PROMO  2
 #define FLG_CASTLE 3
 
-void move_print(move mv);
-const char * xboard_move_print(move mv);
-
 #endif // MOVE__H_

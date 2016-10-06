@@ -9,8 +9,7 @@
 #include "move.h"
 #include "plchess.h"
 
-void print_usage();
-void do_perft();
+static void print_usage();
 
 struct command_t {
     const char *name;
@@ -26,7 +25,7 @@ struct command_t commands[] = {
     { 0, 0, 0 }
 };
 
-void print_usage(int argc, char **argv) {
+static void print_usage(int argc, char **argv) {
     struct command_t *cmd = &commands[0];
     printf("Usage: %s <MODE>\n", argv[0]);
     while (cmd->name) {

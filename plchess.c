@@ -111,6 +111,8 @@ static int xboard_settings_init(struct xboard_settings *settings, const char *lo
 static int xboard_settings_finalize(struct xboard_settings *settings);
 static int handle_xboard_input(const char * const line, size_t bytes, struct xboard_settings *settings);
 static void sighandler(int signum);
+static void move_print(move mv);
+static const char * xboard_move_print(move mv);
 
 // --- Interface Functions ---
 uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves) {
@@ -1205,8 +1207,48 @@ static int handle_xboard_input(const char * const line, size_t bytes, struct xbo
     return 0;
 }
 
-void sighandler(int signum) {
+static void sighandler(int signum) {
     // mask sigint signal until i get pondering
+}
+
+static void move_print(move mv) {
+    const uint32_t to    = TO(mv);
+    const uint32_t from  = FROM(mv);
+    const uint32_t prm   = PROMO_PC(mv);
+    const uint32_t flags = FLAGS(mv);
+
+    printf("from(%s) to(%s)", sq_to_str[from], sq_to_str[to]);
+    switch (flags) {
+    case FLG_EP:
+        printf(" e.p.");
+        break;
+    case FLG_PROMO:
+        printf(" promo(%c)", vpcs[PROMOPC[prm]]);
+        break;
+    case FLG_CASTLE:
+        printf(" castle");
+    default:
+        break;
+    }
+    printf("\n");
+}
+
+static const char * xboard_move_print(move mv) {
+	// max move length is "e7e8q", most moves are "e7e8"
+	static char buffer[6];
+	const char *pcs = " nbrq";
+	const uint32_t to = TO(mv);
+	const uint32_t from = FROM(mv);
+	const uint32_t flags = FLAGS(mv);
+
+	sprintf(&buffer[0], "%s%s", sq_to_str[from], sq_to_str[to]);
+	if (flags == FLG_PROMO) {
+		buffer[5] = pcs[PROMOPC[PROMO_PC(mv)]];
+		buffer[6] = 0;
+	} else {
+		buffer[5] = 0;
+	}
+	return &buffer[0];
 }
 
 //================================================================================
