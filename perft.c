@@ -303,7 +303,7 @@ void test_perft(int argc, char **argv) {
     }    
 }
 
-void deep_perft(int argc, char **argv) {
+void test_deep_perft(int argc, char **argv) {
     const int max_depth = argc == 2 ? 8 : atoi(argv[2]);
     int depth;
     uint64_t nodes;

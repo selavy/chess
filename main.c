@@ -26,7 +26,7 @@ struct command_t commands[] = {
     { "--help", &print_usage, "Print usage" },
     { "--make-move", &test_make_move, "Run make move tests" },
     { "--undo-move", &test_undo_move, "Run undo move tests" },
-    { "--deep-perft", &deep_perft, "Run perft to a deep level -- for timing test" },
+    { "--deep-perft", &test_deep_perft, "Run perft to a deep level -- for timing test" },
     { 0, 0, 0 }
 };
 
