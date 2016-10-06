@@ -9,7 +9,7 @@
 
 //#include "first.c"
 
-void make_move(struct position *restrict p, move m, struct saveposex *restrict sp) {
+void make_move(struct position *restrict p, move m, struct savepos *restrict sp) {
     // --- loads ---
     const uint8_t  side    = p->wtm;
     const uint8_t  contra  = FLIP(side);    
@@ -47,7 +47,7 @@ void make_move(struct position *restrict p, move m, struct saveposex *restrict s
     assert(topc >= PC(WHITE,PAWN) && topc <= EMPTY);
     assert(promo != FLG_PROMO || (promopc >= PC(side,KNIGHT) && promopc <= PC(side,QUEEN)));
 
-    // --- update saveposex ---
+    // --- update savepos ---
     sp->halfmoves   = p->halfmoves;
     sp->enpassant   = p->enpassant;
     sp->castle      = p->castle;
@@ -332,7 +332,7 @@ static int test_move_creation() {
 static int test_make_move_ex(const char *fen, const move *moves) {
     struct position pos;
     struct position tmp;
-    struct saveposex sp;
+    struct savepos sp;
 
     if (read_fen(&pos, fen, 0) != 0) {
         fputs("Failed to read FEN for position!", stderr);
@@ -437,7 +437,7 @@ void test_make_move(int argc, char **argv) {
     printf("Succeeded.\n");
 }
 
-void undo_move(struct position * restrict p, move m, const struct saveposex * restrict sp) {
+void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
     const uint8_t  side   = FLIP(p->wtm);    
     const uint32_t fromsq = FROM(m);
     const uint32_t tosq   = TO(m);
@@ -611,7 +611,7 @@ void undo_move(struct position * restrict p, move m, const struct saveposex * re
 static int test_undo_move_ex(const char *fen, const move *moves) {
     struct position pos;
     struct position tmp;
-    struct saveposex sp;
+    struct savepos sp;
 
     if (read_fen(&pos, fen, 0) != 0) {
         fputs("Failed to read FEN for position!", stderr);
@@ -1035,7 +1035,7 @@ uint32_t generate_moves(const struct position *const restrict pos, move *restric
 }
 
 uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves) {
-	struct saveposex sp;
+	struct savepos sp;
 	uint32_t ret = 0;
 	uint32_t i = 0;
 	const uint8_t side = pos->wtm;

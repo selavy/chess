@@ -29,7 +29,7 @@ uint64_t perft(int depth, struct position *const restrict pos, move pmove, int c
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
-    struct saveposex sp;
+    struct savepos sp;
     move moves[MAX_MOVES];
     #if 0
     struct position tmp;
@@ -88,7 +88,7 @@ uint64_t perft_bulk(int depth, struct position * const restrict pos) {
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
-    struct saveposex sp;
+    struct savepos sp;
     move moves[MAX_MOVES];
 
     if (in_check(pos, FLIP(pos->wtm))) {

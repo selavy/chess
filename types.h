@@ -68,7 +68,7 @@ struct position {
     uint8_t  enpassant;       // 1 *  1 =  1B
 };                            // Total:  164B
 
-struct saveposex {
+struct savepos {
     uint8_t halfmoves;
     uint8_t enpassant;
     uint8_t castle;

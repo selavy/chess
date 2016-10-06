@@ -72,7 +72,7 @@ int xboard_settings_finalize(struct xboard_settings *settings) {
 int handle_xboard_input(const char * const line, size_t bytes, struct xboard_settings *settings) {
     static struct position position;
     static move moves[MAX_MOVES];
-    static struct saveposex sp;
+    static struct savepos sp;
 
     fprintf(settings->log, "Received command: '%s'\n", line);
     if (settings->state == IDLE) {
