@@ -40,92 +40,46 @@ void print_usage(int argc, char **argv) {
     printf("\n");
 }
 
-void sighandler(int signum);
-void xboard_main();
-int handle_xboard_input(const char * const line, size_t bytes);
-
-int main(int argc, char **argv) {
-    if (argc < 2) {
-        xboard_main();
-    } else {
-#ifdef NDEBUG
-        printf("Built in `release' mode\n");
-#else
-        printf("Built in `debug' mode\n");
-#endif
-        void (*func)() = print_usage;
-        struct command_t *cmd = &commands[0];
-        while (cmd->name) {
-            if (strcmp(argv[1], cmd->name) == 0) {
-                func = cmd->func;
-                break;
-            }
-            ++cmd;
-        }
-        func(argc, argv);
-    }
-
-    return 0;
-}
-
 void sighandler(int signum) {
     // mask sigint signal until i get pondering
 }
 
-FILE *ostream;
-
-void xboard_main() {
-    FILE *istream;
-    char *line = 0;
-    size_t len = 0;
-    ssize_t read = 0;
-
-    // TODO(plesslie): until I implement actual move selection algo
-    srand(0);
-
-    //printf("entering xboard mode...\n");
-
-    // xboard sends SIGINT when the opponent moves - can use to wake
-    // up from pondering once that is implemented
-    signal(SIGINT, &sighandler);
-
-    istream = fdopen(STDIN_FILENO, "rb");
-    if (istream == 0) {
-	    exit(EXIT_FAILURE);
+enum xboard_state { IDLE, SETUP, PLAYING };
+struct xboard_settings {
+    int state;
+    FILE *log;
+};
+int xboard_settings_init(struct xboard_settings *settings, const char *log) {
+    settings->state = IDLE;
+    if (log == 0) {
+	log = "/tmp/output.txt";
     }
-    ostream = fopen("/tmp/output.txt", "w");
-
-    // turn off i/o buffering
-    setbuf(stdout , NULL);
-    setbuf(istream, NULL);
-    setbuf(ostream, NULL);
-
-    fprintf(ostream, "Starting up myengine...\n");
-
-    while ((read = getline(&line, &len, istream)) > 0) {
-        line[read-1] = 0;
-        if (handle_xboard_input(line, read-1) != 0) {
-            break;
-        }
+    settings->log = fopen(log, "w");
+    if (!settings->log) {
+	return 1;
     }
-
-    printf("Bye.\n");
-    free(line);
-    fclose(istream);
-    fclose(ostream);
+    setbuf(settings->log, NULL);
+    return 0;
+}
+int xboard_settings_finalize(struct xboard_settings *settings) {
+    if (settings->log) {
+	fclose(settings->log);
+    }
+    return 0;
 }
 
 #define XSTRNCMP(X,Y) strncmp(X, Y, strlen(Y))
-int handle_xboard_input(const char * const line, size_t bytes) {
-    enum { INIT, PLAYING };
-    static int state = INIT;
+int handle_xboard_input(const char * const line, size_t bytes, struct xboard_settings *settings) {
     static struct position position;
     static move moves[MAX_MOVES];
     static struct saveposex sp;
 
-    fprintf(ostream, "Received command: '%s'\n", line);
-
-    if (state == INIT) {
+    fprintf(settings->log, "Received command: '%s'\n", line);
+    if (settings->state == IDLE) {
+	// TODO:
+	settings->state = SETUP;
+    }
+    if (settings->state == SETUP) {
         if (strcmp(line, "xboard") == 0) {
             // no-op
         } else if (XSTRNCMP(line, "protover") == 0) {
@@ -171,66 +125,135 @@ int handle_xboard_input(const char * const line, size_t bytes) {
             // TODO(plesslie):
             // begin game, if white, make first move
 	    set_initial_position(&position);
-	    state = PLAYING;
+	    settings->state = PLAYING;
         } else {
             printf("Error (unknown command): %.*s\n", (int)bytes, line);
             return 1;
         }
-    } else if (state == PLAYING) {
-	    // read move from input
-	    if (bytes == 4 || bytes == 5) {
-		    const uint32_t from = (line[1]-'1')*8 + (line[0]-'a');
-		    const uint32_t to   = (line[3]-'1')*8 + (line[2]-'a');
-		    fprintf(ostream, "Parsed move as %u -> %u, %s -> %s\n",
-			    to, from, sq_to_small[from], sq_to_small[to]);
-		    move m;
-		    if (bytes == 4) {
-			    m = SIMPLEMOVE(from, to);
-		    } else { // promotion
-			    uint32_t prm;
-			    switch (line[4]) {
-			    case 'q': prm = MV_PRM_QUEEN ; break;
-			    case 'n': prm = MV_PRM_KNIGHT; break;
-			    case 'b': prm = MV_PRM_BISHOP; break;
-			    case 'r': prm = MV_PRM_ROOK  ; break;
-			    default:
-				    printf("Invalid move: %s\n", line);
-				    return 1;
-			    }
-			    m = MOVE(from, to, prm, MV_FALSE, MV_FALSE);
-		    }
-		    
-		    fprintf(ostream, "Position before:\n");
-		    position_print_ex(position.sqtopc, ostream);
-		    make_move(&position, m, &sp);
-		    fprintf(ostream, "Position after:\n");
-		    position_print_ex(position.sqtopc, ostream);
-	    } else {
-		    printf("Error (bad move): %s\n", line);
+    } else if (settings->state == PLAYING) {
+	// read move from input
+	if (bytes == 4 || bytes == 5) {
+	    const uint32_t from = (line[1]-'1')*8 + (line[0]-'a');
+	    const uint32_t to   = (line[3]-'1')*8 + (line[2]-'a');
+	    fprintf(settings->log, "Parsed move as %u -> %u, %s -> %s\n",
+		    to, from, sq_to_small[from], sq_to_small[to]);
+	    move m;
+	    if (bytes == 4) {
+		m = SIMPLEMOVE(from, to);
+	    } else { // promotion
+		uint32_t prm;
+		switch (line[4]) {
+		case 'q': prm = MV_PRM_QUEEN ; break;
+		case 'n': prm = MV_PRM_KNIGHT; break;
+		case 'b': prm = MV_PRM_BISHOP; break;
+		case 'r': prm = MV_PRM_ROOK  ; break;
+		default:
+		    printf("Invalid move: %s\n", line);
 		    return 1;
+		}
+		m = MOVE(from, to, prm, MV_FALSE, MV_FALSE);
 	    }
+		    
+	    fprintf(settings->log, "Position before:\n");
+	    position_print_ex(position.sqtopc, settings->log);
+	    make_move(&position, m, &sp);
+	    fprintf(settings->log, "Position after:\n");
+	    position_print_ex(position.sqtopc, settings->log);
+	} else {
+	    printf("Error (bad move): %s\n", line);
+	    return 1;
+	}
     }
 
-    if (state == PLAYING) {
-	    //const uint32_t nmoves = generate_moves(&position, &moves[0]);
-	    const uint32_t nmoves = gen_legal_moves(&position, &moves[0]);
-	    fprintf(ostream, "Found %d legal moves\n", nmoves);
-	    int zz = nmoves < 10 ? nmoves : 10;
-	    for (int ii = 0; ii < zz; ++ii) {
-		    fprintf(ostream, "\t%s\n", xboard_move_print(moves[ii]));
-	    }
-	    if (nmoves == 0) {
-		    // TODO(plesslie): send correct end of game state
-		    printf("resign\n");
-	    } else {
-		    const uint32_t r = rand() % nmoves;
-		    make_move(&position, moves[r], &sp);
-		    const char *movestr = xboard_move_print(moves[r]);
+    if (settings->state == PLAYING) {
+	//const uint32_t nmoves = generate_moves(&position, &moves[0]);
+	const uint32_t nmoves = gen_legal_moves(&position, &moves[0]);
+	fprintf(settings->log, "Found %d legal moves\n", nmoves);
+	int zz = nmoves < 10 ? nmoves : 10;
+	for (int ii = 0; ii < zz; ++ii) {
+	    fprintf(settings->log, "\t%s\n", xboard_move_print(moves[ii]));
+	}
+	if (nmoves == 0) {
+	    // TODO(plesslie): send correct end of game state
+	    printf("resign\n");
+	} else {
+	    const uint32_t r = rand() % nmoves;
+	    make_move(&position, moves[r], &sp);
+	    const char *movestr = xboard_move_print(moves[r]);
 
-		    fprintf(ostream, "Trying to make move: %s\n", movestr);
-		    printf("move %s\n", movestr);
-	    }
+	    fprintf(settings->log, "Trying to make move: %s\n", movestr);
+	    printf("move %s\n", movestr);
+	}
     }
     
     return 0;
 }
+
+void xboard_main() {
+    FILE *istream;
+    char *line = 0;
+    size_t len = 0;
+    ssize_t read = 0;
+    struct xboard_settings settings;
+
+    // TODO(plesslie): until I implement actual move selection algo
+    srand(0);
+
+    // xboard sends SIGINT when the opponent moves - can use to wake
+    // up from pondering once that is implemented
+    signal(SIGINT, &sighandler);
+
+    if (xboard_settings_init(&settings, "/tmp/output.txt") != 0) {
+	fprintf(stderr, "Failed to initialize xboard settings...\n");
+	exit(EXIT_FAILURE);
+    }
+
+    istream = fdopen(STDIN_FILENO, "rb");
+    if (istream == 0) {
+	exit(EXIT_FAILURE);
+    }
+    // turn off i/o buffering
+    setbuf(stdout , NULL);
+    setbuf(istream, NULL);
+
+    fprintf(settings.log, "Starting up myengine...\n");
+    while ((read = getline(&line, &len, istream)) > 0) {
+        line[read-1] = 0;
+        if (handle_xboard_input(line, read-1, &settings) != 0) {
+            break;
+        }
+    }
+
+    printf("Bye.\n");
+    free(line);
+    fclose(istream);
+
+    if (xboard_settings_finalize(&settings) != 0) {
+	fprintf(stderr, "Failed to finalize xboard settings...\n");
+    }
+}
+
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        xboard_main();
+    } else {
+#ifdef NDEBUG
+        printf("Built in `release' mode\n");
+#else
+        printf("Built in `debug' mode\n");
+#endif
+        void (*func)() = print_usage;
+        struct command_t *cmd = &commands[0];
+        while (cmd->name) {
+            if (strcmp(argv[1], cmd->name) == 0) {
+                func = cmd->func;
+                break;
+            }
+            ++cmd;
+        }
+        func(argc, argv);
+    }
+
+    return 0;
+}
+
