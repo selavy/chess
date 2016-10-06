@@ -92,6 +92,8 @@ enum {
 enum xboard_state { IDLE, SETUP, PLAYING };
 
 // --- Types ---
+typedef uint16_t move;
+
 struct xboard_settings {
     int state;
     FILE *log;
@@ -140,6 +142,10 @@ const char *sq_to_str[64] = {
 const uint32_t PROMOPC[5] = { 0, KNIGHT, BISHOP, ROOK, QUEEN };
 
 // --- Static Function Prototypes ---
+static uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves);
+static void make_move(struct position *restrict p, move m, struct savepos *restrict sp);
+static void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp);
+static uint32_t generate_moves(const struct position *const restrict pos, move *restrict moves);
 static int read_fen(struct position * restrict pos, const char * const fen, int print);
 static int attacks(const struct position * const restrict pos, uint8_t side, int square);
 static int in_check(const struct position * const restrict pos, uint8_t side);
@@ -160,7 +166,56 @@ static int validate_position(const struct position * const restrict p);
 static void set_initial_position(struct position * restrict p);
 
 // --- Interface Functions ---
-uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves) {
+
+
+
+
+void xboard_main() {
+    FILE *istream;
+    char *line = 0;
+    size_t len = 0;
+    ssize_t read = 0;
+    struct xboard_settings settings;
+
+    // TODO(plesslie): until I implement actual move selection algo
+    srand(0);
+
+    // xboard sends SIGINT when the opponent moves - can use to wake
+    // up from pondering once that is implemented
+    signal(SIGINT, &sighandler);
+
+    if (xboard_settings_init(&settings, "/tmp/output.txt") != 0) {
+	fprintf(stderr, "Failed to initialize xboard settings...\n");
+	exit(EXIT_FAILURE);
+    }
+
+    istream = fdopen(STDIN_FILENO, "rb");
+    if (istream == 0) {
+	exit(EXIT_FAILURE);
+    }
+    // turn off i/o buffering
+    setbuf(stdout , NULL);
+    setbuf(istream, NULL);
+
+    fprintf(settings.log, "Starting up myengine...\n");
+    while ((read = getline(&line, &len, istream)) > 0) {
+        line[read-1] = 0;
+        if (handle_xboard_input(line, read-1, &settings) != 0) {
+            break;
+        }
+    }
+
+    printf("Bye.\n");
+    free(line);
+    fclose(istream);
+
+    if (xboard_settings_finalize(&settings) != 0) {
+	fprintf(stderr, "Failed to finalize xboard settings...\n");
+    }
+}
+
+// --- Static Function Definitions ---
+static uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves) {
 	struct savepos sp;
 	uint32_t ret = 0;
 	uint32_t i = 0;
@@ -181,7 +236,7 @@ uint32_t gen_legal_moves(const struct position *const restrict pos, move *restri
 	return ret;
 }
 
-void make_move(struct position *restrict p, move m, struct savepos *restrict sp) {
+static void make_move(struct position *restrict p, move m, struct savepos *restrict sp) {
     // --- loads ---
     const uint8_t  side    = p->wtm;
     const uint8_t  contra  = FLIP(side);    
@@ -430,7 +485,7 @@ void make_move(struct position *restrict p, move m, struct savepos *restrict sp)
     assert(((p->castle & BKINGSD)  == 0) || (p->sqtopc[H8] == PC(BLACK,ROOK) && p->sqtopc[E8] == PC(BLACK,KING)));
 }
 
-void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
+static void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp) {
     const uint8_t  side   = FLIP(p->wtm);    
     const uint32_t fromsq = FROM(m);
     const uint32_t tosq   = TO(m);
@@ -601,7 +656,7 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     assert(p->sqtopc[H8] != PC(BLACK,PAWN));
 }
 
-uint32_t generate_moves(const struct position *const restrict pos, move *restrict moves) {
+static uint32_t generate_moves(const struct position *const restrict pos, move *restrict moves) {
     uint32_t from;
     uint32_t to;
     uint64_t pcs;
@@ -867,51 +922,6 @@ uint32_t generate_moves(const struct position *const restrict pos, move *restric
     return nmove;
 }
 
-void xboard_main() {
-    FILE *istream;
-    char *line = 0;
-    size_t len = 0;
-    ssize_t read = 0;
-    struct xboard_settings settings;
-
-    // TODO(plesslie): until I implement actual move selection algo
-    srand(0);
-
-    // xboard sends SIGINT when the opponent moves - can use to wake
-    // up from pondering once that is implemented
-    signal(SIGINT, &sighandler);
-
-    if (xboard_settings_init(&settings, "/tmp/output.txt") != 0) {
-	fprintf(stderr, "Failed to initialize xboard settings...\n");
-	exit(EXIT_FAILURE);
-    }
-
-    istream = fdopen(STDIN_FILENO, "rb");
-    if (istream == 0) {
-	exit(EXIT_FAILURE);
-    }
-    // turn off i/o buffering
-    setbuf(stdout , NULL);
-    setbuf(istream, NULL);
-
-    fprintf(settings.log, "Starting up myengine...\n");
-    while ((read = getline(&line, &len, istream)) > 0) {
-        line[read-1] = 0;
-        if (handle_xboard_input(line, read-1, &settings) != 0) {
-            break;
-        }
-    }
-
-    printf("Bye.\n");
-    free(line);
-    fclose(istream);
-
-    if (xboard_settings_finalize(&settings) != 0) {
-	fprintf(stderr, "Failed to finalize xboard settings...\n");
-    }
-}
-
-// --- Static Function Definitions ---
 static int read_fen(struct position * restrict pos, const char * const fen, int print) {
     int row;
     int col;
