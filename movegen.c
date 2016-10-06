@@ -429,9 +429,6 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     assert(p->sqtopc[H8] != PC(BLACK,PAWN));
 }
 
-
-
-
 // returns 1 if a piece from `side` attacks `square`
 int attacks(const struct position * const restrict pos, uint8_t side, int square) {
     uint64_t pcs;
@@ -468,12 +465,6 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
     // check if the other side attacks the king location
     return attacks(pos, FLIP(side), kingloc);
 }
-
-#if 0
-uint32_t generate_moves(const struct position *const restrict pos, move *restrict moves) {
-    return pos->wtm == WHITE ? gen_move_white(pos, moves) : gen_move_black(pos, moves);	
-}
-#endif
 
 uint32_t generate_moves(const struct position *const restrict pos, move *restrict moves) {
     uint32_t from;
