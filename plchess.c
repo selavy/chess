@@ -304,7 +304,7 @@ static int test_move_creation();
 static int position_cmp(const struct position *restrict l, const struct position *restrict r);
 
 // --- Test Functions ---
-void reset_counts() {
+static void reset_counts() {
     checks     = 0;
     captures   = 0;
     enpassants = 0;
@@ -352,7 +352,7 @@ void test_deep_perft(int argc, char **argv) {
     }
 }
 
-int perft_count_test() {
+static int perft_count_test() {
     int ret;
     
     const char *starting_position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
@@ -440,7 +440,7 @@ int perft_count_test() {
     return 0;
 }
 
-int perft_count_test_ex(const char *name, const char *fen, const struct expected_t *expected, int max_depth) {
+static int perft_count_test_ex(const char *name, const char *fen, const struct expected_t *expected, int max_depth) {
     int depth;
     uint64_t nodes;
     struct position pos;
@@ -500,7 +500,7 @@ int perft_count_test_ex(const char *name, const char *fen, const struct expected
     return 0;
 }
 
-int perft_bulk_test_ex(const char *name, const char *fen, const uint64_t *expected, int max_depth) {
+static int perft_bulk_test_ex(const char *name, const char *fen, const uint64_t *expected, int max_depth) {
     int depth;
     uint64_t nodes;
     struct position pos;
@@ -528,7 +528,7 @@ int perft_bulk_test_ex(const char *name, const char *fen, const uint64_t *expect
     return 0;
 }
 
-uint64_t perft(int depth, struct position *const restrict pos, move pmove, int cap) {
+static uint64_t perft(int depth, struct position *const restrict pos, move pmove, int cap) {
     uint32_t i;
     uint32_t nmoves;
     uint64_t nodes = 0;
@@ -739,7 +739,7 @@ void test_undo_move(int argc, char **argv) {
     printf("Success.\n");
 }
 
-int test_make_move_ex(const char *fen, const move *moves) {
+static int test_make_move_ex(const char *fen, const move *moves) {
     struct position pos;
     struct position tmp;
     struct savepos sp;
@@ -769,7 +769,7 @@ int test_make_move_ex(const char *fen, const move *moves) {
     return 0;
 }
 
-int test_undo_move_ex(const char *fen, const move *moves) {
+static int test_undo_move_ex(const char *fen, const move *moves) {
     struct position pos;
     struct position tmp;
     struct savepos sp;
@@ -812,7 +812,7 @@ int test_undo_move_ex(const char *fen, const move *moves) {
     return 0;    
 }
 
-int test_move_creation() {
+static int test_move_creation() {
     // verify that move creation macro works correctly
     
     int i;
@@ -882,7 +882,7 @@ int test_move_creation() {
     return 0;
 }
 
-int position_cmp(const struct position *restrict l, const struct position *restrict r) {
+static int position_cmp(const struct position *restrict l, const struct position *restrict r) {
     int i;
     for (i = PC(WHITE,PAWN); i <= PC(BLACK,KING); ++i) {
         if (l->brd[i] != r->brd[i]) {
