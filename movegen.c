@@ -607,6 +607,49 @@ void undo_move(struct position * restrict p, move m, const struct savepos * rest
     assert(p->sqtopc[H8] != PC(BLACK,PAWN));
 }
 
+static int position_cmp(const struct position *restrict l, const struct position *restrict r) {
+    int i;
+    for (i = PC(WHITE,PAWN); i <= PC(BLACK,KING); ++i) {
+        if (l->brd[i] != r->brd[i]) {
+            fprintf(stderr, "l->brd[%c] != r->brd[%c] 0x%08" PRIX64 " != 0x%08" PRIX64 "\n",
+                    vpcs[i], vpcs[i], l->brd[i], r->brd[i]);
+            return 1;
+        }
+    }
+
+    for (i = 0; i < 64; ++i) {
+        if (l->sqtopc[i] != r->sqtopc[i]) {
+            fprintf(stderr, "(l->sqtopc[%s]=%c) != (r->sqtopc[%s]=%c)\n",
+                    sq_to_str[i], vpcs[l->sqtopc[i]],
+                    sq_to_str[i], vpcs[r->sqtopc[i]]);
+            return 2;
+        }
+    }
+
+    if (l->nmoves != r->nmoves) {
+        fprintf(stderr, "l->nmoves(%u) != r->nmoves(%u)\n", l->nmoves, r->nmoves);
+        return 3;
+    }
+    if (l->wtm != r->wtm) {
+        fprintf(stderr, "l->wtm(%s) != r->wtm(%s)\n", SIDESTR(l->wtm), SIDESTR(r->wtm));
+        return 4;
+    }
+    if (l->halfmoves != r->halfmoves) {
+        fprintf(stderr, "l->halfmoves(%u) != r->halfmoves(%u)\n", l->halfmoves, r->halfmoves);
+        return 5;
+    }
+    if (l->castle != r->castle) {
+        fprintf(stderr, "l->castle(%u) != r->castle(%u)\n", l->castle, r->castle);
+        return 6;
+    }
+    if (l->enpassant != r->enpassant) {
+        fprintf(stderr, "l->enpassant(%u) != r->enpassant(%u)\n", l->enpassant, r->enpassant);
+        return 7;
+    }
+
+    return 0;
+}
+
 static int test_undo_move_ex(const char *fen, const move *moves) {
     struct position pos;
     struct position tmp;
