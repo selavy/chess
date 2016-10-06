@@ -81,7 +81,7 @@ int handle_xboard_input(const char * const line, size_t bytes, struct xboard_set
     }
     if (settings->state == SETUP) {
         if (strcmp(line, "xboard") == 0) {
-            // no-op
+	    set_initial_position(&position);
         } else if (XSTRNCMP(line, "protover") == 0) {
             if (line[9] != '2') {
                 fprintf(stderr, "Unrecognized protocol version:\n");
@@ -107,9 +107,7 @@ int handle_xboard_input(const char * const line, size_t bytes, struct xboard_set
         } else if (XSTRNCMP(line, "accepted") == 0) {
             // no-op
         } else if (strcmp(line, "hard") == 0) {
-            // no-op
-        } else if (strcmp(line, "easy") == 0) {
-            // no-op
+	    settings->state = PLAYING;
         } else if (strcmp(line, "white") == 0) {
             // TODO(plesslie): setup side
         } else if (strcmp(line, "black") == 0) {
@@ -121,18 +119,16 @@ int handle_xboard_input(const char * const line, size_t bytes, struct xboard_set
         } else if (strcmp(line, "force") == 0) {
             // no-op
             // stop thinking about the current position
-        } else if (strcmp(line, "go") == 0) {
-            // TODO(plesslie):
-            // begin game, if white, make first move
-	    set_initial_position(&position);
-	    settings->state = PLAYING;
         } else {
             printf("Error (unknown command): %.*s\n", (int)bytes, line);
             return 1;
         }
     } else if (settings->state == PLAYING) {
-	// read move from input
-	if (bytes == 4 || bytes == 5) {
+	if (strcmp(line, "go") == 0) {
+	    // no-op
+	} else if (strcmp(line, "white") == 0) {
+	    return 0;
+	} else if (bytes == 4 || bytes == 5) { 	// read move from input
 	    const uint32_t from = (line[1]-'1')*8 + (line[0]-'a');
 	    const uint32_t to   = (line[3]-'1')*8 + (line[2]-'a');
 	    fprintf(settings->log, "Parsed move as %u -> %u, %s -> %s\n",
@@ -163,10 +159,7 @@ int handle_xboard_input(const char * const line, size_t bytes, struct xboard_set
 	    printf("Error (bad move): %s\n", line);
 	    return 1;
 	}
-    }
 
-    if (settings->state == PLAYING) {
-	//const uint32_t nmoves = generate_moves(&position, &moves[0]);
 	const uint32_t nmoves = gen_legal_moves(&position, &moves[0]);
 	fprintf(settings->log, "Found %d legal moves\n", nmoves);
 	int zz = nmoves < 10 ? nmoves : 10;
