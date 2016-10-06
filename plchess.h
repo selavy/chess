@@ -1,8 +1,16 @@
 #ifndef PLCHESS__H_
 #define PLCHESS__H_
 
+#include "types.h"
+#include "move.h"
+
 // --- Interface Functions ---
 
+// TODO: move this out of interface
+extern uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves);
+
+// TODO: move this out of interface
+extern void make_move(struct position *restrict p, move m, struct savepos *restrict sp);
 
 // --- Test Functions ---
 
