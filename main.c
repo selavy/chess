@@ -132,7 +132,7 @@ int handle_xboard_input(const char * const line, size_t bytes, struct xboard_set
 	    const uint32_t from = (line[1]-'1')*8 + (line[0]-'a');
 	    const uint32_t to   = (line[3]-'1')*8 + (line[2]-'a');
 	    fprintf(settings->log, "Parsed move as %u -> %u, %s -> %s\n",
-		    to, from, sq_to_small[from], sq_to_small[to]);
+		    to, from, sq_to_str[from], sq_to_str[to]);
 	    move m;
 	    if (bytes == 4) {
 		m = SIMPLEMOVE(from, to);

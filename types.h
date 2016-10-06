@@ -78,7 +78,6 @@ struct savepos {
 
 extern const char *vpcs;
 extern const char *sq_to_str[64];
-extern const char *sq_to_small[64];
 extern const uint32_t PROMOPC[5];
 extern void position_print(const uint8_t * const restrict sqtopc, FILE *ostream);
 extern void full_position_print(const struct position *p);

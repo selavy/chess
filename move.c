@@ -68,7 +68,7 @@ const char * xboard_move_print(move mv) {
 	const uint32_t from = FROM(mv);
 	const uint32_t flags = FLAGS(mv);
 
-	sprintf(&buffer[0], "%s%s", sq_to_small[from], sq_to_small[to]);
+	sprintf(&buffer[0], "%s%s", sq_to_str[from], sq_to_str[to]);
 	if (flags == FLG_PROMO) {
 		buffer[5] = pcs[PROMOPC[PROMO_PC(mv)]];
 		buffer[6] = 0;
