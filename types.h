@@ -68,13 +68,6 @@ struct position {
     uint8_t  enpassant;       // 1 *  1 =  1B
 };                            // Total:  164B
 
-struct savepos {
-    uint8_t halfmoves;
-    uint8_t enpassant;
-    uint8_t castle;
-    uint8_t was_ep;
-};
-
 struct saveposex {
     uint8_t halfmoves;
     uint8_t enpassant;
@@ -87,7 +80,6 @@ extern const char *vpcs;
 extern const char *sq_to_str[64];
 extern const char *sq_to_small[64];
 extern const uint32_t PROMOPC[5];
-extern void position_print(const uint8_t * const restrict sqtopc);
 extern void position_print_ex(const uint8_t * const restrict sqtopc, FILE *ostream);
 extern void full_position_print(const struct position *p);
 extern int validate_position(const struct position * const restrict p);

@@ -35,10 +35,6 @@ const uint32_t PROMOPC[5] = {
     QUEEN
 };
 
-void position_print(const uint8_t * const restrict sqtopc) {
-	position_print_ex(sqtopc, stdout);
-}
-
 void position_print_ex(const uint8_t * const restrict sqtopc, FILE *ostream) {
     char v;
     int sq, r, c;
@@ -54,7 +50,7 @@ void position_print_ex(const uint8_t * const restrict sqtopc, FILE *ostream) {
 }
 
 void full_position_print(const struct position *p) {
-    position_print(&p->sqtopc[0]);
+    position_print_ex(&p->sqtopc[0], stdout);
     printf("%s\n", p->wtm == WHITE ? "WHITE":"BLACK");
     printf("Full moves: %d\n", p->nmoves);
     printf("Half moves: %d\n", p->halfmoves);
