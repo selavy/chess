@@ -5,7 +5,7 @@ USE_PROFILE=-fprofile-use
 RELEASE=-O3 -fstrict-aliasing -ffast-math -DNDEBUG -flto -msse -march=native -fomit-frame-pointer
 CFLAGS=$(RELEASE) -Wall -Werror -pedantic -std=c11
 GENERATED=magic_tables.o
-OBJS=$(GENERATED) types.o move.o movegen.o read_fen.o perft.o main.o
+OBJS=$(GENERATED) types.o move.o movegen.o read_fen.o plchess.o main.o
 TARGET=chess
 GEN=generate_magic_tables
 
