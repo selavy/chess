@@ -1722,14 +1722,11 @@ static uint64_t perft(int depth, struct position *const restrict pos, move pmove
     uint64_t nodes = 0;
     struct savepos sp;
     move moves[MAX_MOVES];
-    #if 0
-    struct position tmp;
-    #endif
     
     if (in_check(pos, FLIP(pos->wtm))) {
         return 0;
-    }
-    if (depth == 0) {
+    } else if (depth == 0) {
+#ifdef COUNTS
         if (pmove != 0) {
             if (in_check(pos, pos->wtm) != 0) {
                 ++checks;
@@ -1746,30 +1743,17 @@ static uint64_t perft(int depth, struct position *const restrict pos, move pmove
                 ++promotions;
             }
         }
+#endif
         return 1;
     }
 
-    #if 0
-    memcpy(&tmp, pos, sizeof(tmp));
-    #endif
     nmoves = generate_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
-        nodes += perft(depth - 1, pos, moves[i], sp.captured_pc);
+	nodes += perft(depth - 1, pos, moves[i], sp.captured_pc);
         undo_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
-        #if 0
-        if (memcmp(&tmp, pos, sizeof(tmp)) != 0) {
-            printf("Original position:\n");
-            full_position_print(&tmp);
-            printf("\n\nAfter undo move:\n");
-            full_position_print(pos);
-            printf("\nMove:\n");
-            move_print(moves[i]);
-            assert(0);
-        }
-        #endif
     }
 
     return nodes;
