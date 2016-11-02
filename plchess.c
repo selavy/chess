@@ -43,11 +43,7 @@
 #define SIDESTR(side) ((side)==WHITE?"WHITE":"BLACK")
 #define MV_TRUE       1
 #define MV_FALSE      0
-#define MV_PRM_NONE   (MV_FALSE)
-#define MV_PRM_KNIGHT 1
-#define MV_PRM_BISHOP 2
-#define MV_PRM_ROOK   3
-#define MV_PRM_QUEEN  4
+enum { MV_PRM_NONE, MV_PRM_KNIGHT, MV_PRM_BISHOP, MV_PRM_ROOK, MV_PRM_QUEEN };
 #define SIMPLEMOVE(from, to) (((to) << 0) | ((from) << 6))
 #define _MOVE(from, to, prm, ep, csl)              \
     (((to)    <<  0) |                                  \
@@ -165,10 +161,33 @@ static void full_position_print(const struct position *p);
 static int validate_position(const struct position * const restrict p);
 static void set_initial_position(struct position * restrict p);
 
+// TODO(plesslie): implement
+#if 0
+static uint32_t generate_legal_moves(const struct position *const restrict pos, move *restrict moves);
+static uint32_t generate_evasions(const struct position *const restrict pos, move *restrict moves);
+static uint32_t generate_nonevasions(const struct position *const restrict pos, move *restrict moves);
+// TODO(plesslie): add bitboard for all pieces that are giving check in the position, if that bitboard > 0,
+// then only run generate_evasions()
+
+/*
+uint32_t generate_legal_moves():
+    if in_check:
+        move_list = generate_evasions()
+    else:
+        move_list = generate_all()
+
+    for move in move_list:
+        // avoid checking if `legal_move()' on every move, only do it for pinned pieces moving
+	// enpassants (tricky case where enpassant could discovered check), or king move (including castling)
+	// not sure how to handle checking castling legality
+        if ((piece is pinned) || (king move) || (enpassant)) && !legal_move(move):
+            remove move from move list
+
+    return move_list
+}
+*/
+#endif
 // --- Interface Functions ---
-
-
-
 
 void xboard_main() {
     FILE *istream;
@@ -216,24 +235,28 @@ void xboard_main() {
 
 // --- Static Function Definitions ---
 static uint32_t gen_legal_moves(const struct position *const restrict pos, move *restrict moves) {
-	struct savepos sp;
-	uint32_t ret = 0;
-	uint32_t i = 0;
-	const uint8_t side = pos->wtm;
-	move tmp[MAX_MOVES];
-	const uint32_t nmoves = generate_moves(pos, &tmp[0]);
-	struct position p;
-	memcpy(&p, pos, sizeof(p));
-	
-	for (i = 0; i < nmoves; ++i) {
-		make_move(&p, tmp[i], &sp);
-		if (in_check(&p, side) == 0) {
-			moves[ret++] = tmp[i];
-		}
-		undo_move(&p, tmp[i], &sp);
+    struct savepos sp;
+    const uint8_t side = pos->wtm;
+    move *curm, *endm;
+    int legal;
+    struct position p;
+    memcpy(&p, pos, sizeof(p));	
+    const uint32_t nmoves = generate_moves(pos, moves);
+    curm = moves;
+    endm = moves + nmoves;
+    while (curm < endm) {
+	make_move(&p, *curm, &sp);
+	legal = in_check(&p, side) == 0;
+	undo_move(&p, *curm, &sp);
+	if (!legal) {
+	    --endm;
+	    *curm = *endm;
+	} else {
+	    ++curm;
 	}
-	
-	return ret;
+    }
+
+    return curm - moves;
 }
 
 static void make_move(struct position *restrict p, move m, struct savepos *restrict sp) {
@@ -1723,9 +1746,8 @@ static uint64_t perft(int depth, struct position *const restrict pos, move pmove
     struct savepos sp;
     move moves[MAX_MOVES];
     
-    if (in_check(pos, FLIP(pos->wtm))) {
-        return 0;
-    } else if (depth == 0) {
+    if (depth == 0) {
+#define COUNTS
 #ifdef COUNTS
         if (pmove != 0) {
             if (in_check(pos, pos->wtm) != 0) {
@@ -1747,7 +1769,8 @@ static uint64_t perft(int depth, struct position *const restrict pos, move pmove
         return 1;
     }
 
-    nmoves = generate_moves(pos, &moves[0]);
+    //nmoves = generate_moves(pos, &moves[0]);
+    nmoves = gen_legal_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
         make_move(pos, moves[i], &sp);
         assert(validate_position(pos) == 0);
