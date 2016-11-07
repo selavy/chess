@@ -75,8 +75,8 @@ int position_from_fen(struct position *restrict pos, const char *fen) {
 		pos->brd[PIECE(BLACK, KING)] |= MASK(SQUARE(file, rank));
 		break;		
 	    default:
-		if (c >= '0' && c <= '9') {
-		    file += c - '0';
+		if (c >= '1' && c <= '8') {
+		    file += c - '0' - 1; // file will get incremented by for loop
 		} else {
 		    return 2;
 		}
@@ -135,7 +135,7 @@ int position_from_fen(struct position *restrict pos, const char *fen) {
 	return 7;
     } else if (c == '-') {
 	pos->enpassant = EP_NONE;
-    } else if (c >= 'a' && c <= 'z') {
+    } else if (c >= 'a' && c <= 'h') {
 	file = c - 'a';
 	c = *fen++;
 	if (c >= '1' && c <= '8') {
@@ -158,6 +158,7 @@ int position_from_fen(struct position *restrict pos, const char *fen) {
 	return 11;
     }
 
+    // half moves
     while ((c = *fen++) != ' ') {
 	if (c == 0) {
 	    return 12;
@@ -170,6 +171,7 @@ int position_from_fen(struct position *restrict pos, const char *fen) {
     }
     pos->halfmoves = halfmoves;
 
+    // full moves
     while ((c = *fen++)) {
 	if (c < '0' || c > '9') {
 	    return 14;
@@ -206,4 +208,9 @@ void position_print(FILE *os, struct position *restrict pos) {
     fprintf(os, "\n");
     fprintf(os, "Half moves: %d\n", pos->halfmoves);
     fprintf(os, "Full moves: %d\n", pos->nmoves);
+    if (pos->enpassant == EP_NONE) {
+	fprintf(os, "En Passant target: none\n");
+    } else {
+	fprintf(os, "En Passant target: %s\n", EP_TARGETS[pos->enpassant]);
+    }
 }

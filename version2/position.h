@@ -15,7 +15,7 @@ enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2) };
 #define CSL_BQSIDE (1 << 2)
 #define CSL_BKSIDE (1 << 3)
 #define CSL_ALL    (CSL_WQSIDE|CSL_WKSIDE|CSL_BQSIDE|CSL_BKSIDE)
-#define EP_NONE (-1)
+#define EP_NONE 16
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
 enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H };
 #define SQUARE(file, rank) (((rank)*8)+(file))
@@ -30,6 +30,8 @@ enum {
     A7, B7, C7, D7, E7, F7, G7, H7,
     A8, B8, C8, D8, E8, F8, G8, H8,
 };
+const char *EP_TARGETS[] = { "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+			     "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6" };
 
 struct position {
     uint64_t brd[NPIECES*2]; // 8 * 12 = 96B

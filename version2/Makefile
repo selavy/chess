@@ -1,5 +1,5 @@
 CC=gcc
-DEBUG=-O2 -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fbounds-check
+DEBUG=-O0 -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fbounds-check
 RELEASE=-O3 -fstrict-aliasing -ffast-math -DNDEBUG -flto -msse -march=native -fomit-frame-pointer
 CFLAGS=$(DEBUG) -Wall -Werror -pedantic -std=c11
 OBJS=main.o magic_tables.o position.o
