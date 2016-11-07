@@ -19,6 +19,7 @@ enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NPIECES, EMPTY=(NPIECES*2) };
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
 enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H };
 #define SQUARE(file, rank) (((rank)*8)+(file))
+#define MASK(sq) ((uint64_t)1 << (sq))
 enum {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -59,7 +60,7 @@ struct savepos {
     uint8_t captured_pc; // EMPTY if no capture
 };
 
-extern int read_fen(struct position *restrict pos, const char *fen);
+extern int position_from_fen(struct position *restrict pos, const char *fen);
 extern void position_print(FILE *os, struct position *restrict pos); 
 
 #endif // POSITION__H_
