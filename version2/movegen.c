@@ -33,7 +33,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
     pcs = PIECES(*pos, side, KNIGHT);
     while (pcs) {
 	from = lsb(pcs);
-	posmoves = knight_attacks[from] & opp_or_empty;
+	posmoves = knight_attacks(from) & opp_or_empty;
 	while (posmoves) {
 	    to = lsb(posmoves);
 	    *moves++ = SIMPLEMOVE(from, to);
@@ -47,7 +47,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
     assert(pcs);
     assert(popcountll(pcs) == 1);
     from = lsb(pcs);
-    posmoves = king_attacks[from] & opp_or_empty;
+    posmoves = king_attacks(from) & opp_or_empty;
     while (posmoves) {
 	to = lsb(posmoves);
 	*moves++ = SIMPLEMOVE(from, to);
