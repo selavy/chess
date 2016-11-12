@@ -1,28 +1,25 @@
 CC=gcc
-DEBUG=-O2 -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fbounds-check
-GEN_PROFILE=-fprofile-generate
-USE_PROFILE=-fprofile-use
+DEBUG=-O0 -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fbounds-check
 RELEASE=-O3 -fstrict-aliasing -ffast-math -DNDEBUG -flto -msse -march=native -fomit-frame-pointer
 CFLAGS=$(DEBUG) -Wall -Werror -pedantic -std=c11
-GENERATED=magic_tables.o
-OBJS=$(GENERATED) general.o move.o position.o movegen.o plchess.o main.o
+OBJS=main.o magic_tables.o move.o position.o movegen.o
+MT_GENERATOR=generate_magic_tables
 TARGET=chess
-GEN=generate_magic_tables
+
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	./$(GEN)
 	$(CC) -o $@ $(CFLAGS) $(OBJS)
-magic_tables.o: $(GEN)
-	./$(GEN)
+$(MT_GENERATOR): $(MT_GENERATOR).c
+	$(CC) -o $@ -std=c11 -Wall -Werror -pedantic -O3 $<
+	./$(MT_GENERATOR)
+magic_tables.o: $(MT_GENERATOR)
 	$(CC) -o $@ $(CFLAGS) -c magic_tables.c
-$(GEN): $(GEN).c
-	$(CC) -o $@ $(CFLAGS) $<
 main.o: main.c
 	$(CC) -o $@ $(CFLAGS) -c $<
 %.o: %.c %.h
 	$(CC) -o $@ $(CFLAGS) -c $<
-pgn_parser: pgn_parser.c
-	$(CC) -o $@ $(CFLAGS) $<
 .PHONY: clean
 clean:
-	rm -rf $(OBJS) $(TARGET) $(GEN) magic_tables.* *~
+	rm -rf $(OBJS) $(TARGET) $(MT_GENERATOR) *~
+

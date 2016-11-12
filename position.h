@@ -1,18 +1,30 @@
 #ifndef POSITION__H_
 #define POSITION__H_
 
-#include "general.h"
+#include <stdio.h>
+#include <stdint.h>
 #include "move.h"
 
+// TODO: remove king specific bit boards and replace with 2 x 8-bit ints with sq location
+
+// `nmoves'    - number of full moves, incremented after black's move
+// `halfmoves' - number of halfmoves since the last capture or pawn advance (like in FEN)
+//               used for 50 move rule
+// `enpassant' - is the target square behind the pawn (like in FEN)
+//               -1    = no enpassant
+//               0..7  = a3..h3
+//               8..15 = a6..h6
 struct position {
-    uint64_t brd[NPIECES*2];  // 8 * 12 = 96B
-    uint8_t  sqtopc[SQUARES]; // 1 * 64 = 64B
-    uint16_t nmoves;          // 2 *  1 =  2B
-    uint8_t  wtm;             // 1 *  1 =  1B
-    uint8_t  halfmoves;       // 1 *  1 =  1B
-    uint8_t  castle;          // 1 *  1 =  1B
-    uint8_t  enpassant;       // 1 *  1 =  1B
-};                            // Total:  164B
+    uint64_t brd[NPIECES*2];
+    uint64_t side[2];
+    uint8_t  sqtopc[64];
+    uint16_t nmoves;
+    uint8_t  wtm;
+    uint8_t  halfmoves;
+    uint8_t  castle;
+    uint8_t  enpassant;
+};
+#define PIECES(p, side, type) (p).brd[PIECE(side, type)]
 
 struct savepos {
     uint8_t halfmoves;
@@ -22,12 +34,8 @@ struct savepos {
     uint8_t captured_pc; // EMPTY if no capture
 };
 
-extern void make_move(struct position *restrict p, move m, struct savepos *restrict sp);
-extern void undo_move(struct position * restrict p, move m, const struct savepos * restrict sp);
-extern int read_fen(struct position * restrict pos, const char * const fen, int print);
-extern void position_print(const uint8_t * const restrict sqtopc, FILE *ostream);
-extern void full_position_print(const struct position *p);
-extern int validate_position(const struct position * const restrict p);
-extern void set_initial_position(struct position * restrict p);
+extern int position_from_fen(struct position *restrict pos, const char *fen);
+extern void position_print(FILE *os, struct position *restrict pos);
+extern int validate_position(struct position *restrict const pos);
 
 #endif // POSITION__H_
