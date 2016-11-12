@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "position.h"
+#include "move.h"
 
 int main(int argc, char **argv) {
     int ret;
