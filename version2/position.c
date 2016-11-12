@@ -229,27 +229,10 @@ void position_print(FILE *os, struct position *restrict pos) {
 }
 
 int validate_position(struct position *restrict const pos) {
-    #if 0
-    uint64_t pcs;
-    int side;
-    int pctype;
-
-    for (side = WHITE; side <= BLACK; ++side) {
-	for (pctype = KNIGHT; pctype <= PAWN; ++pctype) {
-	    pcs = PIECES(*pos, side, pctype);
-	    for (sq = A1; sq <= H8; ++sq) {
-		if (pos->sqtopc[sq] != EMPTY) {
-		}
-	    }
-	}
-    }
-#endif
-
     int pc;
     int color;
     int contra;
     int sq;
-
     int white_kings = 0;
     int black_kings = 0;
     
