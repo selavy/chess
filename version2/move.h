@@ -74,16 +74,14 @@ extern const char *const ep_targets[16];
 
 typedef uint16_t move;
 
-// #ifdef NDEBUG
-//     #define MOVE _MOVE
-// #else
-//     extern move MOVE(uint32_t from, uint32_t to, uint32_t prm, uint32_t ep, uint32_t csl);
-// #endif
-
+#ifndef NDEBUG
+extern move SIMPLEMOVE(uint32_t from, uint32_t to);
+#else
 #define SIMPLEMOVE _SIMPLEMOVE
 #define EP_CAPTURE _EP_CAPTURE
 #define PROMOTION  _PROMOTION
 #define CASTLE     _CASTLE
+#endif
 
 extern void move_print(move mv);
 

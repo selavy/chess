@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include "move.h"
 
+// TODO: remove king specific bit boards and replace with 2 x 8-bit ints with sq location
+
 // `nmoves'    - number of full moves, incremented after black's move
 // `halfmoves' - number of halfmoves since the last capture or pawn advance (like in FEN)
 //               used for 50 move rule
@@ -22,6 +24,7 @@ struct position {
     uint8_t  castle;
     uint8_t  enpassant;
 };
+#define PIECES(p, side, type) (p).brd[PIECE(side, type)]
 
 struct savepos {
     uint8_t halfmoves;

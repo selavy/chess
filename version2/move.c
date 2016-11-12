@@ -43,6 +43,15 @@ const char *const ep_targets[16] = { "a3", "b3", "c3", "d3", "e3", "f3", "g3", "
 // }
 // #endif
 
+#ifndef NDEBUG
+move SIMPLEMOVE(uint32_t from, uint32_t to) {
+    assert(from >= 0 && from <= 64);
+    assert(to >= 0 && to <= 64);
+    //printf("SIMPLEMOVE(%u, %u)\n", from, to);
+    return _SIMPLEMOVE(from, to);
+}
+#endif
+
 void move_print(move mv) {
     const uint32_t to    = TO(mv);
     const uint32_t from  = FROM(mv);
