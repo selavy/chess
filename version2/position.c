@@ -2,7 +2,10 @@
 #include <string.h>
 #include <assert.h>
 
-const char *visual_pcs = "PNBRQKpnbrqk ";
+const char *const visual_pcs = "PNBRQKpnbrqk ";
+
+const char *const ep_targets[16] = { "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+				     "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6" };
 
 int position_from_fen(struct position *restrict pos, const char *fen) {
     int rank;
@@ -211,6 +214,6 @@ void position_print(FILE *os, struct position *restrict pos) {
     if (pos->enpassant == EP_NONE) {
 	fprintf(os, "En Passant target: none\n");
     } else {
-	fprintf(os, "En Passant target: %s\n", EP_TARGETS[pos->enpassant]);
+	fprintf(os, "En Passant target: %s\n", ep_targets[pos->enpassant]);
     }
 }

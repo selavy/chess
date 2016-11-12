@@ -30,34 +30,30 @@ enum {
     A7, B7, C7, D7, E7, F7, G7, H7,
     A8, B8, C8, D8, E8, F8, G8, H8,
 };
-const char *EP_TARGETS[] = { "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-			     "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6" };
+extern const char *const visual_pcs;
+extern const char *const ep_targets[16];
 
+// `nmoves'    - number of full moves, incremented after black's move
+// `halfmoves' - number of halfmoves since the last capture or pawn advance (like in FEN)
+//               used for 50 move rule
+// `enpassant' - is the target square behind the pawn (like in FEN)
+//               -1    = no enpassant
+//               0..7  = a3..h3
+//               8..15 = a6..h6
 struct position {
-    uint64_t brd[NPIECES*2]; // 8 * 12 = 96B
-    uint8_t  sqtopc[64];     // 1 * 64 = 64B
-    // number of full moves, incremented after black's move
-    uint16_t nmoves;         // 2 *  1 =  2B
-    uint8_t  wtm;            // 1 *  1 =  1B
-    // number of halfmoves since the last capture or pawn advance (like in FEN)
-    // used for 50 move rule
-    uint8_t  halfmoves;      // 1 *  1 =  1B
-    uint8_t  castle;         // 1 *  1 =  1B
-    // enpassant is the target square behind the pawn (like in FEN)
-    // -1    = no enpassant
-    // 0..7  = a3..h3
-    // 8..15 = a6..h6
-    uint8_t  enpassant;      // 1 *  1 =  1B
-};                           // Total:  166B
+    uint64_t brd[NPIECES*2];
+    uint8_t  sqtopc[64];
+    uint16_t nmoves;
+    uint8_t  wtm;
+    uint8_t  halfmoves;
+    uint8_t  castle;
+    uint8_t  enpassant;
+};
 
 struct savepos {
-    // number of halfmoves since the last capture or pawn advance (like in FEN)
-    // used for 50 move rule
     uint8_t halfmoves;
-    // enpassant is the target square behind the pawn (like in FEN)    
     uint8_t enpassant;
     uint8_t castle;
-    // was the last move an enpassant
     uint8_t was_ep;
     uint8_t captured_pc; // EMPTY if no capture
 };
