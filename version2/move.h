@@ -5,6 +5,7 @@
 
 #define WHITE 0
 #define BLACK 1
+#define COLORSTR(x) ((x) == WHITE ? "WHITE":"BLACK")
 #define FLIP(color) ((color)^1)
 #define MAX_MOVES 256
 #define CSL_NONE   (0)
@@ -29,6 +30,7 @@ enum {
     A8, B8, C8, D8, E8, F8, G8, H8,
 };
 enum { KNIGHT, BISHOP, ROOK, QUEEN, PAWN, KING, NPIECES, EMPTY=(NPIECES*2) };
+#define PIECECOLOR(pc) ((pc) <= KING ? WHITE:BLACK)
 #define PIECE(color, type) ((NPIECES*(color))+(type))
 
 // moves are 16 bits

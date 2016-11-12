@@ -20,8 +20,8 @@ int main(int argc, char **argv) {
 	"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
 	0
     };
+    
     const char **cur = &fen[0];
-
     while (*cur) {
 	ret = position_from_fen(&pos, *cur);
 	if (ret != 0) {
@@ -29,8 +29,16 @@ int main(int argc, char **argv) {
 		    ret, *cur);
 	    exit(EXIT_FAILURE);
 	}
+	
 	position_print(stdout, &pos);
 	printf("\n");
+	
+	ret = validate_position(&pos);
+	if (ret != 0) {
+	    fprintf(stderr, "Position validation failed! Error(%d), FEN = %s\n",
+		    ret, *cur);
+	    exit(EXIT_FAILURE);
+	}
 
 	memset(&moves[0], 0, sizeof(moves[0]) * MAX_MOVES);
 	nmoves = generate_legal_moves(&pos, &moves[0]);

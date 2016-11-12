@@ -14,6 +14,7 @@
 //               8..15 = a6..h6
 struct position {
     uint64_t brd[NPIECES*2];
+    uint64_t side[2];
     uint8_t  sqtopc[64];
     uint16_t nmoves;
     uint8_t  wtm;
@@ -31,6 +32,7 @@ struct savepos {
 };
 
 extern int position_from_fen(struct position *restrict pos, const char *fen);
-extern void position_print(FILE *os, struct position *restrict pos); 
+extern void position_print(FILE *os, struct position *restrict pos);
+extern int validate_position(struct position *restrict const pos);
 
 #endif // POSITION__H_

@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-const uint32_t PROMOPC[5] = { 0, KNIGHT, BISHOP, ROOK, QUEEN };
 const char *sq_to_str[64] = {
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
     "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
@@ -13,7 +12,7 @@ const char *sq_to_str[64] = {
     "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 };
-const char *const visual_pcs = "PNBRQKpnbrqk ";
+const char *const visual_pcs = "NBRQPKnbrqpk ";
 const char *const ep_targets[16] = { "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
 				     "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6" };
 
@@ -56,7 +55,7 @@ void move_print(move mv) {
         printf(" e.p.");
         break;
     case FLG_PROMO:
-        printf(" promo(%c)", visual_pcs[PROMOPC[prm]]);
+        printf(" promo(%c)", visual_pcs[prm]);
         break;
     case FLG_CASTLE:
         printf(" castle");

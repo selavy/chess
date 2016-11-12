@@ -1,6 +1,7 @@
 #include "position.h"
 #include <string.h>
 #include <assert.h>
+#include <inttypes.h>
 
 int position_from_fen(struct position *restrict pos, const char *fen) {
     int rank;
@@ -16,6 +17,8 @@ int position_from_fen(struct position *restrict pos, const char *fen) {
     pos->enpassant = EP_NONE;
     memset(&pos->sqtopc[0], EMPTY, sizeof(pos->sqtopc[0]) * 64);
     memset(&pos->brd[0], 0, sizeof(pos->brd[0]) * NPIECES * 2);
+    pos->side[WHITE] = 0ull;
+    pos->side[BLACK] = 0ull;
 
     // piece placements
     for (rank = RANK_8; rank >= RANK_1; --rank) {
@@ -27,50 +30,62 @@ int position_from_fen(struct position *restrict pos, const char *fen) {
 	    case 'P':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(WHITE, PAWN);
 		pos->brd[PIECE(WHITE, PAWN)] |= MASK(SQUARE(file, rank));
+		pos->side[WHITE] |= MASK(SQUARE(file, rank));
 		break;		
 	    case 'N':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(WHITE, KNIGHT);
 		pos->brd[PIECE(WHITE, KNIGHT)] |= MASK(SQUARE(file, rank));
+		pos->side[WHITE] |= MASK(SQUARE(file, rank));		
 		break;		
 	    case 'B':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(WHITE, BISHOP);
 		pos->brd[PIECE(WHITE, BISHOP)] |= MASK(SQUARE(file, rank));
+		pos->side[WHITE] |= MASK(SQUARE(file, rank));		
 		break;		
 	    case 'R':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(WHITE, ROOK);
 		pos->brd[PIECE(WHITE, ROOK)] |= MASK(SQUARE(file, rank));
+		pos->side[WHITE] |= MASK(SQUARE(file, rank));		
 		break;		
 	    case 'Q':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(WHITE, QUEEN);
 		pos->brd[PIECE(WHITE, QUEEN)] |= MASK(SQUARE(file, rank));
+		pos->side[WHITE] |= MASK(SQUARE(file, rank));		
 		break;		
 	    case 'K':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(WHITE, KING);
 		pos->brd[PIECE(WHITE, KING)] |= MASK(SQUARE(file, rank));
+		pos->side[WHITE] |= MASK(SQUARE(file, rank));		
 		break;		
 	    case 'p':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(BLACK, PAWN);
 		pos->brd[PIECE(BLACK, PAWN)] |= MASK(SQUARE(file, rank));
+		pos->side[BLACK] |= MASK(SQUARE(file, rank));
 		break;
 	    case 'n':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(BLACK, KNIGHT);
 		pos->brd[PIECE(BLACK, KNIGHT)] |= MASK(SQUARE(file, rank));
+		pos->side[BLACK] |= MASK(SQUARE(file, rank));		
 		break;		
 	    case 'b':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(BLACK, BISHOP);
 		pos->brd[PIECE(BLACK, BISHOP)] |= MASK(SQUARE(file, rank));
+		pos->side[BLACK] |= MASK(SQUARE(file, rank));		
 		break;		
 	    case 'r':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(BLACK, ROOK);
 		pos->brd[PIECE(BLACK, ROOK)] |= MASK(SQUARE(file, rank));
+		pos->side[BLACK] |= MASK(SQUARE(file, rank));		
 		break;		
 	    case 'q':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(BLACK, QUEEN);
 		pos->brd[PIECE(BLACK, QUEEN)] |= MASK(SQUARE(file, rank));
+		pos->side[BLACK] |= MASK(SQUARE(file, rank));		
 		break;		
 	    case 'k':
 		pos->sqtopc[SQUARE(file, rank)] = PIECE(BLACK, KING);
 		pos->brd[PIECE(BLACK, KING)] |= MASK(SQUARE(file, rank));
+		pos->side[BLACK] |= MASK(SQUARE(file, rank));		
 		break;		
 	    default:
 		if (c >= '1' && c <= '8') {
@@ -211,4 +226,99 @@ void position_print(FILE *os, struct position *restrict pos) {
     } else {
 	fprintf(os, "En Passant target: %s\n", ep_targets[pos->enpassant]);
     }
+}
+
+int validate_position(struct position *restrict const pos) {
+    #if 0
+    uint64_t pcs;
+    int side;
+    int pctype;
+
+    for (side = WHITE; side <= BLACK; ++side) {
+	for (pctype = KNIGHT; pctype <= PAWN; ++pctype) {
+	    pcs = PIECES(*pos, side, pctype);
+	    for (sq = A1; sq <= H8; ++sq) {
+		if (pos->sqtopc[sq] != EMPTY) {
+		}
+	    }
+	}
+    }
+#endif
+
+    int pc;
+    int color;
+    int contra;
+    int sq;
+
+    int white_kings = 0;
+    int black_kings = 0;
+    
+    for (sq = A1; sq <= H8; ++sq) {
+	if (pos->sqtopc[sq] == EMPTY) {
+	    if ((pos->side[WHITE] & MASK(sq)) != 0) {
+		printf("validate_position: sqtopc empty on %s, but white bit board is not empty\n", sq_to_str[sq]);
+		return 1;
+	    }
+	    if ((pos->side[BLACK] & MASK(sq)) != 0) {
+		printf("validate_position: sqtopc empty on %s, but black bit board is not empty\n", sq_to_str[sq]);
+		return 2;
+	    }
+	} else {
+	    pc = pos->sqtopc[sq];
+	    color = PIECECOLOR(pc);
+	    contra = FLIP(color);
+
+	    // check full side bit boards
+	    if ((pos->side[color] & MASK(sq)) == 0) {
+		// full side board doesn't have this square occupied
+		printf("validate_position: sqtopc has %c on %s, but %s bit board is empty\n",
+		       visual_pcs[pc], sq_to_str[sq], COLORSTR(color));
+		return 3;
+	    }
+	    if ((pos->side[contra] & MASK(sq)) != 0) {
+		// other side's full board has this square occupied
+		printf("validate_position: sqtopc has %c on %s, but %s bit board is not empty\n",
+		       visual_pcs[pc], sq_to_str[sq], COLORSTR(color));
+		printf("%" PRIu64 "\n", pos->side[contra]);
+		return 4;
+	    }
+
+	    // check piece bit boards
+	    if ((pos->brd[pc] & MASK(sq)) == 0) {
+		printf("validate_position: sqtoc has %c on %s, but bit board does not\n",
+		       visual_pcs[pc], sq_to_str[sq]);
+		return 5;
+	    }
+
+	    if (pc == PIECE(WHITE, KING)) {
+		++white_kings;
+	    }
+	    if (pc == PIECE(BLACK, KING)) {
+		++black_kings;
+	    }
+	}
+    }
+
+    for (pc = PIECE(WHITE, KNIGHT); pc <= PIECE(BLACK, KING); ++pc) {
+	for (sq = A1; sq <= H8; ++sq) {
+	    if ((pos->brd[pc] & MASK(sq)) != 0) {
+		if (pos->sqtopc[sq] != pc) {
+		    printf("validate_position: pos->brd[%c] has a piece on %s, sqtopc has %c\n",
+			   visual_pcs[pc], sq_to_str[sq], visual_pcs[pos->sqtopc[sq]]);
+		    return 6;
+		}
+	    }
+	}
+    }
+
+    if (white_kings != 1) {
+	printf("validate_position: %d white kings found!\n", white_kings);
+	return 7;
+    }
+    if (black_kings != 1) {
+	printf("validate_position: %d black kings found!\n", black_kings);	
+	return 8;
+    }
+
+    return 0;
 }
