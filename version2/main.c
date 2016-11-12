@@ -1,13 +1,18 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
-#include "position.h"
 #include "move.h"
+#include "position.h"
+#include "movegen.h"
 
 int main(int argc, char **argv) {
     int ret;
     struct position pos;
+    move moves[MAX_MOVES];
+    int nmoves;
+    int i;
     const char *fen[] = {
 	"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 	"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
@@ -26,6 +31,15 @@ int main(int argc, char **argv) {
 	}
 	position_print(stdout, &pos);
 	printf("\n");
+
+	memset(&moves[0], 0, sizeof(moves[0]) * MAX_MOVES);
+	nmoves = generate_legal_moves(&pos, &moves[0]);
+	printf("Legal moves:\n");
+	for (i = 0; i < nmoves; ++i) {
+	    move_print(moves[i]);
+	}
+	printf("\n");
+	
 	++cur;
     }
     

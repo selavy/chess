@@ -6,6 +6,7 @@
 #define WHITE 0
 #define BLACK 1
 #define FLIP(color) ((color)^1)
+#define MAX_MOVES 256
 #define CSL_NONE   (0)
 #define CSL_WQSIDE (1 << 0)
 #define CSL_WKSIDE (1 << 1)
