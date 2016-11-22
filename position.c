@@ -307,5 +307,79 @@ int validate_position(struct position *restrict const pos) {
 }
 
 extern void make_move(struct position *restrict pos, struct savepos *restrict sp, move m) {
-    // TODO(plesslie): implement
+    const uint8_t side = pos->wtm;
+    //const uint8_t contra = FLIP(side);
+    const uint32_t tosq    = TO(m);
+    const uint32_t fromsq  = FROM(m);
+    const uint64_t from    = MASK(fromsq);
+    const uint64_t to      = MASK(tosq);    
+    const uint32_t pc      = pos->sqtopc[fromsq];
+    const uint32_t topc    = pos->sqtopc[tosq];
+    const uint32_t flags   = FLAGS(m);
+
+    uint64_t *restrict pcs = &pos->brd[pc];
+    uint8_t  *restrict s2p = pos->sqtopc;    
+    
+    // update savepos
+    sp->halfmoves = pos->halfmoves;
+    sp->enpassant = pos->enpassant;
+    sp->castle = pos->castle;
+    sp->was_ep = 0;
+    sp->captured_pc = topc;
+
+    pos->enpassant = NO_ENPASSANT;
+
+    switch (flags) {
+    case FLG_NONE:
+	*pcs &= ~from;
+	*pcs |= to;
+	s2p[fromsq] = EMPTY;
+	s2p[tosq] = pc;
+	pos->side[side] &= ~from;
+	pos->side[side] |= to;
+
+	// capture?
+	if (topc != EMPTY) {
+	    pos->brd[topc] &= ~to;
+	    switch (tosq) {
+	    case A8:
+		pos->castle &= ~CSL_BQSIDE;
+		break;
+	    case H8:
+		pos->castle &= ~CSL_BKSIDE;
+		break;
+	    case A1:
+		pos->castle &= ~CSL_WQSIDE;
+		break;
+	    case H1:
+		pos->castle &= ~CSL_WKSIDE;
+		break;
+	    default:
+		break;
+	    }
+	} else if (pc == PIECE(side, PAWN) && (from & RANK2(side)) && (to & EP_SQUARES(side))) {
+	    pos->enpassant = side == WHITE ? to - 8 : to + 8;
+	}
+
+	if (pc == PIECE(side, KING)) {
+	    pos->castle &= ~CSL_SIDE(side);
+	} else if (pc == PIECE(side, ROOK)) {
+	    switch (fromsq) {
+	    case A1: pos->castle &= ~CSL_WQSIDE; break;
+	    case H1: pos->castle &= ~CSL_WKSIDE; break;
+	    case A8: pos->castle &= ~CSL_BQSIDE; break;
+	    case H8: pos->castle &= ~CSL_BKSIDE; break;
+	    default: break;
+	    }
+	}
+	break;
+    case FLG_EP:
+	break;
+    case FLG_PROMO:
+	break;
+    case FLG_CASTLE:
+	break;
+    default:
+	assert(0);
+    }
 }

@@ -14,6 +14,7 @@
 #define CSL_BQSIDE (1 << 2)
 #define CSL_BKSIDE (1 << 3)
 #define CSL_ALL    (CSL_WQSIDE|CSL_WKSIDE|CSL_BQSIDE|CSL_BKSIDE)
+#define CSL_SIDE(side) ((side) == WHITE ? (CSL_WQSIDE | CSL_WKSIDE) : (CSL_BQSIDE | CSL_BKSIDE))
 #define EP_NONE 16
 #define SQUARE(file, rank) (((rank)*8)+(file))
 #define MASK(sq) ((uint64_t)1 << (sq))
@@ -70,6 +71,9 @@ enum { KNIGHT, BISHOP, ROOK, QUEEN, PAWN, KING, NPIECES, EMPTY=(NPIECES*2) };
 #define THIRD_RANK 0xff0000ULL
 #define SIXTH_RANK 0xff0000000000ULL
 #define RANK3(side) ((side) == WHITE ? THIRD_RANK : SIXTH_RANK)
+#define WHITE_ENPASSANT_SQUARES 0x00000000ff000000
+#define BLACK_ENPASSANT_SQUARES 0x000000ff00000000
+#define EP_SQUARES(side) ((side)==WHITE ? WHITE_ENPASSANT_SQUARES : BLACK_ENPASSANT_SQUARES)
 
 extern const char *sq_to_str[64];
 extern const char *const visual_pcs;
