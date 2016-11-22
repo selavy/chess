@@ -61,6 +61,15 @@ enum { KNIGHT, BISHOP, ROOK, QUEEN, PAWN, KING, NPIECES, EMPTY=(NPIECES*2) };
 #define FLG_EP     1
 #define FLG_PROMO  2
 #define FLG_CASTLE 3
+#define SECOND_RANK 0xff00ull
+#define SEVENTH_RANK 0xff000000000000ull
+#define RANK7(side) ((side) == WHITE ? SEVENTH_RANK : SECOND_RANK)
+#define A_FILE 0x101010101010101ULL
+#define H_FILE   0x8080808080808080ULL
+#define RANK2(side) ((side) == WHITE ? SECOND_RANK : SEVENTH_RANK)
+#define THIRD_RANK 0xff0000ULL
+#define SIXTH_RANK 0xff0000000000ULL
+#define RANK3(side) ((side) == WHITE ? THIRD_RANK : SIXTH_RANK)
 
 extern const char *sq_to_str[64];
 extern const char *const visual_pcs;

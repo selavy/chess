@@ -172,10 +172,82 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
             *moves++ = CASTLE(E8, C8);
         }
     }
-    
+
+    pcs = PIECES(*pos, side, PAWN);
     // pawn moves - 1 square
+    posmoves = side == WHITE ? pcs << 8 : pcs >> 8;
+    posmoves &= ~occupied;
+    while (posmoves) {
+        to = lsb(posmoves);
+        from = side == WHITE ? to - 8 : to + 8;
+        assert(pos->sqtopc[from] == PIECE(side,PAWN));        
+        if (to >= A8 || to <= H1) { // promotion
+            *moves++ = PROMOTION(from, to, KNIGHT);
+            *moves++ = PROMOTION(from, to, BISHOP);
+            *moves++ = PROMOTION(from, to, ROOK);
+            *moves++ = PROMOTION(from, to, QUEEN);
+        } else {
+            *moves++ = SIMPLEMOVE(from, to);
+        }        
+        clear_lsb(posmoves);
+    }
+    
     // pawn moves - 2 squares
-    // pawn moves - captures
+    posmoves = pcs & RANK2(side);
+    posmoves = side == WHITE ? posmoves << 16 : posmoves >> 16;
+    posmoves &= ~occupied;
+    while (posmoves) {
+        to = lsb(posmoves);
+        from = side == WHITE ? to - 16 : to + 16;
+        assert(pos->sqtopc[from] == PIECE(side,PAWN));
+        // TODO(plesslie): do this with bitmasks?
+        // make sure we aren't jumping over another piece
+        if (pos->sqtopc[side == WHITE ? to - 8 : to + 8] == EMPTY) {
+            *moves++ = SIMPLEMOVE(from, to);            
+        }        
+        posmoves &= (posmoves - 1);
+    }
+    
+    // pawn moves - capture left
+    posmoves = pcs & ~A_FILE;
+    posmoves = side == WHITE ? posmoves << 7 : posmoves >> 9;
+    posmoves &= contra;
+    while (posmoves) {
+        to = lsb(posmoves);
+        from = side == WHITE ? to - 7 : to + 9;
+        assert(pos->sqtopc[from] == PIECE(side,PAWN));
+        assert(pos->sqtopc[to] != EMPTY);
+        if (to >= A8 || to <= H1) { // last rank => promotion
+            *moves++ = PROMOTION(from, to, KNIGHT);
+            *moves++ = PROMOTION(from, to, BISHOP);
+            *moves++ = PROMOTION(from, to, ROOK);
+            *moves++ = PROMOTION(from, to, QUEEN);
+        } else {
+            *moves++ = SIMPLEMOVE(from, to);
+        }
+        posmoves &= (posmoves - 1);
+    }
+
+    // pawn moves - capture right
+    posmoves = pcs & ~H_FILE;
+    posmoves = side == WHITE ? posmoves << 9 : posmoves >> 7;
+    posmoves &= contra;
+    while (posmoves) {
+        to = lsb(posmoves);
+        from = side == WHITE ? to - 9 : to + 7;
+        assert(pos->sqtopc[from] == PIECE(side,PAWN));
+        assert(pos->sqtopc[to] != EMPTY);
+        if (to >= A8 || to <= H1) { // last rank => promotion
+            *moves++ = PROMOTION(from, to, KNIGHT);
+            *moves++ = PROMOTION(from, to, BISHOP);
+            *moves++ = PROMOTION(from, to, ROOK);
+            *moves++ = PROMOTION(from, to, QUEEN);
+        } else {
+            *moves++ = SIMPLEMOVE(from, to);
+        }
+        posmoves &= (posmoves - 1);
+    }
+    
     // en passant
     
     return moves;
