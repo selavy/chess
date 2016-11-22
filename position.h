@@ -25,6 +25,7 @@ struct position {
     uint8_t  enpassant;
 };
 #define PIECES(p, side, type) (p).brd[PIECE(side, type)]
+#define FULLSIDE(p, color) (p).side[color]
 
 struct savepos {
     uint8_t halfmoves;

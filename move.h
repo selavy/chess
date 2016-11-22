@@ -53,12 +53,6 @@ enum { KNIGHT, BISHOP, ROOK, QUEEN, PAWN, KING, NPIECES, EMPTY=(NPIECES*2) };
      ((from)  <<  6) |					\
      (3 << 14))
 
-// #define _MOVE(from, to, prm, ep, csl)			
-//     (((to)    <<  0) |					
-//      ((from)  <<  6) |					
-//      ((prm)   << 12) |					
-//      (((!!(ep))*1 + (!!(prm))*2 + (!!(csl))*3) << 14))
-
 #define TO(m)       (((m) >>  0) & 0x3f)
 #define FROM(m)     (((m) >>  6) & 0x3f)
 #define PROMO_PC(m) (((m) >> 12) & 0x03)
@@ -75,7 +69,10 @@ extern const char *const ep_targets[16];
 typedef uint16_t move;
 
 #ifndef NDEBUG
-extern move SIMPLEMOVE(uint32_t from, uint32_t to);
+extern move SIMPLEMOVE(int from, int to);
+extern move EP_CAPTURE(int from, int to);
+extern move PROMOTION(int from, int to, int prm);
+extern move CASTLE(int from, int to);
 #else
 #define SIMPLEMOVE _SIMPLEMOVE
 #define EP_CAPTURE _EP_CAPTURE
