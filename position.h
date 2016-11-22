@@ -11,7 +11,7 @@
 // `halfmoves' - number of halfmoves since the last capture or pawn advance (like in FEN)
 //               used for 50 move rule
 // `enpassant' - is the target square behind the pawn (like in FEN)
-//               -1    = no enpassant
+//               16    = no enpassant
 //               0..7  = a3..h3
 //               8..15 = a6..h6
 struct position {
@@ -26,6 +26,7 @@ struct position {
 };
 #define PIECES(p, side, type) (p).brd[PIECE(side, type)]
 #define FULLSIDE(p, color) (p).side[color]
+#define NO_ENPASSANT 16
 
 struct savepos {
     uint8_t halfmoves;
@@ -38,5 +39,6 @@ struct savepos {
 extern int position_from_fen(struct position *restrict pos, const char *fen);
 extern void position_print(FILE *os, struct position *restrict pos);
 extern int validate_position(struct position *restrict const pos);
+extern void make_move(struct position *restrict pos, struct savepos *restrict sp, move m);
 
 #endif // POSITION__H_

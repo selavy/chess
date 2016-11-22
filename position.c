@@ -305,3 +305,7 @@ int validate_position(struct position *restrict const pos) {
 
     return 0;
 }
+
+extern void make_move(struct position *restrict pos, struct savepos *restrict sp, move m) {
+    // TODO(plesslie): implement
+}

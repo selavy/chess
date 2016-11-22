@@ -1,5 +1,6 @@
 #include "movegen.h"
 #include <assert.h>
+#include <string.h>
 #include "magic_tables.h"
 
 // TODO: maybe should be caching this in the position
@@ -10,16 +11,34 @@
 
 static int legal_move(const struct position *const restrict pos, move m);
 static move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves);
+static int in_check(const struct position * const restrict pos, uint8_t side);
 
 static int legal_move(const struct position *const restrict pos, move m) {
     // TODO: return true if playing move `m' would be legal in position `pos'
-    return 1;
+    // REVISIT(plesslie): better implementation possible that doesn't need a copy
+    struct position tmp;
+    struct savepos sp;
+    memcpy(&tmp, pos, sizeof(tmp));
+    make_move(&tmp, &sp, m);
+    return in_check(&tmp, pos->wtm) == 0;
 }
+
+// TEMP TEMP
+static int in_check(const struct position * const restrict pos, uint8_t side) {
+    // find `side`'s king
+    uint64_t kings = pos->brd[PIECE(side,KING)];
+    int kingloc = 0;
+    assert(kings != 0); // there should be a king...
+    for (; (kings & ((uint64_t)1 << kingloc)) == 0; ++kingloc);
+    // check if the other side attacks the king location
+    return attacks(pos, FLIP(side), kingloc);
+}
+
 
 // returns 1 if a piece from `side` attacks `square`
 int attacks(const struct position * const restrict pos, uint8_t side, int square) {
     uint64_t pcs;
-    uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
+    const uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
     pcs = pos->brd[PIECE(side,ROOK)] | pos->brd[PIECE(side,QUEEN)];
     if ((rook_attacks(square, occupied) & pcs) != 0) {
         return 1;
@@ -48,13 +67,13 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
     uint64_t pcs;
     uint32_t from;
     uint32_t to;    
-    uint8_t side = pos->wtm;
-    uint8_t contraside = FLIP(pos->wtm);
-    uint64_t same = pos->side[side];
-    uint64_t contra = pos->side[contraside];
-    uint64_t occupied = same | contra;
-    uint64_t opp_or_empty = ~same;
-    uint8_t castle = pos->castle;
+    const uint8_t side = pos->wtm;
+    const uint8_t contraside = FLIP(pos->wtm);
+    const uint64_t same = pos->side[side];
+    const uint64_t contra = pos->side[contraside];
+    const uint64_t occupied = same | contra;
+    const uint64_t opp_or_empty = ~same;
+    const uint8_t castle = pos->castle;
 
     // knight moves
     pcs = PIECES(*pos, side, KNIGHT);
@@ -247,8 +266,34 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
         }
         posmoves &= (posmoves - 1);
     }
-    
+
+    // TODO: branch on side earlier?
     // en passant
+    if (pos->enpassant != NO_ENPASSANT) {
+	to = side == WHITE ? pos->enpassant + 32 : pos->enpassant + 16;
+	assert((side == WHITE && to >= A6 && to <= H6) ||
+	       (side == BLACK && to >= A3 && to <= H3));
+	assert(pos->sqtopc[to] == EMPTY);
+	// capture left
+	if (to != H6 && to != H3) {
+	    from = side == WHITE ? to - 7 : to + 9;
+	    assert((side == WHITE && from >= A5 && from <= H5) ||
+		   (side == BLACK && from >= A4 && from <= H4));
+	    if (pos->sqtopc[from] == PIECE(side, PAWN)) {
+		*moves++ = EP_CAPTURE(from, to);
+	    }
+	}
+	
+	// capture right
+	if (to != A6 && to != A3) {
+	    from = side == WHITE ? to - 9 : to + 7;
+	    assert((side == WHITE && from >= A5 && from <= H5) ||
+		   (side == BLACK && from >= A4 && from <= H4));
+	    if (pos->sqtopc[from] == PIECE(side, PAWN)) {
+		*moves++ = EP_CAPTURE(from, to);
+	    }
+	}
+    }
     
     return moves;
 }
