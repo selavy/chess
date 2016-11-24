@@ -26,7 +26,6 @@ struct position {
 };
 #define PIECES(p, side, type) (p).brd[PIECE(side, type)]
 #define FULLSIDE(p, color) (p).side[color]
-#define NO_ENPASSANT 16
 
 struct savepos {
     uint8_t halfmoves;
@@ -37,7 +36,7 @@ struct savepos {
 };
 
 extern int position_from_fen(struct position *restrict pos, const char *fen);
-extern void position_print(FILE *os, struct position *restrict pos);
+extern void position_print(FILE *os, const struct position *restrict pos);
 extern int validate_position(struct position *restrict const pos);
 extern void make_move(struct position *restrict pos, struct savepos *restrict sp, move m);
 

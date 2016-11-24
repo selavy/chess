@@ -15,7 +15,7 @@
 #define CSL_BKSIDE (1 << 3)
 #define CSL_ALL    (CSL_WQSIDE|CSL_WKSIDE|CSL_BQSIDE|CSL_BKSIDE)
 #define CSL_SIDE(side) ((side) == WHITE ? (CSL_WQSIDE | CSL_WKSIDE) : (CSL_BQSIDE | CSL_BKSIDE))
-#define EP_NONE 16
+#define EP_NONE 64
 #define SQUARE(file, rank) (((rank)*8)+(file))
 #define MASK(sq) ((uint64_t)1 << (sq))
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
@@ -77,7 +77,6 @@ enum { KNIGHT, BISHOP, ROOK, QUEEN, PAWN, KING, NPIECES, EMPTY=(NPIECES*2) };
 
 extern const char *sq_to_str[64];
 extern const char *const visual_pcs;
-extern const char *const ep_targets[16];
 
 typedef uint16_t move;
 

@@ -13,8 +13,6 @@ const char *sq_to_str[64] = {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
 };
 const char *const visual_pcs = "NBRQPKnbrqpk ";
-const char *const ep_targets[16] = { "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-				     "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6" };
 
 #ifndef NDEBUG
 move SIMPLEMOVE(int from, int to) {

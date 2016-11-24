@@ -269,8 +269,9 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 
     // TODO: branch on side earlier?
     // en passant
-    if (pos->enpassant != NO_ENPASSANT) {
-	to = side == WHITE ? pos->enpassant + 32 : pos->enpassant + 16;
+    if (pos->enpassant != EP_NONE) {
+	position_print(stdout, pos);
+	to = pos->enpassant;
 	assert((side == WHITE && to >= A6 && to <= H6) ||
 	       (side == BLACK && to >= A3 && to <= H3));
 	assert(pos->sqtopc[to] == EMPTY);
