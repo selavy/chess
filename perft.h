@@ -11,6 +11,8 @@ int perft_test(const struct position *restrict pos,
 	       uint64_t *captures,
 	       uint64_t *eps,
 	       uint64_t *castles,
-	       uint64_t *promos);
+	       uint64_t *promos,
+	       uint64_t *checks,
+	       uint64_t *mates);
 
 #endif // PERFT__H_

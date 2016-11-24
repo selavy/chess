@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     move moves[MAX_MOVES];
     int nmoves;
     int i;
-    uint64_t nodes, captures, eps, castles, promos;
+    uint64_t nodes, captures, eps, castles, promos, checks, mates;
     const char *fen[] = {
 	"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 	"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
@@ -74,15 +74,16 @@ int main(int argc, char **argv) {
 	}
 
 	for (i = 0; i < 6; ++i) {
-	    nodes = captures = eps = castles = promos = 0;
-	    perft_test(&pos, i, &nodes, &captures, &eps, &castles, &promos);
+	    perft_test(&pos, i, &nodes, &captures, &eps, &castles, &promos, &checks, &mates);
 	    printf("%d: Nodes=%" PRIu64 ", "
 		   "Captures=%" PRIu64 ", "
 		   "E.p.=%" PRIu64 ", "
 		   "Castles=%" PRIu64 ", "
-		   "Promotions=%" PRIu64
+		   "Promotions=%" PRIu64 ", "
+		   "Checks=%" PRIu64 ", "
+		   "Mates=%" PRIu64
 		   "\n", 
-		   i, nodes, captures, eps, castles, promos);
+		   i, nodes, captures, eps, castles, promos, checks, mates);
 	}
 	break;
     }

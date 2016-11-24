@@ -8,7 +8,9 @@ static uint64_t perft(int depth,
 		      uint64_t *captures,
 		      uint64_t *eps,
 		      uint64_t *castles,
-		      uint64_t *promos) {
+		      uint64_t *promos,
+		      uint64_t *checks,
+		      uint64_t *mates) {
     int i;
     int nmoves;
     uint64_t nodes = 0;    
@@ -28,7 +30,7 @@ static uint64_t perft(int depth,
     if (depth > 1) {
 	for (i = 0; i < nmoves; ++i) {
 	    make_move(pos, &sp, moves[i]);
-	    nodes += perft(depth - 1, pos, captures, eps, castles, promos);
+	    nodes += perft(depth - 1, pos, captures, eps, castles, promos, checks, mates);
 	    memcpy(pos, &tmp, sizeof(tmp));
 	    assert(validate_position(pos) == 0);
 	}
@@ -58,13 +60,16 @@ int perft_test(const struct position *restrict position,
 	       uint64_t *captures,
 	       uint64_t *eps,
 	       uint64_t *castles,
-	       uint64_t *promos) {
+	       uint64_t *promos,
+	       uint64_t *checks,
+	       uint64_t *mates) {
+    *nodes = *captures = *eps = *castles = *promos = *checks = *mates = 0;
     if (depth < 0) {
-	return 0;
+	return 1;
     }
     struct position pos;
     memcpy(&pos, position, sizeof(pos));
-    *nodes = perft(depth, &pos, captures, eps, castles, promos);
+    *nodes = perft(depth, &pos, captures, eps, castles, promos, checks, mates);
 
     return 0;
 }
