@@ -20,6 +20,13 @@ static uint64_t perft(int depth,
     uint32_t flags;
     
     if (depth == 0) {
+	nmoves = generate_legal_moves(pos, &moves[0]);
+	if (nmoves == 0) {
+	    ++(*mates);
+	}
+	if (in_check(pos, pos->wtm)) {
+	    ++(*checks);
+	}
 	return 1;
     }
 
@@ -49,6 +56,10 @@ static uint64_t perft(int depth,
 	    case FLG_CASTLE: ++(*castles); break;
 	    default: break;
 	    }
+	    make_move(pos, &sp, moves[i]);
+	    perft(depth - 1, pos, captures, eps, castles, promos, checks, mates);
+	    memcpy(pos, &tmp, sizeof(tmp));
+	    assert(validate_position(pos) == 0);	    
 	}
     }
     return nodes;

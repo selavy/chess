@@ -11,7 +11,6 @@
 
 static int legal_move(const struct position *const restrict pos, move m);
 static move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves);
-static int in_check(const struct position * const restrict pos, uint8_t side);
 
 static int legal_move(const struct position *const restrict pos, move m) {
     // TODO: return true if playing move `m' would be legal in position `pos'
@@ -24,7 +23,7 @@ static int legal_move(const struct position *const restrict pos, move m) {
 }
 
 // TEMP TEMP
-static int in_check(const struct position * const restrict pos, uint8_t side) {
+int in_check(const struct position * const restrict pos, uint8_t side) {
     // find `side`'s king
     uint64_t kings = pos->brd[PIECE(side,KING)];
     int kingloc = 0;
