@@ -547,5 +547,6 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
     assert(((pos->castle & CSL_WKSIDE)  == 0) || (pos->sqtopc[H1] == PIECE(WHITE,ROOK) && pos->sqtopc[E1] == PIECE(WHITE,KING)));
     assert(((pos->castle & CSL_BQSIDE) == 0) || (pos->sqtopc[A8] == PIECE(BLACK,ROOK) && pos->sqtopc[E8] == PIECE(BLACK,KING)));
     assert(((pos->castle & CSL_BKSIDE)  == 0) || (pos->sqtopc[H8] == PIECE(BLACK,ROOK) && pos->sqtopc[E8] == PIECE(BLACK,KING)));    
-    
+
+    assert(validate_position(pos) == 0);
 }
