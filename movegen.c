@@ -88,18 +88,6 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	clear_lsb(pcs);
     }
 
-    // king moves
-    pcs = PIECES(*pos, side, KING);
-    assert(pcs);
-    assert(popcountll(pcs) == 1);
-    from = lsb(pcs);
-    posmoves = king_attacks(from) & opp_or_empty;
-    while (posmoves) {
-	to = lsb(posmoves);
-	*moves++ = SIMPLEMOVE(from, to);
-	clear_lsb(posmoves);
-    }
-
     // bishop moves
     pcs = PIECES(*pos, side, BISHOP);
     while (pcs) {
@@ -144,8 +132,20 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	}
 	clear_lsb(pcs);
     }
+
+    // king moves
+    pcs = PIECES(*pos, side, KING);
+    assert(pcs);
+    assert(popcountll(pcs) == 1);
+    from = lsb(pcs);
+    posmoves = king_attacks(from) & opp_or_empty;
+    while (posmoves) {
+	to = lsb(posmoves);
+	*moves++ = SIMPLEMOVE(from, to);
+	clear_lsb(posmoves);
+    }
     
-    // castling
+    // castling - `from' still has king position
     if (side == WHITE) {
         if ((castle & CSL_WKSIDE) != 0 &&
             (from == E1)               &&
@@ -270,7 +270,6 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
     // TODO: branch on side earlier?
     // en passant
     if (pos->enpassant != EP_NONE) {
-	position_print(stdout, pos);
 	to = pos->enpassant;
 	assert((side == WHITE && to >= A6 && to <= H6) ||
 	       (side == BLACK && to >= A3 && to <= H3));
