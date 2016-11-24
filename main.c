@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 	    exit(EXIT_FAILURE);
 	}
 
-	for (i = 0; i < 5; ++i) {
+	for (i = 0; i < 6; ++i) {
 	    perft_test(&pos, i, &nodes, &captures, &eps, &castles, &promos, &checks, &mates);
 	    printf("%d: Nodes=%" PRIu64 ", "
 		   "Captures=%" PRIu64 ", "

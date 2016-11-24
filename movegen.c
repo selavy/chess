@@ -19,17 +19,16 @@ static int legal_move(const struct position *const restrict pos, move m) {
     struct savepos sp;
     memcpy(&tmp, pos, sizeof(tmp));
     make_move(&tmp, &sp, m);
-    return in_check(&tmp, pos->wtm) == 0;
+    const int rval = in_check(&tmp, pos->wtm);
+    return rval == 0;
 }
 
 // TEMP TEMP
 int in_check(const struct position * const restrict pos, uint8_t side) {
-    // find `side`'s king
-    uint64_t kings = pos->brd[PIECE(side,KING)];
-    int kingloc = 0;
-    assert(kings != 0); // there should be a king...
-    for (; (kings & ((uint64_t)1 << kingloc)) == 0; ++kingloc);
-    // check if the other side attacks the king location
+    const uint64_t kings = pos->brd[PIECE(side,KING)];
+    assert(kings != 0);
+    const int kingloc = lsb(kings);
+    assert(kingloc >= 0 && kingloc <= 63);
     return attacks(pos, FLIP(side), kingloc);
 }
 
@@ -38,25 +37,25 @@ int in_check(const struct position * const restrict pos, uint8_t side) {
 int attacks(const struct position * const restrict pos, uint8_t side, int square) {
     uint64_t pcs;
     const uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
-    pcs = pos->brd[PIECE(side,ROOK)] | pos->brd[PIECE(side,QUEEN)];
+    pcs = pos->brd[PIECE(side, ROOK)] | pos->brd[PIECE(side, QUEEN)];
     if ((rook_attacks(square, occupied) & pcs) != 0) {
         return 1;
     }
-    pcs = pos->brd[PIECE(side,BISHOP)] | pos->brd[PIECE(side,QUEEN)];
+    pcs = pos->brd[PIECE(side, BISHOP)] | pos->brd[PIECE(side, QUEEN)];
     if ((bishop_attacks(square, occupied) & pcs) != 0) {
-        return 1;
+        return 2;
     }
-    pcs = pos->brd[PIECE(side,KNIGHT)];
+    pcs = pos->brd[PIECE(side, KNIGHT)];
     if ((knight_attacks(square) & pcs) != 0) {
-        return 1;
+        return 3;
     }
-    pcs = pos->brd[PIECE(side,PAWN)];
+    pcs = pos->brd[PIECE(side, PAWN)];
     if ((pawn_attacks(FLIP(side), square) & pcs) != 0) {
-        return 1;
+        return 4;
     }
-    pcs = pos->brd[PIECE(side,KING)];
+    pcs = pos->brd[PIECE(side, KING)];
     if ((king_attacks(square) & pcs) != 0) {
-        return 1;
+        return 5;
     }
     return 0;
 }

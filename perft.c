@@ -30,6 +30,8 @@ static uint64_t perft(int depth,
 	return 1;
     }
 
+    assert(in_check(pos, FLIP(pos->wtm)) == 0);
+
     assert(validate_position(pos) == 0);    
     memcpy(&tmp, pos, sizeof(tmp));
     nmoves = generate_legal_moves(pos, &moves[0]);

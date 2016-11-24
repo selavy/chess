@@ -325,6 +325,8 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
     uint8_t  *restrict s2p   = pos->sqtopc;
     uint64_t *restrict rooks = &pos->brd[PIECE(side, ROOK)];
     int epsq;
+
+    assert(topc != PIECE(WHITE, KING) && topc != PIECE(BLACK, KING));
     
     // update savepos
     sp->halfmoves = pos->halfmoves;
