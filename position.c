@@ -166,6 +166,10 @@ int position_from_fen(struct position *restrict pos, const char *fen) {
     } else {
 	return 9;
     }
+    
+    assert((pos->enpassant == EP_NONE) ||
+	   (pos->enpassant >= A3 && pos->enpassant <= H3) ||
+	   (pos->enpassant >= A6 && pos->enpassant <= H6));
 
     if (*fen++ != ' ') {
 	return 11;
@@ -351,7 +355,9 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
 	    default: break;
 	    }
 	} else if (pc == PIECE(side, PAWN) && (from & RANK2(side)) && (to & EP_SQUARES(side))) {
-	    pos->enpassant = side == WHITE ? to - 8 : to + 8;
+	    pos->enpassant = side == WHITE ? tosq - 8 : tosq + 8;
+	    assert((pos->enpassant >= A3 && pos->enpassant <= H3) ||
+		   (pos->enpassant >= A6 && pos->enpassant <= H6));
 	}
 
 	if (pc == PIECE(side, KING)) {

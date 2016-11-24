@@ -10,11 +10,11 @@ static uint64_t perft(int depth, struct position *restrict pos) {
     move moves[MAX_MOVES];
     struct position tmp;
     struct savepos sp;
-
+    
     if (depth == 0) {
 	return 1;
     }
-
+    
     memcpy(&tmp, pos, sizeof(tmp));
     nmoves = generate_legal_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {
@@ -23,7 +23,6 @@ static uint64_t perft(int depth, struct position *restrict pos) {
 	memcpy(pos, &tmp, sizeof(tmp));
 	assert(validate_position(pos) == 0);
     }
-    
     return nodes;
 }
 
