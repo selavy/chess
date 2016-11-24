@@ -14,7 +14,8 @@ static uint64_t perft(int depth, struct position *restrict pos) {
     if (depth == 0) {
 	return 1;
     }
-    
+
+    assert(validate_position(pos) == 0);    
     memcpy(&tmp, pos, sizeof(tmp));
     nmoves = generate_legal_moves(pos, &moves[0]);
     for (i = 0; i < nmoves; ++i) {

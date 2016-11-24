@@ -12,7 +12,7 @@ if __name__ == '__main__':
     print(bbrd)
 
     sys.stdout.write('+---+---+---+---+---+---+---+---+\n')
-    for rank in range(7, -1, -1):
+    for rank in reversed(range(0, 8)):
         for file in range(8):
             sq = rank * 8 + file
             pc = '*' if (bbrd & (1 << sq)) else ' '
