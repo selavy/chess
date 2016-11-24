@@ -490,4 +490,56 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
     default:
 	assert(0);
     }
+
+    pos->wtm = contra;
+    if (pc == PIECE(side, PAWN) || topc != EMPTY) {
+	pos->halfmoves = 0;
+    } else {
+	++pos->halfmoves;
+    }
+    ++pos->nmoves;
+
+    // position assertions
+    assert(pos->enpassant == EP_NONE || pc == PIECE(side,PAWN));
+
+    // no pawns on 1st or 8th ranks
+    assert(pos->sqtopc[A1] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[B1] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[C1] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[D1] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[E1] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[F1] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[G1] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[H1] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[A1] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[B1] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[C1] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[D1] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[E1] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[F1] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[G1] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[H1] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[A8] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[B8] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[C8] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[D8] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[E8] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[F8] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[G8] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[H8] != PIECE(WHITE,PAWN));
+    assert(pos->sqtopc[A8] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[B8] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[C8] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[D8] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[E8] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[F8] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[G8] != PIECE(BLACK,PAWN));
+    assert(pos->sqtopc[H8] != PIECE(BLACK,PAWN));
+
+    // either "cant castle"              OR "king and rook are still on original squares"    
+    assert(((pos->castle & CSL_WQSIDE) == 0) || (pos->sqtopc[A1] == PIECE(WHITE,ROOK) && pos->sqtopc[E1] == PIECE(WHITE,KING)));        
+    assert(((pos->castle & CSL_WKSIDE)  == 0) || (pos->sqtopc[H1] == PIECE(WHITE,ROOK) && pos->sqtopc[E1] == PIECE(WHITE,KING)));
+    assert(((pos->castle & CSL_BQSIDE) == 0) || (pos->sqtopc[A8] == PIECE(BLACK,ROOK) && pos->sqtopc[E8] == PIECE(BLACK,KING)));
+    assert(((pos->castle & CSL_BKSIDE)  == 0) || (pos->sqtopc[H8] == PIECE(BLACK,ROOK) && pos->sqtopc[E8] == PIECE(BLACK,KING)));    
+    
 }
