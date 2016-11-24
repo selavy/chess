@@ -316,7 +316,7 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
     const uint32_t pc        = pos->sqtopc[fromsq];
     const uint32_t topc      = pos->sqtopc[tosq];
     const uint32_t flags     = FLAGS(m);
-    const uint32_t epsq      = side == WHITE ? pos->enpassant + 32 : pos->enpassant + 24;
+    const uint32_t epsq      = pos->enpassant;
     const int      promopc   = PROMO_PC(m);
     uint64_t *restrict pcs   = &pos->brd[pc];
     uint8_t  *restrict s2p   = pos->sqtopc;
