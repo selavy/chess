@@ -243,11 +243,11 @@ int validate_position(struct position *restrict const pos) {
     for (sq = A1; sq <= H8; ++sq) {
 	if (pos->sqtopc[sq] == EMPTY) {
 	    if ((pos->side[WHITE] & MASK(sq)) != 0) {
-		printf("validate_position: sqtopc empty on %s, but white bit board is not empty\n", sq_to_str[sq]);
+		printf("validate_position: sqtopc empty on %s, but white full bitboard is not empty\n", sq_to_str[sq]);
 		return 1;
 	    }
 	    if ((pos->side[BLACK] & MASK(sq)) != 0) {
-		printf("validate_position: sqtopc empty on %s, but black bit board is not empty\n", sq_to_str[sq]);
+		printf("validate_position: sqtopc empty on %s, but black full bitboard is not empty\n", sq_to_str[sq]);
 		return 2;
 	    }
 	} else {
@@ -255,24 +255,24 @@ int validate_position(struct position *restrict const pos) {
 	    color = PIECECOLOR(pc);
 	    contra = FLIP(color);
 
-	    // check full side bit boards
+	    // check full side bitboards
 	    if ((pos->side[color] & MASK(sq)) == 0) {
 		// full side board doesn't have this square occupied
-		printf("validate_position: sqtopc has %c on %s, but %s bit board is empty\n",
+		printf("validate_position: sqtopc has %c on %s, but %s (same) bitboard is empty\n",
 		       visual_pcs[pc], sq_to_str[sq], COLORSTR(color));
 		return 3;
 	    }
 	    if ((pos->side[contra] & MASK(sq)) != 0) {
 		// other side's full board has this square occupied
-		printf("validate_position: sqtopc has %c on %s, but %s bit board is not empty\n",
+		printf("validate_position: sqtopc has %c on %s, but %s (contra) bitboard is not empty\n",
 		       visual_pcs[pc], sq_to_str[sq], COLORSTR(color));
 		printf("%" PRIu64 "\n", pos->side[contra]);
 		return 4;
 	    }
 
-	    // check piece bit boards
+	    // check piece bitboards
 	    if ((pos->brd[pc] & MASK(sq)) == 0) {
-		printf("validate_position: sqtoc has %c on %s, but bit board does not\n",
+		printf("validate_position: sqtoc has %c on %s, but bitboard does not\n",
 		       visual_pcs[pc], sq_to_str[sq]);
 		return 5;
 	    }
@@ -320,11 +320,11 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
     const uint32_t pc        = pos->sqtopc[fromsq];
     const uint32_t topc      = pos->sqtopc[tosq];
     const uint32_t flags     = FLAGS(m);
-    const uint32_t epsq      = pos->enpassant;
     const int      promopc   = PROMO_PC(m);
     uint64_t *restrict pcs   = &pos->brd[pc];
     uint8_t  *restrict s2p   = pos->sqtopc;
     uint64_t *restrict rooks = &pos->brd[PIECE(side, ROOK)];
+    int epsq;
     
     // update savepos
     sp->halfmoves = pos->halfmoves;
@@ -347,6 +347,7 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
 	// capture?
 	if (topc != EMPTY) {
 	    pos->brd[topc] &= ~to;
+	    pos->side[contra] &= ~to;
 	    switch (tosq) {
 	    case A8: pos->castle &= ~CSL_BQSIDE; break;
 	    case H8: pos->castle &= ~CSL_BKSIDE; break;
@@ -375,6 +376,7 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
     case FLG_EP:
 	sp->was_ep = 1;
 	if (side == WHITE) {
+	    epsq = tosq - 8;
 	    *pcs &= ~from;
 	    *pcs |= to;
 	    pos->brd[PIECE(BLACK, PAWN)] &= ~MASK(epsq);
@@ -383,8 +385,9 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
 	    s2p[tosq] = PIECE(WHITE, PAWN);
 	    pos->side[WHITE] &= ~from;
 	    pos->side[WHITE] |= to;
-	    pos->side[BLACK] &= ~epsq;
+	    pos->side[BLACK] &= ~MASK(epsq);
 	} else {
+	    epsq = tosq + 8;
 	    *pcs &= ~from;
 	    *pcs |= to;
 	    pos->brd[PIECE(WHITE, PAWN)] &= ~MASK(epsq);
@@ -393,7 +396,7 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
 	    s2p[tosq] = PIECE(BLACK, PAWN);
 	    pos->side[BLACK] &= ~from;
 	    pos->side[BLACK] |= to;
-	    pos->side[WHITE] &= ~epsq;
+	    pos->side[WHITE] &= ~MASK(epsq);
 	}
 	break;
     case FLG_PROMO:
