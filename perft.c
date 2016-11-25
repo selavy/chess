@@ -20,6 +20,7 @@ static uint64_t perft(int depth,
     uint32_t flags;
     
     if (depth == 0) {
+#ifdef COUNT_CHECKS_AND_MATES
 	nmoves = generate_legal_moves(pos, &moves[0]);
 	if (nmoves == 0) {
 	    ++(*mates);
@@ -27,6 +28,7 @@ static uint64_t perft(int depth,
 	if (in_check(pos, pos->wtm)) {
 	    ++(*checks);
 	}
+#endif
 	return 1;
     }
 
@@ -53,15 +55,18 @@ static uint64_t perft(int depth,
 		    ++(*captures);
 		}
 		break;
-	    case FLG_EP: ++(*eps); break;
+	    case FLG_EP: ++(*eps); ++(*castles); break;
 	    case FLG_PROMO: ++(*promos); break;
 	    case FLG_CASTLE: ++(*castles); break;
 	    default: break;
 	    }
+
+#if COUNT_CHECKS_AND_MATES
 	    make_move(pos, &sp, moves[i]);
 	    perft(depth - 1, pos, captures, eps, castles, promos, checks, mates);
 	    memcpy(pos, &tmp, sizeof(tmp));
-	    assert(validate_position(pos) == 0);	    
+	    assert(validate_position(pos) == 0);
+#endif
 	}
     }
     return nodes;
@@ -83,7 +88,7 @@ int perft_test(const struct position *restrict position,
     struct position pos;
     memcpy(&pos, position, sizeof(pos));
     *nodes = perft(depth, &pos, captures, eps, castles, promos, checks, mates);
-
+ 
     return 0;
 }
 

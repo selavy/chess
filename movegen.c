@@ -1,6 +1,7 @@
 #include "movegen.h"
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 #include "magic_tables.h"
 
 // TODO: maybe should be caching this in the position
@@ -9,10 +10,10 @@
 #define clear_lsb(bb) bb &= (bb - 1)
 #define popcountll(bb) __builtin_popcountll(bb)
 
-static int legal_move(const struct position *const restrict pos, move m);
+//static int legal_move(const struct position *const restrict pos, move m);
 static move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves);
 
-static int legal_move(const struct position *const restrict pos, move m) {
+/*static*/int legal_move(const struct position *const restrict pos, move m) {
     // TODO: return true if playing move `m' would be legal in position `pos'
     // REVISIT(plesslie): better implementation possible that doesn't need a copy
     struct position tmp;
@@ -73,6 +74,10 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
     const uint64_t opp_or_empty = ~same;
     const uint8_t castle = pos->castle;
 
+#define TO_SQ_NOT_KING(sq)				\
+    assert(pos->sqtopc[sq] != PIECE(WHITE, KING));	\
+    assert(pos->sqtopc[sq] != PIECE(BLACK, KING));
+
     // knight moves
     pcs = PIECES(*pos, side, KNIGHT);
     while (pcs) {
@@ -80,6 +85,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	posmoves = knight_attacks(from) & opp_or_empty;
 	while (posmoves) {
 	    to = lsb(posmoves);
+	    TO_SQ_NOT_KING(to);
 	    *moves++ = SIMPLEMOVE(from, to);
 	    clear_lsb(posmoves);
 	}
@@ -94,6 +100,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	while (posmoves) {
 	    to = lsb(posmoves);
 	    if ((MASK(to) & same) == 0) {
+		TO_SQ_NOT_KING(to);		
 		*moves++ = SIMPLEMOVE(from, to);
 	    }
 	    clear_lsb(posmoves);
@@ -109,6 +116,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	while (posmoves) {
 	    to = lsb(posmoves);
 	    if ((MASK(to) & same) == 0) {
+		TO_SQ_NOT_KING(to);		
 		*moves++ = SIMPLEMOVE(from, to);
 	    }
 	    clear_lsb(posmoves);
@@ -124,6 +132,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	while (posmoves) {
 	    to = lsb(posmoves);
 	    if ((MASK(to) & same) == 0) {
+		TO_SQ_NOT_KING(to);
 		*moves++ = SIMPLEMOVE(from, to);
 	    }
 	    clear_lsb(posmoves);
@@ -139,6 +148,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
     posmoves = king_attacks(from) & opp_or_empty;
     while (posmoves) {
 	to = lsb(posmoves);
+	TO_SQ_NOT_KING(to);
 	*moves++ = SIMPLEMOVE(from, to);
 	clear_lsb(posmoves);
     }
@@ -199,11 +209,13 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
         from = side == WHITE ? to - 8 : to + 8;
         assert(pos->sqtopc[from] == PIECE(side,PAWN));        
         if (to >= A8 || to <= H1) { // promotion
+	    TO_SQ_NOT_KING(to);
             *moves++ = PROMOTION(from, to, KNIGHT);
             *moves++ = PROMOTION(from, to, BISHOP);
             *moves++ = PROMOTION(from, to, ROOK);
             *moves++ = PROMOTION(from, to, QUEEN);
         } else {
+	    TO_SQ_NOT_KING(to);
             *moves++ = SIMPLEMOVE(from, to);
         }        
         clear_lsb(posmoves);
@@ -220,6 +232,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
         // TODO(plesslie): do this with bitmasks?
         // make sure we aren't jumping over another piece
         if (pos->sqtopc[side == WHITE ? to - 8 : to + 8] == EMPTY) {
+	    TO_SQ_NOT_KING(to);
             *moves++ = SIMPLEMOVE(from, to);            
         }        
         posmoves &= (posmoves - 1);
@@ -235,11 +248,13 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
         assert(pos->sqtopc[from] == PIECE(side,PAWN));
         assert(pos->sqtopc[to] != EMPTY);
         if (to >= A8 || to <= H1) { // last rank => promotion
+	    TO_SQ_NOT_KING(to);
             *moves++ = PROMOTION(from, to, KNIGHT);
             *moves++ = PROMOTION(from, to, BISHOP);
             *moves++ = PROMOTION(from, to, ROOK);
             *moves++ = PROMOTION(from, to, QUEEN);
         } else {
+	    TO_SQ_NOT_KING(to);
             *moves++ = SIMPLEMOVE(from, to);
         }
         posmoves &= (posmoves - 1);
@@ -255,12 +270,23 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
         assert(pos->sqtopc[from] == PIECE(side,PAWN));
         assert(pos->sqtopc[to] != EMPTY);
         if (to >= A8 || to <= H1) { // last rank => promotion
+	    TO_SQ_NOT_KING(to);
             *moves++ = PROMOTION(from, to, KNIGHT);
             *moves++ = PROMOTION(from, to, BISHOP);
             *moves++ = PROMOTION(from, to, ROOK);
             *moves++ = PROMOTION(from, to, QUEEN);
         } else {
+
+	    //TO_SQ_NOT_KING(to);
             *moves++ = SIMPLEMOVE(from, to);
+	    //DEBUG
+	    if (pos->sqtopc[to] == PIECE(WHITE, KING) ||
+		pos->sqtopc[to] == PIECE(BLACK, KING)) {
+		position_print(stdout, pos);
+		move_print(*(moves - 1));
+		exit(EXIT_FAILURE);
+	    }
+	    //GUBED	    
         }
         posmoves &= (posmoves - 1);
     }
@@ -278,6 +304,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	    assert((side == WHITE && from >= A5 && from <= H5) ||
 		   (side == BLACK && from >= A4 && from <= H4));
 	    if (pos->sqtopc[from] == PIECE(side, PAWN)) {
+		TO_SQ_NOT_KING(to);
 		*moves++ = EP_CAPTURE(from, to);
 	    }
 	}
@@ -288,6 +315,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	    assert((side == WHITE && from >= A5 && from <= H5) ||
 		   (side == BLACK && from >= A4 && from <= H4));
 	    if (pos->sqtopc[from] == PIECE(side, PAWN)) {
+		TO_SQ_NOT_KING(to);
 		*moves++ = EP_CAPTURE(from, to);
 	    }
 	}

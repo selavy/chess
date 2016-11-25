@@ -4,10 +4,23 @@
 #include <string.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <time.h>
 #include "move.h"
 #include "position.h"
 #include "movegen.h"
 #include "perft.h"
+
+struct timespec diff(struct timespec start, struct timespec end){
+	struct timespec temp;
+	if ((end.tv_nsec-start.tv_nsec)<0) {
+		temp.tv_sec = end.tv_sec-start.tv_sec-1;
+		temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+	} else {
+		temp.tv_sec = end.tv_sec-start.tv_sec;
+		temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+	}
+	return temp;
+}
 
 int main(int argc, char **argv) {
     int ret;
@@ -24,6 +37,7 @@ int main(int argc, char **argv) {
 	"rnbqkbnr/p1ppp1pp/1p6/4Pp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 2",
 	"rnbqkbnr/ppp1pppp/8/8/3pP3/P6P/1PPP1PP1/RNBQKBNR b KQkq e3 0 2",
 	"rnbqkb1r/ppp1pppp/5n2/8/3pP3/P2B1N1P/1PPP1PP1/RNBQK2R w KQkq - 1 4",
+	"rnbqkbnr/p1pppppp/8/8/1p6/3P4/PPPKPPPP/RNBQ1BNR w kq - 0 3",
 	0
     };
     
@@ -53,8 +67,12 @@ int main(int argc, char **argv) {
 	    move_print(moves[i]);
 	}
 	printf("\n");
-	
-	++cur;
+	++cur;	
+
+	/* move m = SIMPLEMOVE(D2, C3); */
+	/* move_print(m); */
+	/* printf("Legal move? %s\n", legal_move(&pos, m) ? "TRUE" : "FALSE"); */
+	/* exit(EXIT_SUCCESS); */
     }
 
     printf("Begin perft...\n");
@@ -73,7 +91,9 @@ int main(int argc, char **argv) {
 	    exit(EXIT_FAILURE);
 	}
 
-	for (i = 0; i < 6; ++i) {
+	struct timespec begin, end, dur;
+	for (i = 0; i < 7; ++i) {
+	    clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
 	    perft_test(&pos, i, &nodes, &captures, &eps, &castles, &promos, &checks, &mates);
 	    printf("%d: Nodes=%" PRIu64 ", "
 		   "Captures=%" PRIu64 ", "
@@ -84,6 +104,9 @@ int main(int argc, char **argv) {
 		   "Mates=%" PRIu64
 		   "\n", 
 		   i, nodes, captures, eps, castles, promos, checks, mates);
+	    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	    dur = diff(begin, end);
+	    printf("%ld seconds %ld nanos\n", dur.tv_sec, dur.tv_nsec);
 	}
 	break;
     }
