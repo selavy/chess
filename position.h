@@ -39,5 +39,6 @@ extern int position_from_fen(struct position *restrict pos, const char *fen);
 extern void position_print(FILE *os, const struct position *restrict pos);
 extern int validate_position(struct position *restrict const pos);
 extern void make_move(struct position *restrict pos, struct savepos *restrict sp, move m);
+extern void undo_move(struct position *restrict pos, const struct savepos *restrict sp, move m);
 
 #endif // POSITION__H_

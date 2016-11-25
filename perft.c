@@ -42,7 +42,8 @@ static uint64_t perft(int depth,
 	for (i = 0; i < nmoves; ++i) {
 	    make_move(pos, &sp, moves[i]);
 	    nodes += perft(depth - 1, pos, captures, eps, castles, promos, checks, mates);
-	    memcpy(pos, &tmp, sizeof(tmp));
+	    //memcpy(pos, &tmp, sizeof(tmp));
+	    undo_move(pos, &sp, moves[i]);
 	    assert(validate_position(pos) == 0);
 	}
     } else {

@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
 	}
 
 	struct timespec begin, end, dur;
-	for (i = 0; i < 7; ++i) {
+	for (i = 0; i < 8; ++i) {
 	    clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
 	    perft_test(&pos, i, &nodes, &captures, &eps, &castles, &promos, &checks, &mates);
 	    printf("%d: Nodes=%" PRIu64 ", "
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 		   i, nodes, captures, eps, castles, promos, checks, mates);
 	    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 	    dur = diff(begin, end);
-	    printf("%ld seconds %ld nanos\n", dur.tv_sec, dur.tv_nsec);
+	    printf("%ld seconds %ld millis\n", dur.tv_sec, dur.tv_nsec / 1000000);
 	}
 	break;
     }

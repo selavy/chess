@@ -307,6 +307,42 @@ int validate_position(struct position *restrict const pos) {
 	return 8;
     }
 
+    for (sq = A1; sq <= H1; ++sq) {
+	if (pos->sqtopc[sq] == PIECE(WHITE, PAWN)) {
+	    printf("validate_position: white pawn on %s\n", sq_to_str[sq]);
+	    return 9;
+	} else if (pos->sqtopc[sq] == PIECE(BLACK, PAWN)) {
+	    printf("validate_position: black pawn on %s\n", sq_to_str[sq]);
+	    return 10;
+	}
+    }
+
+    if ((pos->castle & CSL_WQSIDE) != 0) {
+	if (pos->sqtopc[A1] != PIECE(WHITE, ROOK)) {
+	    return 11;
+	} else if (pos->sqtopc[E1] != PIECE(WHITE, KING)) {
+	    return 12;
+	}
+    } else if ((pos->castle & CSL_WKSIDE) != 0) {
+	if (pos->sqtopc[H1] != PIECE(WHITE, ROOK)) {
+	    return 13;
+	} else if (pos->sqtopc[E1] != PIECE(WHITE, KING)) {
+	    return 14;
+	}
+    } else if ((pos->castle & CSL_BQSIDE) != 0) {
+	if (pos->sqtopc[A8] != PIECE(BLACK, ROOK)) {
+	    return 15;
+	} else if (pos->sqtopc[E8] != PIECE(BLACK, KING)) {
+	    return 16;
+	}
+    } else if ((pos->castle & CSL_BKSIDE) != 0) {
+	if (pos->sqtopc[H8] != PIECE(BLACK, ROOK)) {
+	    return 17;
+	} else if (pos->sqtopc[E8] != PIECE(BLACK, KING)) {
+	    return 18;
+	}
+    }
+    
     return 0;
 }
 
@@ -320,7 +356,7 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
     const uint32_t pc        = pos->sqtopc[fromsq];
     const uint32_t topc      = pos->sqtopc[tosq];
     const uint32_t flags     = FLAGS(m);
-    const int      promopc   = PROMO_PC(m);
+    const int      promopc   = PIECE(side, PROMO_PC(m));
     uint64_t *restrict pcs   = &pos->brd[pc];
     uint8_t  *restrict s2p   = pos->sqtopc;
     uint64_t *restrict rooks = &pos->brd[PIECE(side, ROOK)];
@@ -511,48 +547,162 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
     }
     ++pos->nmoves;
 
-    // position assertions
     assert(pos->enpassant == EP_NONE || pc == PIECE(side,PAWN));
+    assert(validate_position(pos) == 0);
+}
 
-    // no pawns on 1st or 8th ranks
-    assert(pos->sqtopc[A1] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[B1] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[C1] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[D1] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[E1] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[F1] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[G1] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[H1] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[A1] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[B1] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[C1] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[D1] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[E1] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[F1] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[G1] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[H1] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[A8] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[B8] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[C8] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[D8] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[E8] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[F8] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[G8] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[H8] != PIECE(WHITE,PAWN));
-    assert(pos->sqtopc[A8] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[B8] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[C8] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[D8] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[E8] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[F8] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[G8] != PIECE(BLACK,PAWN));
-    assert(pos->sqtopc[H8] != PIECE(BLACK,PAWN));
+void undo_move(struct position *restrict pos, const struct savepos *restrict sp, move m) {
+    const uint8_t side     = FLIP(pos->wtm);
+    const uint32_t fromsq  = FROM(m);
+    const uint32_t tosq    = TO(m);
+    const uint32_t promo   = PROMO_PC(m);
+    const uint32_t promopc = PIECE(side, promo);
+    const uint32_t flags   = FLAGS(m);
+    const uint32_t pc      = pos->sqtopc[tosq];
+    const uint32_t cappc   = sp->captured_pc;
+    const uint64_t from    = MASK(fromsq);
+    const uint64_t to      = MASK(tosq); // REVISIT: all uses of `to' are `~to' so just calculate that?
+    // REVISIT: make sp->enpassant be the captured pawn square when FLG_EP?
+    //const uint32_t epsq    = sp->enpassant; 
+    const uint32_t epsq = side == WHITE ? tosq - 8 : fromsq + 8;
+    uint64_t *restrict pcs = &pos->brd[pc];
+    uint8_t  *restrict s2p = pos->sqtopc;
+    uint64_t *restrict sidebb = &pos->side[side];
+    uint64_t *restrict contrabb = &pos->side[pos->wtm];    
+    
+    assert(validate_position(pos) == 0);
+    assert(fromsq >= A1 && fromsq <= H8);
+    assert(tosq   >= A1 && tosq   <= H8);
+    assert(side == WHITE || side == BLACK);
+    assert(flags == FLG_NONE  ||
+	   flags == FLG_EP    ||
+	   flags == FLG_PROMO ||
+	   flags == FLG_CASTLE);
+    assert((side == WHITE && (pc >= PIECE(WHITE, KNIGHT) && pc <= PIECE(WHITE, KING))) ||
+	   (side == BLACK && (pc >= PIECE(BLACK, KNIGHT) && pc <= PIECE(BLACK, KING))));
+    assert(cappc == EMPTY || (cappc >= PIECE(WHITE, KNIGHT) && cappc <= PIECE(BLACK, KING)));
+    assert(flags != FLG_PROMO || (promopc >= PIECE(side, KNIGHT) && promopc <= PIECE(side, KING)));
 
-    // either "cant castle"              OR "king and rook are still on original squares"    
-    assert(((pos->castle & CSL_WQSIDE) == 0) || (pos->sqtopc[A1] == PIECE(WHITE,ROOK) && pos->sqtopc[E1] == PIECE(WHITE,KING)));        
-    assert(((pos->castle & CSL_WKSIDE)  == 0) || (pos->sqtopc[H1] == PIECE(WHITE,ROOK) && pos->sqtopc[E1] == PIECE(WHITE,KING)));
-    assert(((pos->castle & CSL_BQSIDE) == 0) || (pos->sqtopc[A8] == PIECE(BLACK,ROOK) && pos->sqtopc[E8] == PIECE(BLACK,KING)));
-    assert(((pos->castle & CSL_BKSIDE)  == 0) || (pos->sqtopc[H8] == PIECE(BLACK,ROOK) && pos->sqtopc[E8] == PIECE(BLACK,KING)));    
+    pos->halfmoves = sp->halfmoves;
+    pos->enpassant = sp->enpassant;
+    pos->castle = sp->castle;
+    pos->wtm = side;
+    --pos->nmoves;
 
+    switch (flags) {
+    case FLG_NONE:
+	s2p[fromsq] = pc;
+	*pcs |= from;
+	*pcs &= ~to;
+	*sidebb |= from;
+	*sidebb &= ~to;
+	s2p[tosq] = cappc;
+	if (cappc != EMPTY) {
+	    pos->brd[cappc] |= to;
+	    *contrabb |= to;
+	}
+	break;
+    case FLG_EP:
+	s2p[fromsq] = pc;
+        *pcs |= from;
+        *pcs &= ~to;
+	*sidebb |= from;
+	*sidebb &= ~to;
+	*contrabb |= MASK(epsq);	
+        s2p[tosq] = EMPTY;
+        if (side == WHITE) {
+            assert(epsq == (tosq - 8));
+            s2p[epsq] = PIECE(BLACK,PAWN);
+            pos->brd[PIECE(BLACK,PAWN)] |= MASK(epsq);
+        } else {
+            assert(epsq == (tosq + 8));            
+            s2p[epsq] = PIECE(WHITE,PAWN);
+            pos->brd[PIECE(WHITE,PAWN)] |= MASK(epsq);            
+        }
+	break;
+    case FLG_CASTLE:
+        assert(pc == PIECE(side,KING));
+	switch (tosq) {
+	case C1:
+            assert(fromsq == E1);
+            assert(s2p[A1] == EMPTY);
+            assert(s2p[B1] == EMPTY);
+            assert(s2p[C1] == PIECE(WHITE,KING));
+            assert(s2p[D1] == PIECE(WHITE,ROOK));
+            assert(s2p[E1] == EMPTY);
+            s2p[A1] = PIECE(WHITE,ROOK);
+            s2p[B1] = EMPTY;
+            s2p[C1] = EMPTY;
+            s2p[D1] = EMPTY;
+            s2p[E1] = PIECE(WHITE,KING);
+	    *sidebb |= MASK(A1) | MASK(E1);
+	    *sidebb &= ~(MASK(B1) | MASK(C1) | MASK(D1));
+            pos->brd[PIECE(WHITE,ROOK)] &= ~MASK(D1);
+            pos->brd[PIECE(WHITE,ROOK)] |= MASK(A1);
+            pos->brd[PIECE(WHITE,KING)] &= ~MASK(C1);
+            pos->brd[PIECE(WHITE,KING)] |= MASK(E1);
+	    break;
+	case G1:
+            assert(fromsq == E1);
+            assert(s2p[E1] == EMPTY);
+            assert(s2p[F1] == PIECE(WHITE,ROOK));
+            assert(s2p[G1] == PIECE(WHITE,KING));
+            assert(s2p[H1] == EMPTY);
+            s2p[E1] = PIECE(WHITE,KING);
+            s2p[F1] = EMPTY;
+            s2p[G1] = EMPTY;
+            s2p[H1] = PIECE(WHITE,ROOK);
+	    *sidebb |= MASK(E1) | MASK(H1);
+	    *sidebb &= ~(MASK(F1) | MASK(G1));
+            pos->brd[PIECE(WHITE,KING)] &= ~MASK(G1);
+            pos->brd[PIECE(WHITE,KING)] |= MASK(E1);
+            pos->brd[PIECE(WHITE,ROOK)] &= ~MASK(F1);
+            pos->brd[PIECE(WHITE,ROOK)] |= MASK(H1);
+	    break;
+	case C8:
+            assert(fromsq == E8);
+            assert(s2p[A8] == EMPTY);
+            assert(s2p[B8] == EMPTY);
+            assert(s2p[C8] == PIECE(BLACK,KING));
+            assert(s2p[D8] == PIECE(BLACK,ROOK));
+            assert(s2p[E8] == EMPTY);
+            s2p[A8] = PIECE(BLACK,ROOK);
+            s2p[B8] = EMPTY;
+            s2p[C8] = EMPTY;
+            s2p[D8] = EMPTY;
+            s2p[E8] = PIECE(BLACK,KING);
+	    *sidebb |= MASK(A8) | MASK(E8);
+	    *sidebb &= ~(MASK(B8) | MASK(C8) | MASK(D8));	    
+            pos->brd[PIECE(BLACK,ROOK)] &= ~MASK(D8);
+            pos->brd[PIECE(BLACK,ROOK)] |= MASK(A8);
+            pos->brd[PIECE(BLACK,KING)] &= ~MASK(C8);
+            pos->brd[PIECE(BLACK,KING)] |= MASK(E8);
+	    break;
+	case G8:
+            assert(fromsq == E8);
+            assert(s2p[E8] == EMPTY);
+            assert(s2p[F8] == PIECE(BLACK,ROOK));
+            assert(s2p[G8] == PIECE(BLACK,KING));
+            assert(s2p[H8] == EMPTY);
+            s2p[E8] = PIECE(BLACK,KING);
+            s2p[F8] = EMPTY;
+            s2p[G8] = EMPTY;
+            s2p[H8] = PIECE(BLACK,ROOK);
+	    *sidebb |= MASK(E8) | MASK(H8);
+	    *sidebb &= ~(MASK(F8) | MASK(G8));	    
+            pos->brd[PIECE(BLACK,KING)] &= ~MASK(G8);
+            pos->brd[PIECE(BLACK,KING)] |= MASK(E8);
+            pos->brd[PIECE(BLACK,ROOK)] &= ~MASK(F8);
+            pos->brd[PIECE(BLACK,ROOK)] |= MASK(H8);
+	    break;
+	default:
+	    unreachable();
+	    break;
+	}
+	break;
+    default:
+	unreachable();
+    }
+    
     assert(validate_position(pos) == 0);
 }

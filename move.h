@@ -2,6 +2,9 @@
 #define MOVE__H_
 
 #include <stdint.h>
+#include <assert.h>
+
+#define unreachable() do { __builtin_unreachable(); assert(0); } while(0)
 
 #define WHITE 0
 #define BLACK 1
