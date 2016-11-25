@@ -412,7 +412,7 @@ int main(int argc, char **argv) {
           "       >> magic_bishop_shift[square]))\n", hdr);
     fputs("#define rook_attacks(square, occ) *(magic_rook_indices[square]+((((occ)&magic_rook_mask[square])*magic_rook[square])>>magic_rook_shift[square]))\n", hdr);
     fputs("#define queen_attacks(square, occ) (bishop_attacks(square, occ) | rook_attacks(square, occ))\n", hdr);
-    fputs("#define pawn_attacks(square, side) ((side) == WHITE ? wpawn_attacks[square] : bpawn_attacks[square])\n", hdr);
+    fputs("#define pawn_attacks(side, square) ((side) == WHITE ? wpawn_attacks[square] : bpawn_attacks[square])\n", hdr);
     fputs("\n", hdr);
     fputs("#endif // MAGIC_TABLES__H_\n", hdr);
 
