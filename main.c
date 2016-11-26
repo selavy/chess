@@ -201,9 +201,17 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    //#if 0
+    #if 0
     time_test(6);
-    //#endif
+    #endif
+
+    const char *fen = "r1bqkbnr/ppp2ppp/2n1p3/1B1p4/3P4/4PN2/PPP2PPP/RNBQK2R b KQkq - 1 4";
+    struct position pos;
+
+    position_from_fen(&pos, fen);
+    position_print(stdout, &pos);
+    const uint64_t result = pinned_pieces(&pos, BLACK, WHITE);
+    printf("%" PRIu64 "\n", result);
     
     return EXIT_SUCCESS;
 }

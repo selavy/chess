@@ -11,9 +11,17 @@
 #define popcountll(bb) __builtin_popcountll(bb)
 
 //static int legal_move(const struct position *const restrict pos, move m);
-static move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves);
-
 /*static*/int legal_move(const struct position *const restrict pos, move m) {
+    // if enpassant
+
+    // else if king move
+    //   +check if moving into check
+    //   +castling is checked in movegen
+
+    // else
+    //   +legal iff it is not pinned or it is moving along the ray towards
+    //    or away from the king (i.e. it will still be pinned after the move)
+    
     // TODO: return true if playing move `m' would be legal in position `pos'
     // REVISIT(plesslie): better implementation possible that doesn't need a copy
     struct position tmp;
@@ -59,6 +67,30 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     }
     return 0;
 }
+
+/*static*/ uint64_t pinned_pieces(const struct position *const restrict pos, uint8_t side, uint8_t kingcolor) {
+    const uint64_t kingbb = pos->brd[PIECE(side, KING)];
+    const uint32_t kingsq = lsb(kingbb);
+    assert(kingbb);
+
+    //uint64_t bb;
+    uint64_t result = 0;
+    const uint64_t pinners =
+	((PIECES(*pos, side, ROOK) | PIECES(*pos, side, QUEEN)) & rook_attacks(kingsq, 0)) |
+	((PIECES(*pos, side, BISHOP) | PIECES(*pos, side, QUEEN)) & bishop_attacks(kingsq, 0));
+
+    /* while (pinners) { */
+	
+    /* } */
+    result = pinners;
+
+    return result;
+}
+
+/* static move *generate_evasions(const struct position *const restrict pos, move *restrict moves) { */
+/*     // TODO: generate moves that get out of check */
+/*     return moves; */
+/* } */
 
 static move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves) {
     uint64_t posmoves;    
