@@ -70,10 +70,12 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
 }
 
 /*static*/ uint64_t pinned_pieces(const struct position *const restrict pos, uint8_t side, uint8_t kingcolor) {
+    // REVISIT: make new macros for pseudo attacks that don't need occupied bitboard.  not sure if that will be faster
+    //          because LUT will be smaller.
+    
     // 1. find the king
     // 2. find pseudo queen, rook, and bishop attacks to the king square
-    // 3. remove potential pieces that are the wrong color
-    // 4. remove potential pieces that have other pieces between them and the king
+    // 3. remove potential pieces that have other pieces between them and the king
     
     const uint64_t kingbb = pos->brd[PIECE(kingcolor, KING)];
     const uint32_t ksq = lsb(kingbb);

@@ -402,8 +402,10 @@ int main(int argc, char **argv) {
     fputs("extern const uint64_t slide_attacks[64];\n", hdr);
     fputs("extern const uint64_t diagl_attacks[64];\n", hdr);
     fputs("extern const uint64_t wpawn_attacks[64];\n", hdr);
-    fputs("extern const uint64_t bpawn_attacks[64];\n", hdr);        
+    fputs("extern const uint64_t bpawn_attacks[64];\n", hdr);
+    fputs("extern const uint64_t _between_sqs[64][64];\n", hdr);
     fputs("\n", hdr);
+    fputs("#define between_sqs(sq1, sq2) _between_sqs[sq1][sq2];\n", hdr);
     fputs("#define knight_attacks(sq) _knight_attacks[sq]\n", hdr);
     fputs("#define king_attacks(sq)   _king_attacks[sq]\n", hdr);
     fputs("#define bishop_attacks(square, occ)                                     \\\n"
@@ -772,7 +774,37 @@ int main(int argc, char **argv) {
     fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 "\n};\n",
             bpawn_attacks[60], bpawn_attacks[61],
             bpawn_attacks[62], bpawn_attacks[63]);    
+
+    uint64_t between_sqs[64][64];
+    for (int i = 0; i < 64; ++i) {
+	for (int j = 0; j < 64; ++j) {
+	    between_sqs[i][j] = 0ull;
+	}
+    }
+
+    // TODO: fill in between_sqs with the squares between src and dst
+    uint64_t sqs;
+    for (int rank = 0; rank < 8; ++rank) {
+    	for (int file = 0; file < 8; ++file) {
+	    
+    	}
+    }
     
+    fputs("const uint64_t _between_sqs[64][64] = {\n", fp);
+    for (int i = 0; i < 64; ++i) {
+	fprintf(fp, "{\n");
+	for (int j = 0; j < (64/4); ++j) {
+	    fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ",\n",
+		    between_sqs[i][j], between_sqs[i][j], between_sqs[i][j], between_sqs[i][j]);
+	}
+	fprintf(fp, "},\n");
+    }
+    fprintf(fp, "};\n");
+    
+    /* for (int i = 0; i < (64*64/4); ++i) { */
+    /* 	fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ",\n", */
+    /* 		between_sqs[i], between_sqs[i+1], between_sqs[i+2], between_sqs[i+3]); */
+    /* } */
     
     
     fputs("\n\n", hdr);
