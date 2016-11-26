@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include "magic_tables.h"
 
 // TODO: maybe should be caching this in the position
@@ -69,15 +70,28 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
 }
 
 /*static*/ uint64_t pinned_pieces(const struct position *const restrict pos, uint8_t side, uint8_t kingcolor) {
-    const uint64_t kingbb = pos->brd[PIECE(side, KING)];
-    const uint32_t kingsq = lsb(kingbb);
+    // 1. find the king
+    // 2. find pseudo queen, rook, and bishop attacks to the king square
+    // 3. remove potential pieces that are the wrong color
+    // 4. remove potential pieces that have other pieces between them and the king
+    
+    const uint64_t kingbb = pos->brd[PIECE(kingcolor, KING)];
+    const uint32_t ksq = lsb(kingbb);
+    const uint64_t rooks = PIECES(*pos, side, ROOK);
+    const uint64_t queens = PIECES(*pos, side, QUEEN);
+    const uint64_t bishops = PIECES(*pos, side, BISHOP);
     assert(kingbb);
 
     //uint64_t bb;
     uint64_t result = 0;
-    const uint64_t pinners =
-	((PIECES(*pos, side, ROOK) | PIECES(*pos, side, QUEEN)) & rook_attacks(kingsq, 0)) |
-	((PIECES(*pos, side, BISHOP) | PIECES(*pos, side, QUEEN)) & bishop_attacks(kingsq, 0));
+    const uint64_t pinners = ((rooks | queens) & rook_attacks(ksq, 0)) | ((bishops | queens) & bishop_attacks(ksq, 0));
+
+    printf("king sq: %u\n", ksq);
+    printf("bishops: %" PRIu64 "\n", bishops);
+    printf("rooks  : %" PRIu64 "\n", rooks);
+    printf("queens : %" PRIu64 "\n", queens);
+    printf("rook attacks: %" PRIu64 "\n", rook_attacks(ksq, 0));
+    printf("bishop attacks: %" PRIu64 "\n", bishop_attacks(ksq, 0));
 
     /* while (pinners) { */
 	
