@@ -10,6 +10,8 @@ uint64_t set_mask[65];
 const int lower_n = 16;
 const int lower_b = 1;
 
+#define MASK(x) ((uint64_t)1 << x)
+
 #  define SetMask(a)             (set_mask[a])
 #  define ClearMask(a)           (clear_mask[a])
 const uint64_t magic_rook[64] = {
@@ -406,7 +408,7 @@ int main(int argc, char **argv) {
     fputs("extern const uint64_t bpawn_attacks[64];\n", hdr);
     fputs("extern const uint64_t _between_sqs[64][64];\n", hdr);
     fputs("\n", hdr);
-    fputs("#define between_sqs(sq1, sq2) _between_sqs[sq1][sq2];\n", hdr);
+    fputs("#define between_sqs(from, to) _between_sqs[from][to]\n", hdr);
     fputs("#define knight_attacks(sq) _knight_attacks[sq]\n", hdr);
     fputs("#define king_attacks(sq)   _king_attacks[sq]\n", hdr);
     fputs("#define bishop_attacks(square, occ)                                     \\\n"
@@ -794,7 +796,7 @@ int main(int argc, char **argv) {
 		++cur;
 		for (; cur < end; ++cur) {
 		    sq = fromrank * 8 + cur;
-		    sqs |= (uint64_t)1 << sq;
+		    sqs |= MASK(sq);
 		}
 
 		between_sqs[from][to] = sqs;
@@ -805,7 +807,7 @@ int main(int argc, char **argv) {
 		++cur;
 		for (; cur < end; ++cur) {
 		    sq = cur * 8 + fromfile;
-		    sqs |= (uint64_t)1 << sq;
+		    sqs |= MASK(sq);
 		}
 	    } else if (drank == dfile) {
 		int dirrank = fromrank - torank;
@@ -814,26 +816,25 @@ int main(int argc, char **argv) {
 		if (dirrank < 0) {
 		    if (dirfile < 0) { // `from' is down left
 			for (int cur = from + 9; cur < to; cur += 9) {
-			    sqs |= (uint64_t)1 << cur;
+			    sqs |= MASK(cur);
 			}
 		    } else {           // `from' is down right
 			for (int cur = from + 7; cur < to; cur += 7) {
-			    sqs |= (uint64_t)1 << cur;
+			    sqs |= MASK(cur);
 			}
 		    }
 		} else {
 		    if (dirfile < 0) { // `from' is up left
 			for (int cur = from - 7; cur > to; cur -= 7) {
-			    sqs |= (uint64_t)1 << cur;
+			    sqs |= MASK(cur);
 			}
 		    } else {           // `from' is up right
 			for (int cur = from - 9; cur > to; cur -= 9) {
-			    sqs |= (uint64_t)1 << cur;
+			    sqs |= MASK(cur);
 			}
 		    }
 		}
 	    }
-
 	    between_sqs[from][to] = sqs;
 	}
     }
@@ -851,21 +852,18 @@ int main(int argc, char **argv) {
 
     
     fputs("const uint64_t _between_sqs[64][64] = {\n", fp);
-    for (int i = 0; i < 64; ++i) {
+    for (int from = 0; from < 64; ++from) {
 	fprintf(fp, "{\n");
-	for (int j = 0; j < (64/4); ++j) {
+	for (int to = 0; to < 64; to += 4) {
 	    fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ",\n",
-		    between_sqs[i][j], between_sqs[i][j], between_sqs[i][j], between_sqs[i][j]);
+		    between_sqs[from][to],
+		    between_sqs[from][to+1],
+		    between_sqs[from][to+2],
+		    between_sqs[from][to+3]);
 	}
 	fprintf(fp, "},\n");
     }
     fprintf(fp, "};\n");
-    
-    /* for (int i = 0; i < (64*64/4); ++i) { */
-    /* 	fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ",\n", */
-    /* 		between_sqs[i], between_sqs[i+1], between_sqs[i+2], between_sqs[i+3]); */
-    /* } */
-    
     
     fputs("\n\n", hdr);
     fclose(hdr);

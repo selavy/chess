@@ -10,6 +10,7 @@
 #define lsb(bb) __builtin_ctzll(bb)
 #define clear_lsb(bb) bb &= (bb - 1)
 #define popcountll(bb) __builtin_popcountll(bb)
+#define power_of_two(bb) (bb & (bb - 1))
 
 //static int legal_move(const struct position *const restrict pos, move m);
 /*static*/int legal_move(const struct position *const restrict pos, move m) {
@@ -72,34 +73,28 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
 /*static*/ uint64_t pinned_pieces(const struct position *const restrict pos, uint8_t side, uint8_t kingcolor) {
     // REVISIT: make new macros for pseudo attacks that don't need occupied bitboard.  not sure if that will be faster
     //          because LUT will be smaller.
-    
-    // 1. find the king
-    // 2. find pseudo queen, rook, and bishop attacks to the king square
-    // 3. remove potential pieces that have other pieces between them and the king
-    
+    int sq;
+    uint64_t bb;
+    uint64_t result = 0;
+    const uint64_t allpieces = pos->side[WHITE] | pos->side[BLACK];    
     const uint64_t kingbb = pos->brd[PIECE(kingcolor, KING)];
     const uint32_t ksq = lsb(kingbb);
     const uint64_t rooks = PIECES(*pos, side, ROOK);
     const uint64_t queens = PIECES(*pos, side, QUEEN);
     const uint64_t bishops = PIECES(*pos, side, BISHOP);
+    uint64_t pinners = ((rooks | queens) & rook_attacks(ksq, 0)) | ((bishops | queens) & bishop_attacks(ksq, 0));    
     assert(kingbb);
 
-    //uint64_t bb;
-    uint64_t result = 0;
-    const uint64_t pinners = ((rooks | queens) & rook_attacks(ksq, 0)) | ((bishops | queens) & bishop_attacks(ksq, 0));
-
-    printf("king sq: %u\n", ksq);
-    printf("bishops: %" PRIu64 "\n", bishops);
-    printf("rooks  : %" PRIu64 "\n", rooks);
-    printf("queens : %" PRIu64 "\n", queens);
-    printf("rook attacks: %" PRIu64 "\n", rook_attacks(ksq, 0));
-    printf("bishop attacks: %" PRIu64 "\n", bishop_attacks(ksq, 0));
-
-    /* while (pinners) { */
-	
-    /* } */
-    result = pinners;
-
+#define more_than_one_piece_between(b) power_of_two(b)
+    while (pinners) {
+	sq = lsb(pinners);
+	bb = between_sqs(sq, ksq) & allpieces;
+	if (!more_than_one_piece_between(bb)) {
+	    result |= (uint64_t)1 << sq;
+	}
+	clear_lsb(pinners);
+    }
+    
     return result;
 }
 

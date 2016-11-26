@@ -9,6 +9,7 @@
 #include "position.h"
 #include "movegen.h"
 #include "perft.h"
+#include "magic_tables.h"
 
 struct timespec diff(struct timespec start, struct timespec end){
 	struct timespec temp;
@@ -204,17 +205,6 @@ int main(int argc, char **argv) {
     #if 0
     time_test(6);
     #endif
-
-    //const char *fen = "r1bqkbnr/ppp2ppp/2n1p3/1B1p4/3P4/4PN2/PPP2PPP/RNBQK2R b KQkq - 1 4";
-    //const char *fen = "r1bqk2r/1pp1bpp1/p1n1pn1p/1B1p2B1/Q2PP3/2P2N2/PP3PPP/RN2K2R b KQkq - 2 8";
-    //const char *fen = "r2qk2r/2pb1pp1/ppnbpn1p/1B1P2B1/Q2P4/2P2N2/PP3PPP/RN2R1K1 b kq - 1 11";
-    const char *fen = "r2qk2r/2pb1pp1/ppnbpn1p/1B1P2B1/3P4/2P2N2/PP2QPPP/RN2R1K1 b q - 5 13";
-    struct position pos;
-
-    position_from_fen(&pos, fen);
-    position_print(stdout, &pos);
-    const uint64_t result = pinned_pieces(&pos, WHITE, BLACK);
-    printf("%" PRIu64 "\n", result);
     
     return EXIT_SUCCESS;
 }
