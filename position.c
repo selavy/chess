@@ -482,7 +482,7 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
 		assert(s2p[D1] == EMPTY);
 		assert(s2p[C1] == EMPTY);
 		assert(s2p[B1] == EMPTY);
-		assert(s2p[A1] == PIECE(WHITE, KING));
+		assert(s2p[A1] == PIECE(WHITE, ROOK));
 		*pcs   &= ~MASK(E1);
                 *pcs   |= MASK(C1);
                 *rooks &= ~MASK(A1);
