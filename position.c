@@ -462,7 +462,7 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
 	if (side == WHITE) {
 	    assert(fromsq == E1);
 	    assert(tosq == C1 || tosq == G1);
-	    if (tosq == G1) { // king side castle
+	    if (tosq == G1) {
 		assert(s2p[E1] == PIECE(WHITE, KING));
 		assert(s2p[F1] == EMPTY);
 		assert(s2p[G1] == EMPTY);
@@ -477,7 +477,7 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
 		s2p[H1] = EMPTY;
 		pos->side[side] &= ~(MASK(E1) | MASK(H1));
 		pos->side[side] |= (MASK(F1) | MASK(G1));
-	    } else {          // queen side castle
+	    } else {
 		assert(s2p[E1] == PIECE(WHITE, KING));
 		assert(s2p[D1] == EMPTY);
 		assert(s2p[C1] == EMPTY);
@@ -499,11 +499,11 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
 	} else {
 	    assert(fromsq == E8);
 	    assert(tosq == C8 || tosq == G8);
-	    if (tosq == G8) { // king side castle
-                assert(s2p[E8] == PIECE(WHITE, KING));
+	    if (tosq == G8) {
+                assert(s2p[E8] == PIECE(BLACK, KING));
                 assert(s2p[F8] == EMPTY);
                 assert(s2p[G8] == EMPTY);
-                assert(s2p[H8] == PIECE(WHITE, ROOK));
+                assert(s2p[H8] == PIECE(BLACK, ROOK));
                 *pcs   &= ~MASK(E8);
                 *pcs   |= MASK(G8);
                 *rooks &= ~MASK(H8);
@@ -514,7 +514,7 @@ extern void make_move(struct position *restrict pos, struct savepos *restrict sp
                 s2p[H8] = EMPTY;
 		pos->side[side] &= ~(MASK(E8) | MASK(H8));
 		pos->side[side] |= (MASK(F8) | MASK(G8));
-	    } else {          // queen side castle
+	    } else {
                 assert(s2p[E8] == PIECE(BLACK, KING));
                 assert(s2p[D8] == EMPTY);
                 assert(s2p[C8] == EMPTY);

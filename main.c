@@ -40,10 +40,10 @@ int check_perft() {
     uint64_t checks;
     uint64_t mates;
     struct test_position test_positions[] = {
-	{
-	    .fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-	    .nodes={ 1, 20, 400, 8902, 197281, 4865609 }
-	},
+	/* { */
+	/*     .fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", */
+	/*     .nodes={ 1, 20, 400, 8902, 197281, 4865609 } */
+	/* }, */
 	{
 	    .fen="r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
 	    .nodes={ 1, 48, 2039, 97862, 4085603, 193690690 }
@@ -123,7 +123,6 @@ int main(int argc, char **argv) {
 		    ret, *cur);
 	    exit(EXIT_FAILURE);
 	}
-	
 	position_print(stdout, &pos);
 	printf("\n");
 	
