@@ -564,7 +564,7 @@ void undo_move(struct position *restrict pos, const struct savepos *restrict sp,
     const uint64_t to      = MASK(tosq); // REVISIT: all uses of `to' are `~to' so just calculate that?
     // REVISIT: make sp->enpassant be the captured pawn square when FLG_EP?
     //const uint32_t epsq    = sp->enpassant; 
-    const uint32_t epsq = side == WHITE ? tosq - 8 : fromsq + 8;
+    const uint32_t epsq = side == WHITE ? tosq - 8 : tosq + 8;
     uint64_t *restrict pcs = &pos->brd[pc];
     uint8_t  *restrict s2p = pos->sqtopc;
     uint64_t *restrict sidebb = &pos->side[side];
@@ -619,6 +619,18 @@ void undo_move(struct position *restrict pos, const struct savepos *restrict sp,
             s2p[epsq] = PIECE(WHITE,PAWN);
             pos->brd[PIECE(WHITE,PAWN)] |= MASK(epsq);            
         }
+	break;
+    case FLG_PROMO:
+        pos->brd[PIECE(side,PAWN)] |= from;
+        pos->brd[promopc] &= ~to;	
+	s2p[tosq] = cappc;
+	s2p[fromsq] = PIECE(side, PAWN);
+	*sidebb |= from;
+	*sidebb &= ~to;
+	if (cappc != EMPTY) {
+	    pos->brd[cappc] |= to;
+	    *contrabb |= to;
+	}
 	break;
     case FLG_CASTLE:
         assert(pc == PIECE(side,KING));
@@ -706,3 +718,4 @@ void undo_move(struct position *restrict pos, const struct savepos *restrict sp,
     
     assert(validate_position(pos) == 0);
 }
+

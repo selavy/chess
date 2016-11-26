@@ -25,6 +25,8 @@ struct timespec diff(struct timespec start, struct timespec end){
 int main(int argc, char **argv) {
     int ret;
     struct position pos;
+    struct position tmp;    
+    struct savepos sp;
     move moves[MAX_MOVES];
     int nmoves;
     int i;
@@ -61,18 +63,19 @@ int main(int argc, char **argv) {
 	}
 
 	memset(&moves[0], 0, sizeof(moves[0]) * MAX_MOVES);
+	memcpy(&tmp, &pos, sizeof(tmp));
 	nmoves = generate_legal_moves(&pos, &moves[0]);
 	printf("Legal moves:\n");
 	for (i = 0; i < nmoves; ++i) {
 	    move_print(moves[i]);
+	    make_move(&pos, &sp, moves[i]);
+	    assert(validate_position(&pos) == 0);
+	    undo_move(&pos, &sp, moves[i]);
+	    assert(validate_position(&pos) == 0);
+	    assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
 	}
 	printf("\n");
 	++cur;	
-
-	/* move m = SIMPLEMOVE(D2, C3); */
-	/* move_print(m); */
-	/* printf("Legal move? %s\n", legal_move(&pos, m) ? "TRUE" : "FALSE"); */
-	/* exit(EXIT_SUCCESS); */
     }
 
     printf("Begin perft...\n");

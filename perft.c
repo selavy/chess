@@ -33,7 +33,6 @@ static uint64_t perft(int depth,
     }
 
     assert(in_check(pos, FLIP(pos->wtm)) == 0);
-
     assert(validate_position(pos) == 0);    
     memcpy(&tmp, pos, sizeof(tmp));
     nmoves = generate_legal_moves(pos, &moves[0]);
@@ -42,9 +41,8 @@ static uint64_t perft(int depth,
 	for (i = 0; i < nmoves; ++i) {
 	    make_move(pos, &sp, moves[i]);
 	    nodes += perft(depth - 1, pos, captures, eps, castles, promos, checks, mates);
-	    //memcpy(pos, &tmp, sizeof(tmp));
 	    undo_move(pos, &sp, moves[i]);
-	    assert(validate_position(pos) == 0);
+	    assert(memcmp(pos, &tmp, sizeof(tmp)) == 0);
 	}
     } else {
 	nodes += nmoves;
@@ -65,8 +63,8 @@ static uint64_t perft(int depth,
 #if COUNT_CHECKS_AND_MATES
 	    make_move(pos, &sp, moves[i]);
 	    perft(depth - 1, pos, captures, eps, castles, promos, checks, mates);
-	    memcpy(pos, &tmp, sizeof(tmp));
-	    assert(validate_position(pos) == 0);
+	    undo_move(pos, &sp, moves[i]);
+	    assert(memcmp(pos, &tmp, sizeof(tmp)) == 0);	    
 #endif
 	}
     }
