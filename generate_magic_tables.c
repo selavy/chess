@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <math.h>
 
 uint64_t clear_mask[65];
 uint64_t set_mask[65];
@@ -776,19 +777,78 @@ int main(int argc, char **argv) {
             bpawn_attacks[62], bpawn_attacks[63]);    
 
     uint64_t between_sqs[64][64];
-    for (int i = 0; i < 64; ++i) {
-	for (int j = 0; j < 64; ++j) {
-	    between_sqs[i][j] = 0ull;
+    for (int from = 0; from < 64; ++from) {
+	for (int to = 0; to < 64; ++to) {
+	    if (from == to) continue;
+	    uint64_t sqs = 0;
+	    int fromrank = from / 8;
+	    int fromfile = from % 8;
+	    int torank = to / 8;
+	    int tofile = to % 8;
+	    int drank = abs(fromrank - torank);
+	    int dfile = abs(fromfile - tofile);	    
+	    if (fromrank == torank) {
+		int sq;
+		int cur = fromfile < tofile ? fromfile : tofile;
+		int end = fromfile < tofile ? tofile   : fromfile;
+		++cur;
+		for (; cur < end; ++cur) {
+		    sq = fromrank * 8 + cur;
+		    sqs |= (uint64_t)1 << sq;
+		}
+
+		between_sqs[from][to] = sqs;
+	    } else if (fromfile == tofile) {
+		int sq;
+		int cur = fromrank < torank ? fromrank : torank;
+		int end = fromrank < torank ? torank : fromrank;
+		++cur;
+		for (; cur < end; ++cur) {
+		    sq = cur * 8 + fromfile;
+		    sqs |= (uint64_t)1 << sq;
+		}
+	    } else if (drank == dfile) {
+		int dirrank = fromrank - torank;
+		int dirfile = fromfile - tofile;
+
+		if (dirrank < 0) {
+		    if (dirfile < 0) { // `from' is down left
+			for (int cur = from + 9; cur < to; cur += 9) {
+			    sqs |= (uint64_t)1 << cur;
+			}
+		    } else {           // `from' is down right
+			for (int cur = from + 7; cur < to; cur += 7) {
+			    sqs |= (uint64_t)1 << cur;
+			}
+		    }
+		} else {
+		    if (dirfile < 0) { // `from' is up left
+			for (int cur = from - 7; cur > to; cur -= 7) {
+			    sqs |= (uint64_t)1 << cur;
+			}
+		    } else {           // `from' is up right
+			for (int cur = from - 9; cur > to; cur -= 9) {
+			    sqs |= (uint64_t)1 << cur;
+			}
+		    }
+		}
+	    }
+
+	    between_sqs[from][to] = sqs;
 	}
     }
 
-    // TODO: fill in between_sqs with the squares between src and dst
-    uint64_t sqs;
-    for (int rank = 0; rank < 8; ++rank) {
-    	for (int file = 0; file < 8; ++file) {
-	    
-    	}
+    // check that result is symmetrical
+    for (int to = 0; to < 64; ++to) {
+	for (int from = 0; from < 64; ++from) {
+	    if (between_sqs[to][from] != between_sqs[from][to]) {
+		printf("(%d,%d)=%" PRIu64 " != (%d,%d)=%" PRIu64 "\n",
+		       to, from, between_sqs[to][from], from, to, between_sqs[from][to]);
+		exit(EXIT_FAILURE);
+	    }
+	}
     }
+
     
     fputs("const uint64_t _between_sqs[64][64] = {\n", fp);
     for (int i = 0; i < 64; ++i) {
