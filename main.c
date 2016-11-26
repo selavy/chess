@@ -119,7 +119,25 @@ int check_perft() {
     return 0;
 }
 
+void time_test(int depth) {
+    uint64_t nodes = 0;
+    struct timespec begin;
+    struct timespec end;
+    struct timespec dur;    
+    struct position pos;
+    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    position_from_fen(&pos, fen);
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
+    nodes = perft_speed(&pos, depth);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    dur = diff(begin, end);
+    printf("Passed depth %d, nodes = %" PRIu64 ", took %ld seconds %ld millis\n",
+	   depth, nodes, dur.tv_sec, dur.tv_nsec / 1000000);
+}
+
 int main(int argc, char **argv) {
+    #if 0
     int i;    
     int ret;
     int nmoves;    
@@ -172,13 +190,20 @@ int main(int argc, char **argv) {
 	printf("\n");
 	++cur;	
     }
+    #endif
 
+    //#if 0
     printf("checking perft values...\n");
     if (check_perft() != 0) {
 	printf("check perft failed!\n");
     } else {
 	printf("passed.\n");
     }
+    //#endif
+
+    #if 0
+    time_test(6);
+    #endif
     
     return EXIT_SUCCESS;
 }

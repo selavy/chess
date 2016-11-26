@@ -91,3 +91,27 @@ int perft_test(const struct position *restrict position,
     return 0;
 }
 
+uint64_t perft_speed(struct position *restrict pos, int depth) {
+    int i;
+    int nmoves;
+    uint64_t nodes = 0;    
+    move moves[MAX_MOVES];
+    struct savepos sp;
+    
+    if (depth == 0) {
+	return 1;
+    }
+
+    nmoves = generate_legal_moves(pos, &moves[0]);
+    if (depth == 1) {
+	nodes = nmoves;
+    } else {
+	for (i = 0; i < nmoves; ++i) {
+	    make_move(pos, &sp, moves[i]);
+	    nodes += perft_speed(pos, depth - 1);	    
+	    undo_move(pos, &sp, moves[i]);
+	}
+    }
+    
+    return nodes;
+}
