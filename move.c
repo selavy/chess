@@ -15,10 +15,10 @@ const char *sq_to_str[64] = {
 const char *const visual_pcs = "NBRQPKnbrqpk ";
 
 #ifndef NDEBUG
-move SIMPLEMOVE(int from, int to) {
+move MOVE(int from, int to) {
     assert(from >= 0 && from <= 64);
     assert(to >= 0 && to <= 64);
-    return _SIMPLEMOVE(from, to);
+    return _MOVE(from, to);
 }
 
 move EP_CAPTURE(int from, int to) {

@@ -15,7 +15,7 @@
 //               0..7  = a3..h3
 //               8..15 = a6..h6
 struct position {
-    uint64_t brd[NPIECES*2];
+    uint64_t brd[12];
     uint64_t side[2];
     uint8_t  sqtopc[64];
     uint16_t nmoves;

@@ -33,7 +33,7 @@ enum {
     A7, B7, C7, D7, E7, F7, G7, H7,
     A8, B8, C8, D8, E8, F8, G8, H8,
 };
-enum { KNIGHT, BISHOP, ROOK, QUEEN, PAWN, KING, NPIECES, EMPTY=(NPIECES*2) };
+enum { KNIGHT, BISHOP, ROOK, QUEEN, PAWN, KING, NPIECES=6, EMPTY=(NPIECES*2) };
 #define PIECECOLOR(pc) ((pc) <= KING ? WHITE:BLACK)
 #define PIECE(color, type) ((NPIECES*(color))+(type))
 
@@ -42,7 +42,7 @@ enum { KNIGHT, BISHOP, ROOK, QUEEN, PAWN, KING, NPIECES, EMPTY=(NPIECES*2) };
 // 6 bits for `from'
 // 2 bits for `promo' - 0 = KNIGHT, 1 = BISHOP, 2 = ROOK, 3 = QUEEN
 // 2 bits for flags - NONE, EP, PROMO, CASTLE
-#define _SIMPLEMOVE(from, to) (((to) << 0) | ((from) << 6))
+#define _MOVE(from, to) (((to) << 0) | ((from) << 6))
 #define _EP_CAPTURE(from, to)				\
     (((to)    <<  0) |					\
      ((from)  <<  6) |					\
@@ -84,12 +84,12 @@ extern const char *const visual_pcs;
 typedef uint16_t move;
 
 #ifndef NDEBUG
-extern move SIMPLEMOVE(int from, int to);
+extern move MOVE(int from, int to);
 extern move EP_CAPTURE(int from, int to);
 extern move PROMOTION(int from, int to, int prm);
 extern move CASTLE(int from, int to);
 #else
-#define SIMPLEMOVE _SIMPLEMOVE
+#define MOVE _MOVE
 #define EP_CAPTURE _EP_CAPTURE
 #define PROMOTION  _PROMOTION
 #define CASTLE     _CASTLE
