@@ -22,10 +22,10 @@ struct timespec diff(struct timespec start, struct timespec end){
 	return temp;
 }
 
-#define DEPTH 6
+#define MAX_DEPTH 6
 struct test_position {
     const char *fen;
-    uint64_t nodes[DEPTH];
+    uint64_t nodes[MAX_DEPTH];
 };
 
 int check_perft() {
@@ -65,8 +65,9 @@ int check_perft() {
 	    .nodes={ 1, 44, 1486, 62379, 2103487, 89941194 }
 	},
 	{
-	    .fen="rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",
-	    .nodes={ 1, 46, 2079, 89890, 3894594, 164075551 }
+	    .fen="r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
+	    //.nodes={ 1, 46, 2079, 89890, 3894594, 164075551 }
+	    .nodes={ 1, 46, 2079, 89890, 0, 0 }
 	},
 	{
 	    .fen=0,
@@ -91,7 +92,7 @@ int check_perft() {
 	    return 2;
 	}
 
-	for (i = 0; i < DEPTH; ++i) {
+	for (i = 0; i < MAX_DEPTH && cur->nodes[i]; ++i) {
 	    printf("Checking depth: %d...\n", i);
 	    struct timespec begin, end, dur;
 	    clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
