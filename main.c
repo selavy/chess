@@ -96,14 +96,13 @@ int check_perft() {
 }
 
 int main(int argc, char **argv) {
+    int i;    
     int ret;
+    int nmoves;    
     struct position pos;
     struct position tmp;    
     struct savepos sp;
     move moves[MAX_MOVES];
-    int nmoves;
-    int i;
-    /* uint64_t nodes, captures, eps, castles, promos, checks, mates; */
     const char *fen[] = {
 	"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 	"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
@@ -157,42 +156,6 @@ int main(int argc, char **argv) {
     } else {
 	printf("passed.\n");
     }
-    
-    /* printf("Begin perft...\n"); */
-    /* cur = &fen[0]; */
-    /* while (*cur) { */
-    /* 	ret = position_from_fen(&pos, *cur); */
-    /* 	if (ret != 0) { */
-    /* 	    fprintf(stderr, "Unable to read fen for position! Error(%d), FEN = %s\n", */
-    /* 		    ret, *cur); */
-    /* 	    exit(EXIT_FAILURE); */
-    /* 	} */
-    /* 	ret = validate_position(&pos); */
-    /* 	if (ret != 0) { */
-    /* 	    fprintf(stderr, "Position validation failed! Error(%d), FEN = %s\n", */
-    /* 		    ret, *cur); */
-    /* 	    exit(EXIT_FAILURE); */
-    /* 	} */
-
-    /* 	struct timespec begin, end, dur; */
-    /* 	for (i = 0; i < 8; ++i) { */
-    /* 	    clock_gettime(CLOCK_MONOTONIC_RAW, &begin); */
-    /* 	    perft_test(&pos, i, &nodes, &captures, &eps, &castles, &promos, &checks, &mates); */
-    /* 	    printf("%d: Nodes=%" PRIu64 ", " */
-    /* 		   "Captures=%" PRIu64 ", " */
-    /* 		   "E.p.=%" PRIu64 ", " */
-    /* 		   "Castles=%" PRIu64 ", " */
-    /* 		   "Promotions=%" PRIu64 ", " */
-    /* 		   "Checks=%" PRIu64 ", " */
-    /* 		   "Mates=%" PRIu64 */
-    /* 		   "\n",  */
-    /* 		   i, nodes, captures, eps, castles, promos, checks, mates); */
-    /* 	    clock_gettime(CLOCK_MONOTONIC_RAW, &end); */
-    /* 	    dur = diff(begin, end); */
-    /* 	    printf("%ld seconds %ld millis\n", dur.tv_sec, dur.tv_nsec / 1000000); */
-    /* 	} */
-    /* 	break; */
-    /* } */
     
     return EXIT_SUCCESS;
 }
