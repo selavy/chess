@@ -192,18 +192,18 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    //#if 0
+    #if 0
     printf("checking perft values...\n");
     if (check_perft() != 0) {
 	printf("check perft failed!\n");
     } else {
 	printf("passed.\n");
     }
-    //#endif
-
-    #if 0
-    time_test(6);
     #endif
+
+    //#if 0
+    time_test(6);
+    //#endif
     
     return EXIT_SUCCESS;
 }
