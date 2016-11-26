@@ -22,6 +22,79 @@ struct timespec diff(struct timespec start, struct timespec end){
 	return temp;
 }
 
+#define DEPTH 6
+struct test_position {
+    const char *fen;
+    uint64_t nodes[DEPTH];
+};
+
+int check_perft() {
+    int i;
+    int ret;
+    struct position pos;
+    uint64_t nodes;
+    uint64_t captures;
+    uint64_t eps;
+    uint64_t castles;
+    uint64_t promos;
+    uint64_t checks;
+    uint64_t mates;
+    struct test_position test_positions[] = {
+	{
+	    .fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+	    .nodes={ 1, 20, 400, 8902, 197281, 4865609 }
+	},
+	{
+	    .fen="r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+	    .nodes={ 1, 48, 2039, 97862, 4085603, 193690690 }
+	},
+	{ .fen=0, .nodes={ 0, 0, 0, 0, 0, 0 } }
+    };
+    struct test_position *cur = &test_positions[0];
+    while (cur->fen) {
+	ret = position_from_fen(&pos, cur->fen);
+	if (ret != 0) {
+	    fprintf(stderr, "Unable to read fen for position! Error(%d), FEN = '%s'\n",
+		    ret, cur->fen);
+	    return 1;
+	}
+	position_print(stdout, &pos);
+	printf("\n");
+
+	ret = validate_position(&pos);
+	if (ret != 0) {
+	    fprintf(stderr, "Position validation failed! Error(%d), FEN = %s\n",
+		    ret, cur->fen);
+	    return 2;
+	}
+
+	for (i = 0; i < DEPTH; ++i) {
+	    printf("Checking depth: %d...\n", i);
+	    struct timespec begin, end, dur;
+	    clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
+	    ret = perft_test(&pos, i, &nodes, &captures, &eps, &castles, &promos, &checks, &mates);
+	    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	    if (ret != 0) {
+		fprintf(stderr, "perft_test failed on depth = %d! Error(%d)\n", i, ret);
+		return 3;
+	    }
+	    if (nodes != cur->nodes[i]) {
+		fprintf(stderr, "Perft test failed.  Expected=%" PRIu64 ", Actual=%" PRIu64 "\n",
+			cur->nodes[i], nodes);
+		return 4;
+	    } else {
+		dur = diff(begin, end);
+		printf("Passed depth %d, nodes = %" PRIu64 ", took %ld seconds %ld millis\n",
+		       i, nodes, dur.tv_sec, dur.tv_nsec / 1000000);
+	    }
+	}
+	
+	++cur;
+    }
+
+    return 0;
+}
+
 int main(int argc, char **argv) {
     int ret;
     struct position pos;
@@ -30,7 +103,7 @@ int main(int argc, char **argv) {
     move moves[MAX_MOVES];
     int nmoves;
     int i;
-    uint64_t nodes, captures, eps, castles, promos, checks, mates;
+    /* uint64_t nodes, captures, eps, castles, promos, checks, mates; */
     const char *fen[] = {
 	"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 	"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
@@ -78,41 +151,48 @@ int main(int argc, char **argv) {
 	++cur;	
     }
 
-    printf("Begin perft...\n");
-    cur = &fen[0];
-    while (*cur) {
-	ret = position_from_fen(&pos, *cur);
-	if (ret != 0) {
-	    fprintf(stderr, "Unable to read fen for position! Error(%d), FEN = %s\n",
-		    ret, *cur);
-	    exit(EXIT_FAILURE);
-	}
-	ret = validate_position(&pos);
-	if (ret != 0) {
-	    fprintf(stderr, "Position validation failed! Error(%d), FEN = %s\n",
-		    ret, *cur);
-	    exit(EXIT_FAILURE);
-	}
-
-	struct timespec begin, end, dur;
-	for (i = 0; i < 8; ++i) {
-	    clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
-	    perft_test(&pos, i, &nodes, &captures, &eps, &castles, &promos, &checks, &mates);
-	    printf("%d: Nodes=%" PRIu64 ", "
-		   "Captures=%" PRIu64 ", "
-		   "E.p.=%" PRIu64 ", "
-		   "Castles=%" PRIu64 ", "
-		   "Promotions=%" PRIu64 ", "
-		   "Checks=%" PRIu64 ", "
-		   "Mates=%" PRIu64
-		   "\n", 
-		   i, nodes, captures, eps, castles, promos, checks, mates);
-	    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-	    dur = diff(begin, end);
-	    printf("%ld seconds %ld millis\n", dur.tv_sec, dur.tv_nsec / 1000000);
-	}
-	break;
+    printf("checking perft values...\n");
+    if (check_perft() != 0) {
+	printf("check perft failed!\n");
+    } else {
+	printf("passed.\n");
     }
+    
+    /* printf("Begin perft...\n"); */
+    /* cur = &fen[0]; */
+    /* while (*cur) { */
+    /* 	ret = position_from_fen(&pos, *cur); */
+    /* 	if (ret != 0) { */
+    /* 	    fprintf(stderr, "Unable to read fen for position! Error(%d), FEN = %s\n", */
+    /* 		    ret, *cur); */
+    /* 	    exit(EXIT_FAILURE); */
+    /* 	} */
+    /* 	ret = validate_position(&pos); */
+    /* 	if (ret != 0) { */
+    /* 	    fprintf(stderr, "Position validation failed! Error(%d), FEN = %s\n", */
+    /* 		    ret, *cur); */
+    /* 	    exit(EXIT_FAILURE); */
+    /* 	} */
+
+    /* 	struct timespec begin, end, dur; */
+    /* 	for (i = 0; i < 8; ++i) { */
+    /* 	    clock_gettime(CLOCK_MONOTONIC_RAW, &begin); */
+    /* 	    perft_test(&pos, i, &nodes, &captures, &eps, &castles, &promos, &checks, &mates); */
+    /* 	    printf("%d: Nodes=%" PRIu64 ", " */
+    /* 		   "Captures=%" PRIu64 ", " */
+    /* 		   "E.p.=%" PRIu64 ", " */
+    /* 		   "Castles=%" PRIu64 ", " */
+    /* 		   "Promotions=%" PRIu64 ", " */
+    /* 		   "Checks=%" PRIu64 ", " */
+    /* 		   "Mates=%" PRIu64 */
+    /* 		   "\n",  */
+    /* 		   i, nodes, captures, eps, castles, promos, checks, mates); */
+    /* 	    clock_gettime(CLOCK_MONOTONIC_RAW, &end); */
+    /* 	    dur = diff(begin, end); */
+    /* 	    printf("%ld seconds %ld millis\n", dur.tv_sec, dur.tv_nsec / 1000000); */
+    /* 	} */
+    /* 	break; */
+    /* } */
     
     return EXIT_SUCCESS;
 }
