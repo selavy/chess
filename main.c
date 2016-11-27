@@ -202,16 +202,19 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 0
-    time_test(6);
+    #if 1
+    time_test(8);
     #endif
 
     #if 0
-//int depth = 5; const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-//int depth = 4; const char *fen = "rnbqkbnr/pppppppp/8/8/8/2P5/PP1PPPPP/RNBQKBNR b KQkq - 0 1"; // c2c3
-//int depth = 3; const char *fen = "rnbqkbnr/pppp1ppp/8/4p3/8/2P5/PP1PPPPP/RNBQKBNR w KQkq e6 0 2"; // c2c3 e7e5
-//int depth = 2; const char *fen = "rnbqkbnr/pppp1ppp/8/4p3/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 1 2"; // c2c3 e7e5 d1a4
-    int depth = 1; const char *fen = "rnb1kbnr/pppp1ppp/8/4p3/Q6q/2P5/PP1PPPPP/RNB1KBNR w KQkq - 2 3"; // c2c3 e7e5 d1a4 d8h4
+    //int depth = 5; const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    //int depth = 4; const char *fen = "rnbqkbnr/pppppppp/8/8/8/2P5/PP1PPPPP/RNBQKBNR b KQkq - 0 1";
+    //int depth = 3; const char *fen = "rnbqkbnr/pppp1ppp/8/4p3/8/2P5/PP1PPPPP/RNBQKBNR w KQkq e6 0 2";
+    //int depth = 2; const char *fen = "rnbqkbnr/pppp1ppp/8/4p3/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 1 2";
+    //int depth = 1; const char *fen = "rnb1kbnr/pppp1ppp/8/4p3/Q6q/2P5/PP1PPPPP/RNB1KBNR w KQkq - 2 3";
+    //int depth = 4; const char *fen = "rnbqkbnr/pppppppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR b KQkq - 0 1";
+    //int depth = 3; const char *fen = "rnbqkb1r/pppppppp/5n2/8/8/3P4/PPP1PPPP/RNBQKBNR w KQkq - 1 2";
+    int depth = 2; const char *fen = "rnbqkb1r/pppppppp/5n2/8/8/3P4/PPPKPPPP/RNBQ1BNR b kq - 2 2";
     
     struct position pos;
     if (position_from_fen(&pos, fen) != 0) {
@@ -225,7 +228,7 @@ int main(int argc, char **argv) {
     perft_text_tree(&pos, depth);
     #endif
 
-    #if 1
+    #if 0
     const char *fen = "rnb1kbnr/pppp1ppp/8/4p3/Q6q/2P5/PP1PPPPP/RNB1KBNR w KQkq - 2 3";
     struct position pos;
     move moves[MAX_MOVES];
@@ -237,7 +240,6 @@ int main(int argc, char **argv) {
     for (int i = 0; i < nmoves; ++i) {
 	move_print_short(moves[i]); printf("\n");
     }
-    
     #endif
     
     return EXIT_SUCCESS;

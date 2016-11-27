@@ -85,12 +85,24 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     uint64_t pinners = ((rooks | queens) & rook_attacks(ksq, 0)) | ((bishops | queens) & bishop_attacks(ksq, 0));    
     assert(kingbb);
 
+//#define DEBUG
+#ifdef DEBUG
+    printf("pinners = %" PRIu64 "\n", pinners);
+    printf("allpieces = %" PRIu64 "\n", allpieces);
+#endif
+    
 #define more_than_one_piece_between(b) power_of_two(b)
     while (pinners) {
 	sq = lsb(pinners);
 	bb = between_sqs(sq, ksq) & allpieces;
+	#ifdef DEBUG
+	printf("between_sqs(%d, %d) = %" PRIu64 "\n", sq, ksq, between_sqs(sq, ksq));
+	#endif
 	if (!more_than_one_piece_between(bb)) {
 	    result |= (uint64_t)1 << sq;
+	    #ifdef DEBUG
+	    printf("valid pinner on %d\n", sq);
+	    #endif
 	}
 	clear_lsb(pinners);
     }
@@ -364,24 +376,38 @@ int generate_legal_moves(const struct position *const restrict pos, move *restri
     move *restrict cur = moves;
     move *restrict end = generate_non_evasions(pos, moves);
 
-    #define FAST_VERSION
-    #ifdef FAST_VERSION
-    const uint8_t color = pos->wtm;
-    const uint64_t kingbb = pos->brd[PIECE(color, KING)];
-    const int ksq = lsb(kingbb);
-    const uint64_t pinpcs = pinned_pieces(pos, color, color);
-    while (cur != end) {
-	// need to check legality of move if:
-	//   +it is the king moving
-	//   +there are pinned pieces
-	//   +move is enpassant
-	if ((FROM(*cur) == ksq || pinpcs || FLAGS(*cur) == FLG_EP) && !legal_move(pos, *cur)) {
-	    *cur = *(--end);
-	} else {
-	    ++cur;
+#define FAST_VERSION
+#ifdef FAST_VERSION
+    // TODO(plesslie): if in check, then only generate evasions, then this branch will go away		
+    const int incheck = in_check(pos, pos->wtm);
+    if (incheck) {
+	while (cur != end) {
+	    if (!legal_move(pos, *cur)) {
+		*cur = *(--end);
+	    } else {
+		++cur;
+	    }
+	}
+    } else {
+	const uint8_t side = pos->wtm;
+	const uint8_t contra = FLIP(side);
+	const uint64_t kingbb = pos->brd[PIECE(side, KING)];
+	const int ksq = lsb(kingbb);
+	const uint64_t pinpcs = pinned_pieces(pos, contra, side);
+    
+	while (cur != end) {
+	    // need to check legality of move if:
+	    //   +it is the king moving
+	    //   +there are pinned pieces
+	    //   +move is enpassant
+	    if ((FROM(*cur) == ksq || pinpcs || FLAGS(*cur) == FLG_EP) && !legal_move(pos, *cur)) {
+		*cur = *(--end);
+	    } else {
+		++cur;
+	    }
 	}
     }
-    #else
+#else
     while (cur != end) {
 	if (!legal_move(pos, *cur)) {
 	    *cur = *(--end);
@@ -389,7 +415,7 @@ int generate_legal_moves(const struct position *const restrict pos, move *restri
 	    ++cur;
 	}
     }
-    #endif
+#endif
 
     return (int)(end - moves);
 }
