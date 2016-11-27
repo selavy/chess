@@ -139,6 +139,7 @@ void time_test(int depth) {
 
 int main(int argc, char **argv) {
     #if 0
+    // test make_move() and undo_move() on some basic positions
     int i;    
     int ret;
     int nmoves;    
@@ -194,6 +195,7 @@ int main(int argc, char **argv) {
     #endif
 
     #if 0
+    // verify perft values on some known positions
     printf("checking perft values...\n");
     if (check_perft() != 0) {
 	printf("check perft failed!\n");
@@ -202,11 +204,14 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 1
+    #if 0
+    // time starting position perft to given depth
     time_test(8);
     #endif
 
     #if 0
+    // for each of the moves in the position, print number of moves on that branch to `depth'
+    
     //int depth = 5; const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     //int depth = 4; const char *fen = "rnbqkbnr/pppppppp/8/8/8/2P5/PP1PPPPP/RNBQKBNR b KQkq - 0 1";
     //int depth = 3; const char *fen = "rnbqkbnr/pppp1ppp/8/4p3/8/2P5/PP1PPPPP/RNBQKBNR w KQkq e6 0 2";
@@ -228,17 +233,38 @@ int main(int argc, char **argv) {
     perft_text_tree(&pos, depth);
     #endif
 
+#define CREATE_POSITION_FROM_FEN(pos, fen) do {				\
+	if (position_from_fen(&(pos), (fen)) != 0) exit(EXIT_FAILURE);	\
+	if (validate_position(&(pos)) != 0) exit(EXIT_FAILURE);		\
+    } while (0)
+    
     #if 0
+    // print all legal moves generated for `fen'
     const char *fen = "rnb1kbnr/pppp1ppp/8/4p3/Q6q/2P5/PP1PPPPP/RNB1KBNR w KQkq - 2 3";
     struct position pos;
     move moves[MAX_MOVES];
-    
-    if (position_from_fen(&pos, fen) != 0) exit(EXIT_FAILURE);
-    if (validate_position(&pos) != 0) exit(EXIT_FAILURE);
+
+    CREATE_POSITION_FROM_FEN(pos, fen);
 
     const int nmoves = generate_legal_moves(&pos, &moves[0]);
     for (int i = 0; i < nmoves; ++i) {
 	move_print_short(moves[i]); printf("\n");
+    }
+    #endif
+
+    
+    #if 1
+    // Test evasion move generation
+
+    const char *fen = "rnbqkb1r/pppppppp/8/8/4n3/3P4/PPPKPPPP/RNBQ1BNR w kq - 3 3";
+    struct position pos;
+    move moves[MAX_MOVES];
+    CREATE_POSITION_FROM_FEN(pos, fen);
+
+    const move *cur = &moves[0];
+    const move *end = generate_evasions(&pos, &moves[0]);
+    while (cur != end) {
+	move_print_short(*cur++); printf("\n");
     }
     #endif
     

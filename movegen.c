@@ -110,36 +110,44 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     return result;
 }
 
-// TOD: finish
-static move *generate_evasions(const struct position *const restrict pos, move *restrict moves) {
+// bitboard with squares attacked by `side'
+static uint64_t attacked_squares(const struct position *const restrict pos, uint8_t side) {
+    // TODO: implement
+    return 0;
+}
+ 
+// TODO: generate moves that get out of check
+move *generate_evasions(const struct position *const restrict pos, move *restrict moves) {
     assert(in_check(pos, pos->wtm) != 0);
+    uint32_t to;
+    uint32_t from;
+    uint64_t pcs;    
+    uint64_t posmoves;
+    const uint8_t side = pos->wtm;
+    const uint8_t contra = FLIP(side); // TODO: does this create a data dependency on `side'?
+    const uint64_t attackedsqs = attacked_squares(pos, contra);
+    const uint64_t safesqs = ~(pos->side[side]) & ~attackedsqs;
+
 
     // 0. General case: either move king, capture piece, or block
     // 1. Knight or pawn check: either move king, or capture knight
     // 2. If more than 1 checker, then must move king
 
-    // find squares between checking piece and king, and only generate moves that do that or capture checking piece
-
-    // 1. generate king moves
-    uint64_t pcs;
-    uint32_t from;
-    const uint8_t side = pos->wtm;
-    const uint64_t opp_or_empty = ~pos->side[side];
-
+    // generate king moves
     // king evasions
     pcs = PIECES(*pos, side, KING);
     assert(pcs);
     assert(popcountll(pcs) == 1);
     from = lsb(pcs);
-    posmoves = king_attacks(from) & opp_or_empty;
+    posmoves = king_attacks(from) & safesqs;
     while (posmoves) {
 	to = lsb(posmoves);
 	// TODO: check that `to' is not attacked
 	*moves++ = MOVE(from, to);
 	clear_lsb(posmoves);
     }
-    
-    // TODO: generate moves that get out of check
+
+    // find squares between checking piece and king, and only generate moves that block or capture checking piece
     return moves;
 }
 
@@ -149,7 +157,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
     uint32_t from;
     uint32_t to;    
     const uint8_t side = pos->wtm;
-    const uint8_t contraside = FLIP(side);
+    const uint8_t contraside = FLIP(side); // TODO: does this create a data dependency on `side'?
     const uint64_t same = pos->side[side];
     const uint64_t contra = pos->side[contraside];
     const uint64_t occupied = same | contra;
