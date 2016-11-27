@@ -206,8 +206,13 @@ int main(int argc, char **argv) {
     time_test(6);
     #endif
 
-    #if 1
-    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    #if 0
+//int depth = 5; const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+//int depth = 4; const char *fen = "rnbqkbnr/pppppppp/8/8/8/2P5/PP1PPPPP/RNBQKBNR b KQkq - 0 1"; // c2c3
+//int depth = 3; const char *fen = "rnbqkbnr/pppp1ppp/8/4p3/8/2P5/PP1PPPPP/RNBQKBNR w KQkq e6 0 2"; // c2c3 e7e5
+//int depth = 2; const char *fen = "rnbqkbnr/pppp1ppp/8/4p3/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 1 2"; // c2c3 e7e5 d1a4
+    int depth = 1; const char *fen = "rnb1kbnr/pppp1ppp/8/4p3/Q6q/2P5/PP1PPPPP/RNB1KBNR w KQkq - 2 3"; // c2c3 e7e5 d1a4 d8h4
+    
     struct position pos;
     if (position_from_fen(&pos, fen) != 0) {
 	perror("position_from_fen");
@@ -217,7 +222,22 @@ int main(int argc, char **argv) {
 	perror("position_from_fen");
 	exit(EXIT_FAILURE);	
     }
-    perft_text_tree(&pos, 5);
+    perft_text_tree(&pos, depth);
+    #endif
+
+    #if 1
+    const char *fen = "rnb1kbnr/pppp1ppp/8/4p3/Q6q/2P5/PP1PPPPP/RNB1KBNR w KQkq - 2 3";
+    struct position pos;
+    move moves[MAX_MOVES];
+    
+    if (position_from_fen(&pos, fen) != 0) exit(EXIT_FAILURE);
+    if (validate_position(&pos) != 0) exit(EXIT_FAILURE);
+
+    const int nmoves = generate_legal_moves(&pos, &moves[0]);
+    for (int i = 0; i < nmoves; ++i) {
+	move_print_short(moves[i]); printf("\n");
+    }
+    
     #endif
     
     return EXIT_SUCCESS;
