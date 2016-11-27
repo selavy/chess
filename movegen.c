@@ -5,8 +5,6 @@
 #include <inttypes.h>
 #include "magic_tables.h"
 
-// TODO: maybe should be caching this in the position
-
 #define lsb(bb) __builtin_ctzll(bb)
 #define clear_lsb(bb) bb &= (bb - 1)
 #define popcountll(bb) __builtin_popcountll(bb)
@@ -35,18 +33,42 @@
 }
 
 // TEMP TEMP
-int in_check(const struct position * const restrict pos, uint8_t side) {
+int in_check(const struct position *const restrict pos, uint8_t side) {
     const uint64_t kings = pos->brd[PIECE(side,KING)];
     assert(kings != 0);
     const int kingloc = lsb(kings);
-    assert(kingloc >= 0 && kingloc <= 63);
+    assert(kingloc >= A1 && kingloc <= H8);
     return attacks(pos, FLIP(side), kingloc);
+}
+
+// return bitboard of pieces that attack `side's king
+uint64_t generate_checkers(const struct position *const restrict pos, uint8_t side) {
+    uint64_t ret = 0;
+    const int ksq = lsb(PIECES(*pos, side, KING));
+    const uint8_t contra = FLIP(side);    
+    const uint64_t occupied = pos->side[side] | pos->side[contra];
+    const uint64_t knights = PIECES(*pos, contra, KNIGHT);
+    const uint64_t bishops = PIECES(*pos, contra, BISHOP);
+    const uint64_t rooks = PIECES(*pos, contra, ROOK);
+    const uint64_t queens = PIECES(*pos, contra, QUEEN);
+    const uint64_t pawns = PIECES(*pos, contra, PAWN);
+    const uint64_t king = PIECES(*pos, contra, KING);
+
+    ret |= rook_attacks(ksq, occupied) & (rooks | queens);
+    ret |= bishop_attacks(ksq, occupied) & (bishops | queens);
+    ret |= knight_attacks(ksq) & knights;
+    ret |= king_attacks(ksq) & king;
+    ret |= pawn_attacks(side, ksq) & pawns;
+    
+    return ret;
 }
 
 // returns 1 if a piece from `side` attacks `square`
 int attacks(const struct position * const restrict pos, uint8_t side, int square) {
     uint64_t pcs;
-    const uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, FLIP(side));
+    const uint8_t contra = FLIP(side);
+    //const uint64_t occupied = FULLSIDE(*pos, side) | FULLSIDE(*pos, contra);
+    const uint64_t occupied = pos->side[side] | pos->side[contra];
     pcs = pos->brd[PIECE(side, ROOK)] | pos->brd[PIECE(side, QUEEN)];
     if ((rook_attacks(square, occupied) & pcs) != 0) {
         return 1;
@@ -60,7 +82,7 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
         return 3;
     }
     pcs = pos->brd[PIECE(side, PAWN)];
-    if ((pawn_attacks(FLIP(side), square) & pcs) != 0) {
+    if ((pawn_attacks(contra, square) & pcs) != 0) {
         return 4;
     }
     pcs = pos->brd[PIECE(side, KING)];
@@ -161,7 +183,6 @@ static uint64_t attacked_squares(const struct position *const restrict pos, cons
 
     // capture left
     pcs = pawns & ~A_FILE;
-    // TODO: move the shift amount to an array?
     pcs = side == WHITE ? pcs << 7 : pcs >> 9;
     ret |= pcs & contra;
 
@@ -174,7 +195,7 @@ static uint64_t attacked_squares(const struct position *const restrict pos, cons
 }
  
 // TODO: generate moves that get out of check
-move *generate_evasions(const struct position *const restrict pos, move *restrict moves) {
+move *generate_evasions(const struct position *const restrict pos, const uint64_t checkers, move *restrict moves) {
     assert(in_check(pos, pos->wtm) != 0);
     uint32_t to;
     uint32_t from;
@@ -184,14 +205,13 @@ move *generate_evasions(const struct position *const restrict pos, move *restric
     const uint8_t contra = FLIP(side); // TODO: does this create a data dependency on `side'?
     const uint64_t attackedsqs = attacked_squares(pos, contra);
     const uint64_t safesqs = ~(pos->side[side]) & ~attackedsqs;
-
+    //const uint64_t betweenbb = 
 
     // 0. General case: either move king, capture piece, or block
     // 1. Knight or pawn check: either move king, or capture knight
     // 2. If more than 1 checker, then must move king
 
-    // generate king moves
-    // king evasions
+    // generate king moves to squares that are not under attack
     pcs = PIECES(*pos, side, KING);
     assert(pcs);
     assert(popcountll(pcs) == 1);
@@ -199,12 +219,13 @@ move *generate_evasions(const struct position *const restrict pos, move *restric
     posmoves = king_attacks(from) & safesqs;
     while (posmoves) {
 	to = lsb(posmoves);
-	// TODO: check that `to' is not attacked
 	*moves++ = MOVE(from, to);
 	clear_lsb(posmoves);
     }
 
     // find squares between checking piece and king, and only generate moves that block or capture checking piece
+    
+    
     return moves;
 }
 

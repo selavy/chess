@@ -6,6 +6,8 @@
 #include "move.h"
 
 // TODO: remove king specific bit boards and replace with 2 x 8-bit ints with sq location
+// TODO: cache king location? (maybe taken care of by above, but will need to look at how
+//       that affects the make_move(), undo_move() code)
 
 // `nmoves'    - number of full moves, incremented after black's move
 // `halfmoves' - number of halfmoves since the last capture or pawn advance (like in FEN)
