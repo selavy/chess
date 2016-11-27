@@ -9,6 +9,7 @@
 #define clear_lsb(bb) bb &= (bb - 1)
 #define popcountll(bb) __builtin_popcountll(bb)
 #define power_of_two(bb) (bb & (bb - 1))
+#define more_than_one_piece(bb) power_of_two(bb)
 
 //static int legal_move(const struct position *const restrict pos, move m);
 /*static*/int legal_move(const struct position *const restrict pos, move m) {
@@ -113,7 +114,8 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     printf("allpieces = %" PRIu64 "\n", allpieces);
 #endif
     
-#define more_than_one_piece_between(b) power_of_two(b)
+//#define more_than_one_piece_between(b) power_of_two(b)
+#define more_than_one_piece_between(b) more_than_one_piece(b)    
     while (pinners) {
 	sq = lsb(pinners);
 	bb = between_sqs(sq, ksq) & allpieces;
@@ -222,7 +224,19 @@ move *generate_evasions(const struct position *const restrict pos, const uint64_
     }
 
     // find squares between checking piece and king, and only generate moves that block or capture checking piece
-    
+    if (!more_than_one_piece(checkers)) {
+	// REVISIT(plesslie): may want to move these up top to schedule them in parallel
+	const int checksq = lsb(checkers);
+	const int checkpc = pos->sqtopc[checksq];
+	printf("Check given by %c\n", visual_pcs[checkpc]);
+	if (checkpc == PIECE(contra, KNIGHT) || checkpc == PIECE(contra, PAWN)) {
+	    printf("check given by knight or pawn so can't block the check!\n");
+	} else {
+	    printf("check given by slider so we can try to block it!\n");
+	}
+    } else {
+	printf("More than one checker in position so must move king!\n");
+    }
     
     return moves;
 }

@@ -261,7 +261,10 @@ int main(int argc, char **argv) {
     //const char *fen = "r1bqkbnr/1pp3pp/n2p4/pB2ppB1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
     //const char *fen = "r1bqkbnr/1pp3pp/n2p1p2/pB2p1B1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
     //const char *fen = "r1bq1bnr/1p4pp/n1pk1p2/pB2P1B1/4p3/5N2/PPPQ1PPP/RN1R3K b - - 0 11";
-    const char *fen = "2bq1bnr/rp4pp/n1pk1p1B/pB2P3/4p3/5N2/PPPQ1PPP/RN1R3K b - - 0 12";
+    //const char *fen = "2bq1bnr/rp4pp/n1pk1p1B/pB2P3/4p3/5N2/PPPQ1PPP/RN1R3K b - - 0 12";
+    //const char *fen = "2bq1bnr/rp4pp/n1pk1p1B/pB2p3/1Q1Pp3/5N2/PPP2PPP/RN1R3K b - - 3 12";
+    //const char *fen = "2bq2nr/rp2b1pp/n1pk1p1B/pB2p3/3PN3/8/PPPQ1PPP/RN1R3K b - - 0 13";
+    const char *fen = "2bq2nr/rp2b1pp/n1p1kp1B/pB1Pp3/4p3/7N/PPPQ1PPP/RN1R3K b - - 0 14";
     struct position pos;
     move moves[MAX_MOVES];
     CREATE_POSITION_FROM_FEN(pos, fen);
