@@ -6,6 +6,7 @@
 #include "position.h"
 
 extern uint64_t generate_checkers(const struct position *const restrict pos, uint8_t side);
+extern uint64_t generate_attacked(const struct position *const restrict pos, const uint8_t side);
 extern move *generate_evasions(const struct position *const restrict pos, uint64_t checkers, move *restrict moves);
 extern uint64_t pinned_pieces(const struct position *const restrict pos, uint8_t side, uint8_t kingcolor);
 extern int attacks(const struct position *const restrict pos, uint8_t side, int square);

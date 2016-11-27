@@ -260,13 +260,17 @@ int main(int argc, char **argv) {
     //const char *fen = "r1bqkbnr/1pp2pp1/n2p3p/pB2p1B1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
     //const char *fen = "r1bqkbnr/1pp3pp/n2p4/pB2ppB1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
     //const char *fen = "r1bqkbnr/1pp3pp/n2p1p2/pB2p1B1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
-    const char *fen = "r1bq1bnr/1p4pp/n1pk1p2/pB2P1B1/4p3/5N2/PPPQ1PPP/RN1R3K b - - 0 11";
+    //const char *fen = "r1bq1bnr/1p4pp/n1pk1p2/pB2P1B1/4p3/5N2/PPPQ1PPP/RN1R3K b - - 0 11";
+    const char *fen = "2bq1bnr/rp4pp/n1pk1p1B/pB2P3/4p3/5N2/PPPQ1PPP/RN1R3K b - - 0 12";
     struct position pos;
     move moves[MAX_MOVES];
     CREATE_POSITION_FROM_FEN(pos, fen);
 
     const uint64_t checkers = generate_checkers(&pos, pos.wtm);
     printf("Checkers bb: %" PRIu64 "\n", checkers);
+
+    const uint64_t attacked = generate_attacked(&pos, FLIP(pos.wtm));
+    printf("Attacked bb: %" PRIu64 "\n", attacked);
     
     const move *cur = &moves[0];
     const move *end = generate_evasions(&pos, checkers, &moves[0]);

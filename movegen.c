@@ -132,16 +132,18 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     return ret;
 }
 
-// bitboard with squares attacked by `side'
-static uint64_t attacked_squares(const struct position *const restrict pos, const uint8_t side) {
+// bitboard with squares attacked by `side' if other side's king is removed.
+// removes the other side's king because the king won't be able to move to any square
+// that not currently under attack because he is blocking the path.
+uint64_t generate_attacked(const struct position *const restrict pos, const uint8_t side) {
     uint64_t ret = 0;
     uint64_t pcs;
     uint32_t from;
     const uint8_t contraside = FLIP(side);
     const uint64_t same = pos->side[side];
-    const uint64_t contra = pos->side[contraside];    
-    const uint64_t occupied = same | contra;    
-    const uint64_t opp_or_empty = ~same;
+    const uint64_t contra = pos->side[contraside];
+    const uint64_t ksq = lsb(PIECES(*pos, contraside, KING));
+    const uint64_t occupied = (same | contra) & ~MASK(ksq);
     const uint64_t knights = PIECES(*pos, side, KNIGHT);
     const uint64_t bishops = PIECES(*pos, side, BISHOP);
     const uint64_t rooks = PIECES(*pos, side, ROOK);
@@ -149,47 +151,43 @@ static uint64_t attacked_squares(const struct position *const restrict pos, cons
     const uint64_t king = PIECES(*pos, side, KING);
     const uint64_t pawns = PIECES(*pos, side, PAWN);
 
+    printf("occupied: %" PRIu64 "\n", occupied);
+
     pcs = knights;
     while (pcs) {
 	from = lsb(pcs);
-	ret |= knight_attacks(from) & opp_or_empty;
+	ret |= knight_attacks(from);
 	clear_lsb(pcs);
     }
 
     pcs = bishops | queens;
     while (pcs) {
 	from = lsb(pcs);
-	ret |= bishop_attacks(from, occupied) & opp_or_empty;
+	ret |= bishop_attacks(from, occupied);
 	clear_lsb(pcs);
     }
 
     pcs = rooks | queens;
     while (pcs) {
 	from = lsb(pcs);
-	ret |= rook_attacks(from, occupied) & opp_or_empty;
+	ret |= rook_attacks(from, occupied);
 	clear_lsb(pcs);
     }
 
     assert(king);
     assert(popcountll(king) == 1);    
-    pcs = king;
-    from = lsb(pcs);
-    ret |= king_attacks(from) & opp_or_empty;
-
-    // pawn moves
-    // +don't need to check enpassant (otherwise pawn jumped over the king to move 2 squares...)
-    // +don't need to check promotions
-    // +only need to check normal pawn attacks
+    from = lsb(king);
+    ret |= king_attacks(from);
 
     // capture left
     pcs = pawns & ~A_FILE;
     pcs = side == WHITE ? pcs << 7 : pcs >> 9;
-    ret |= pcs & contra;
+    ret |= pcs;
 
     // capture right
     pcs = pawns & ~H_FILE;
     pcs = side == WHITE ? pcs << 9 : pcs >> 7;
-    ret |= pcs & contra;
+    ret |= pcs;
 
     return ret;
 }
@@ -203,20 +201,20 @@ move *generate_evasions(const struct position *const restrict pos, const uint64_
     uint64_t posmoves;
     const uint8_t side = pos->wtm;
     const uint8_t contra = FLIP(side); // TODO: does this create a data dependency on `side'?
-    const uint64_t attackedsqs = attacked_squares(pos, contra);
-    const uint64_t safesqs = ~(pos->side[side]) & ~attackedsqs;
-    //const uint64_t betweenbb = 
+    const uint64_t attacked = generate_attacked(pos, contra);
+    const uint64_t safe = ~(pos->side[side]) & ~attacked;
 
     // 0. General case: either move king, capture piece, or block
     // 1. Knight or pawn check: either move king, or capture knight
     // 2. If more than 1 checker, then must move king
+    // 3. en passant could remove the attacker
 
     // generate king moves to squares that are not under attack
     pcs = PIECES(*pos, side, KING);
     assert(pcs);
     assert(popcountll(pcs) == 1);
     from = lsb(pcs);
-    posmoves = king_attacks(from) & safesqs;
+    posmoves = king_attacks(from) & safe;
     while (posmoves) {
 	to = lsb(posmoves);
 	*moves++ = MOVE(from, to);
