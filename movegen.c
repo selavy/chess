@@ -110,10 +110,38 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     return result;
 }
 
-/* static move *generate_evasions(const struct position *const restrict pos, move *restrict moves) { */
-/*     // TODO: generate moves that get out of check */
-/*     return moves; */
-/* } */
+// TOD: finish
+static move *generate_evasions(const struct position *const restrict pos, move *restrict moves) {
+    assert(in_check(pos, pos->wtm) != 0);
+
+    // 0. General case: either move king, capture piece, or block
+    // 1. Knight or pawn check: either move king, or capture knight
+    // 2. If more than 1 checker, then must move king
+
+    // find squares between checking piece and king, and only generate moves that do that or capture checking piece
+
+    // 1. generate king moves
+    uint64_t pcs;
+    uint32_t from;
+    const uint8_t side = pos->wtm;
+    const uint64_t opp_or_empty = ~pos->side[side];
+
+    // king evasions
+    pcs = PIECES(*pos, side, KING);
+    assert(pcs);
+    assert(popcountll(pcs) == 1);
+    from = lsb(pcs);
+    posmoves = king_attacks(from) & opp_or_empty;
+    while (posmoves) {
+	to = lsb(posmoves);
+	// TODO: check that `to' is not attacked
+	*moves++ = MOVE(from, to);
+	clear_lsb(posmoves);
+    }
+    
+    // TODO: generate moves that get out of check
+    return moves;
+}
 
 static move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves) {
     uint64_t posmoves;    
