@@ -75,7 +75,7 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     //          because LUT will be smaller.
     int sq;
     uint64_t bb;
-    uint64_t result = 0;
+    uint64_t ret = 0;
     const uint64_t allpieces = pos->side[WHITE] | pos->side[BLACK];    
     const uint64_t kingbb = pos->brd[PIECE(kingcolor, KING)];
     const uint32_t ksq = lsb(kingbb);
@@ -99,7 +99,7 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
 	printf("between_sqs(%d, %d) = %" PRIu64 "\n", sq, ksq, between_sqs(sq, ksq));
 	#endif
 	if (!more_than_one_piece_between(bb)) {
-	    result |= (uint64_t)1 << sq;
+	    ret |= (uint64_t)1 << sq;
 	    #ifdef DEBUG
 	    printf("valid pinner on %d\n", sq);
 	    #endif
@@ -107,13 +107,70 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
 	clear_lsb(pinners);
     }
     
-    return result;
+    return ret;
 }
 
 // bitboard with squares attacked by `side'
-static uint64_t attacked_squares(const struct position *const restrict pos, uint8_t side) {
-    // TODO: implement
-    return 0;
+static uint64_t attacked_squares(const struct position *const restrict pos, const uint8_t side) {
+    uint64_t ret = 0;
+    uint64_t pcs;
+    uint32_t from;
+    const uint8_t contraside = FLIP(side);
+    const uint64_t same = pos->side[side];
+    const uint64_t contra = pos->side[contraside];    
+    const uint64_t occupied = same | contra;    
+    const uint64_t opp_or_empty = ~same;
+    const uint64_t knights = PIECES(*pos, side, KNIGHT);
+    const uint64_t bishops = PIECES(*pos, side, BISHOP);
+    const uint64_t rooks = PIECES(*pos, side, ROOK);
+    const uint64_t queens = PIECES(*pos, side, QUEEN);
+    const uint64_t king = PIECES(*pos, side, KING);
+    const uint64_t pawns = PIECES(*pos, side, PAWN);
+
+    pcs = knights;
+    while (pcs) {
+	from = lsb(pcs);
+	ret |= knight_attacks(from) & opp_or_empty;
+	clear_lsb(pcs);
+    }
+
+    pcs = bishops | queens;
+    while (pcs) {
+	from = lsb(pcs);
+	ret |= bishop_attacks(from, occupied) & opp_or_empty;
+	clear_lsb(pcs);
+    }
+
+    pcs = rooks | queens;
+    while (pcs) {
+	from = lsb(pcs);
+	ret |= rook_attacks(from, occupied) & opp_or_empty;
+	clear_lsb(pcs);
+    }
+
+    assert(king);
+    assert(popcountll(king) == 1);    
+    pcs = king;
+    from = lsb(pcs);
+    ret |= king_attacks(from) & opp_or_empty;
+
+    // pawn moves
+    // +don't need to check enpassant (otherwise pawn jumped over the king to move 2 squares...)
+    // +don't need to check promotions
+    // +only need to check normal pawn attacks
+
+    // capture left
+    pcs = pawns & ~A_FILE;
+    // TODO: move the shift amount to an array?
+    pcs = side == WHITE ? pcs << 7 : pcs >> 9;
+    ret |= pcs & contra;
+
+    // capture right
+    pcs = pawns & ~H_FILE;
+    pcs = side == WHITE ? pcs << 9 : pcs >> 7;
+    ret |= pcs & contra;
+
+    return ret;
 }
  
 // TODO: generate moves that get out of check

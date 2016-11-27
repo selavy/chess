@@ -256,7 +256,10 @@ int main(int argc, char **argv) {
     #if 1
     // Test evasion move generation
 
-    const char *fen = "rnbqkb1r/pppppppp/8/8/4n3/3P4/PPPKPPPP/RNBQ1BNR w kq - 3 3";
+    //const char *fen = "rnbqkb1r/pppppppp/8/8/4n3/3P4/PPPKPPPP/RNBQ1BNR w kq - 3 3";
+    //const char *fen = "r1bqkbnr/1pp2pp1/n2p3p/pB2p1B1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
+    //const char *fen = "r1bqkbnr/1pp3pp/n2p4/pB2ppB1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
+    const char *fen = "r1bqkbnr/1pp3pp/n2p1p2/pB2p1B1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
     struct position pos;
     move moves[MAX_MOVES];
     CREATE_POSITION_FROM_FEN(pos, fen);
