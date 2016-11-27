@@ -205,6 +205,20 @@ int main(int argc, char **argv) {
     #if 0
     time_test(6);
     #endif
+
+    #if 1
+    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    struct position pos;
+    if (position_from_fen(&pos, fen) != 0) {
+	perror("position_from_fen");
+	exit(EXIT_FAILURE);
+    }
+    if (validate_position(&pos) != 0) {
+	perror("position_from_fen");
+	exit(EXIT_FAILURE);	
+    }
+    perft_text_tree(&pos, 5);
+    #endif
     
     return EXIT_SUCCESS;
 }

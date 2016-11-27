@@ -1,6 +1,7 @@
 #include "perft.h"
 #include <assert.h>
 #include <string.h>
+#include <inttypes.h>
 #include "movegen.h"
 
 static uint64_t perft(int depth,
@@ -114,4 +115,50 @@ uint64_t perft_speed(struct position *restrict pos, int depth) {
     }
     
     return nodes;
+}
+
+static uint64_t perft_text_tree_helper(struct position *restrict pos, int depth) {
+    int i;
+    int nmoves;
+    move moves[MAX_MOVES];
+    uint64_t nodes = 0;
+    struct savepos sp;
+    
+    if (depth == 0) {
+	return 1;
+    }
+    
+    nmoves = generate_legal_moves(pos, &moves[0]);
+    if (depth == 1) {
+	nodes = nmoves;
+    } else {
+	for (i = 0; i < nmoves; ++i) {
+	    make_move(pos, &sp, moves[i]);
+	    nodes += perft_text_tree_helper(pos, depth - 1);
+	    undo_move(pos, &sp, moves[i]);
+	}
+    }
+    
+    return nodes;
+}
+
+void perft_text_tree(struct position *restrict pos, int depth) {
+    int i;
+    int nmoves;
+    move moves[MAX_MOVES];
+    struct savepos sp;
+    uint64_t total_nodes = 0;
+    uint64_t nodes;
+    depth = depth > 0 ? depth : 1;
+
+    nmoves = generate_legal_moves(pos, &moves[0]);
+    for (i = 0; i < nmoves; ++i) {
+	make_move(pos, &sp, moves[i]);
+	nodes = perft_text_tree_helper(pos, depth - 1);
+	total_nodes += nodes;
+	undo_move(pos, &sp, moves[i]);
+	move_print_short(moves[i]); printf(": %" PRIu64 "\n", nodes);
+    }
+
+    printf("Total nodes at depth %d: %" PRIu64 "\n", depth, total_nodes);
 }

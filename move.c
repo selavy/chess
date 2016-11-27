@@ -62,4 +62,7 @@ void move_print(move mv) {
     printf("\n");
 }
 
+void move_print_short(move m) {
+    printf("%s%s", sq_to_str[FROM(m)], sq_to_str[TO(m)]);
+}
 

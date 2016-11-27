@@ -17,4 +17,6 @@ extern int perft_test(const struct position *restrict pos,
 
 extern uint64_t perft_speed(struct position *restrict pos, int depth);
 
+extern void perft_text_tree(struct position *restrict pos, int depth);
+
 #endif // PERFT__H_

@@ -363,9 +363,17 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 int generate_legal_moves(const struct position *const restrict pos, move *restrict moves) {
     move *restrict cur = moves;
     move *restrict end = generate_non_evasions(pos, moves);
+    const uint8_t color = pos->wtm;
+    const uint64_t kingbb = pos->brd[PIECE(color, KING)];
+    const int ksq = lsb(kingbb);
+    const uint64_t pinpcs = pinned_pieces(pos, color, color);
 
     while (cur != end) {
-	if (!legal_move(pos, *cur)) {
+	// need to check legality of move if:
+	//   +it is the king moving
+	//   +there are pinned pieces
+	//   +move is enpassant
+	if ((FROM(*cur) == ksq || pinpcs || FLAGS(*cur) == FLG_EP) && !legal_move(pos, *cur)) {
 	    *cur = *(--end);
 	} else {
 	    ++cur;
