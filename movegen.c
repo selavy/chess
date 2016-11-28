@@ -193,7 +193,9 @@ uint64_t generate_attacked(const struct position *const restrict pos, const uint
 
     return ret;
 }
- 
+
+// REVISIT: consolidate common move generation code into: generate_normal_moves(targets) and
+//          generate_pawn_moves(targets) and generate_castling()?
 // TODO: generate moves that get out of check
 move *generate_evasions(const struct position *const restrict pos, const uint64_t checkers, move *restrict moves) {
     uint32_t to;
@@ -234,11 +236,35 @@ move *generate_evasions(const struct position *const restrict pos, const uint64_
 
     if (!more_than_one_piece(checkers)) {
 	uint64_t targets = checkers;
-
-	
 	if (checkpc == PIECE(contra, PAWN)) {
 	    if (pos->enpassant != EP_NONE) {
-		// TODO: check enpassant
+		to = pos->enpassant;
+		int epsq = side == WHITE ? to - 8 : to + 8;
+		if (epsq == checksq) {
+		    assert(pos->sqtopc[epsq] == PIECE(contra, PAWN));
+		    assert((side == WHITE && to >= A6 && to <= H6) ||
+			   (side == BLACK && to >= A3 && to <= H3));
+		    assert(pos->sqtopc[to] == EMPTY);
+		    // capture left
+		    if (to != H6 && to != H3) {
+			from = side == WHITE ? to - 7 : to + 9;
+			assert((side == WHITE && from >= A5 && from <= H5) ||
+			       (side == BLACK && from >= A4 && from <= H4));
+			if (pos->sqtopc[from] == PIECE(side, PAWN)) {
+			    *moves++ = EP_CAPTURE(from, to);
+			}
+		    }
+	
+		    // capture right
+		    if (to != A6 && to != A3) {
+			from = side == WHITE ? to - 9 : to + 7;
+			assert((side == WHITE && from >= A5 && from <= H5) ||
+			       (side == BLACK && from >= A4 && from <= H4));
+			if (pos->sqtopc[from] == PIECE(side, PAWN)) {
+			    *moves++ = EP_CAPTURE(from, to);
+			}
+		    }
+		}
 	    }
 	} else if (checkpc != PIECE(contra, KNIGHT)) {
 	    const uint64_t between = between_sqs(checksq, ksq);
