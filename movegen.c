@@ -153,7 +153,7 @@ uint64_t generate_attacked(const struct position *const restrict pos, const uint
     const uint64_t king = PIECES(*pos, side, KING);
     const uint64_t pawns = PIECES(*pos, side, PAWN);
 
-    printf("occupied: %" PRIu64 "\n", occupied);
+    //printf("occupied: %" PRIu64 "\n", occupied);
 
     pcs = knights;
     while (pcs) {
@@ -642,49 +642,63 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 }
 
 int generate_legal_moves(const struct position *const restrict pos, move *restrict moves) {
+    const uint64_t checkers = generate_checkers(pos, pos->wtm);
+    const uint8_t side = pos->wtm;
+    const uint8_t contra = FLIP(side);
+    const uint64_t kingbb = pos->brd[PIECE(side, KING)];
+    const int ksq = lsb(kingbb);
+    const uint64_t pinpcs = pinned_pieces(pos, contra, side);    
     move *restrict cur = moves;
-    move *restrict end = generate_non_evasions(pos, moves);
+    move *restrict end = checkers ? generate_evasions(pos, checkers, moves) : generate_non_evasions(pos, moves);
 
-#define FAST_VERSION
-#ifdef FAST_VERSION
-    // TODO(plesslie): if in check, then only generate evasions, then this branch will go away		
-    const int incheck = in_check(pos, pos->wtm);
-    if (incheck) {
-	while (cur != end) {
-	    if (!legal_move(pos, *cur)) {
-		*cur = *(--end);
-	    } else {
-		++cur;
-	    }
-	}
-    } else {
-	const uint8_t side = pos->wtm;
-	const uint8_t contra = FLIP(side);
-	const uint64_t kingbb = pos->brd[PIECE(side, KING)];
-	const int ksq = lsb(kingbb);
-	const uint64_t pinpcs = pinned_pieces(pos, contra, side);
-    
-	while (cur != end) {
-	    // need to check legality of move if:
-	    //   +it is the king moving
-	    //   +there are pinned pieces
-	    //   +move is enpassant
-	    if ((FROM(*cur) == ksq || pinpcs || FLAGS(*cur) == FLG_EP) && !legal_move(pos, *cur)) {
-		*cur = *(--end);
-	    } else {
-		++cur;
-	    }
-	}
-    }
-#else
     while (cur != end) {
-	if (!legal_move(pos, *cur)) {
+	if ((FROM(*cur) == ksq || pinpcs || FLAGS(*cur) == FLG_EP) && !legal_move(pos, *cur)) {
 	    *cur = *(--end);
 	} else {
 	    ++cur;
 	}
     }
-#endif
+
+/* #define FAST_VERSION */
+/* #ifdef FAST_VERSION */
+/*     // TODO(plesslie): if in check, then only generate evasions, then this branch will go away		 */
+/*     const int incheck = in_check(pos, pos->wtm); */
+/*     if (incheck) { */
+/* 	while (cur != end) { */
+/* 	    if (!legal_move(pos, *cur)) { */
+/* 		*cur = *(--end); */
+/* 	    } else { */
+/* 		++cur; */
+/* 	    } */
+/* 	} */
+/*     } else { */
+/* 	const uint8_t side = pos->wtm; */
+/* 	const uint8_t contra = FLIP(side); */
+/* 	const uint64_t kingbb = pos->brd[PIECE(side, KING)]; */
+/* 	const int ksq = lsb(kingbb); */
+/* 	const uint64_t pinpcs = pinned_pieces(pos, contra, side); */
+    
+/* 	while (cur != end) { */
+/* 	    // need to check legality of move if: */
+/* 	    //   +it is the king moving */
+/* 	    //   +there are pinned pieces */
+/* 	    //   +move is enpassant */
+/* 	    if ((FROM(*cur) == ksq || pinpcs || FLAGS(*cur) == FLG_EP) && !legal_move(pos, *cur)) { */
+/* 		*cur = *(--end); */
+/* 	    } else { */
+/* 		++cur; */
+/* 	    } */
+/* 	} */
+/*     } */
+/* #else */
+/*     while (cur != end) { */
+/* 	if (!legal_move(pos, *cur)) { */
+/* 	    *cur = *(--end); */
+/* 	} else { */
+/* 	    ++cur; */
+/* 	} */
+/*     } */
+/* #endif */
 
     return (int)(end - moves);
 }

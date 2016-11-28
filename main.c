@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 0
+    #if 1
     // verify perft values on some known positions
     printf("checking perft values...\n");
     if (check_perft() != 0) {
@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
     #endif
 
     
-    #if 1
+    #if 0
     // Test evasion move generation
 
     //const char *fen = "rnbqkb1r/pppppppp/8/8/4n3/3P4/PPPKPPPP/RNBQ1BNR w kq - 3 3";
