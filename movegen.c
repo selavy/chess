@@ -196,7 +196,6 @@ uint64_t generate_attacked(const struct position *const restrict pos, const uint
  
 // TODO: generate moves that get out of check
 move *generate_evasions(const struct position *const restrict pos, const uint64_t checkers, move *restrict moves) {
-    assert(in_check(pos, pos->wtm) != 0);
     uint32_t to;
     uint32_t from;
     uint64_t pcs;    
@@ -205,6 +204,20 @@ move *generate_evasions(const struct position *const restrict pos, const uint64_
     const uint8_t contra = FLIP(side); // TODO: does this create a data dependency on `side'?
     const uint64_t attacked = generate_attacked(pos, contra);
     const uint64_t safe = ~(pos->side[side]) & ~attacked;
+    // REVISIT(plesslie): check that these loads are scheduled well
+    const int checksq = lsb(checkers);
+    const int checkpc = pos->sqtopc[checksq];
+    const uint64_t kings = PIECES(*pos, side, KING);
+    const uint64_t pawns = PIECES(*pos, side, PAWN);
+    const uint64_t knights = PIECES(*pos, side, KNIGHT);
+    const uint64_t bishops = PIECES(*pos, side, BISHOP);
+    const uint64_t rooks = PIECES(*pos, side, ROOK);
+    const uint64_t queens = PIECES(*pos, side, QUEEN);
+    const uint64_t occupied = pos->side[WHITE] | pos->side[BLACK];
+    const int ksq = lsb(kings);
+
+    assert(in_check(pos, pos->wtm) != 0);
+    assert(checkers);    
 
     // 0. General case: either move king, capture piece, or block
     // 1. Knight or pawn check: either move king, or capture knight
@@ -212,31 +225,144 @@ move *generate_evasions(const struct position *const restrict pos, const uint64_
     // 3. en passant could remove the attacker
 
     // generate king moves to squares that are not under attack
-    pcs = PIECES(*pos, side, KING);
-    assert(pcs);
-    assert(popcountll(pcs) == 1);
-    from = lsb(pcs);
-    posmoves = king_attacks(from) & safe;
+    posmoves = king_attacks(ksq) & safe;
     while (posmoves) {
 	to = lsb(posmoves);
-	*moves++ = MOVE(from, to);
+	*moves++ = MOVE(ksq, to);
 	clear_lsb(posmoves);
     }
 
-    // find squares between checking piece and king, and only generate moves that block or capture checking piece
     if (!more_than_one_piece(checkers)) {
-	// REVISIT(plesslie): may want to move these up top to schedule them in parallel
-	const int checksq = lsb(checkers);
-	const int checkpc = pos->sqtopc[checksq];
-	printf("Check given by %c\n", visual_pcs[checkpc]);
-	if (checkpc == PIECE(contra, KNIGHT) || checkpc == PIECE(contra, PAWN)) {
-	    printf("check given by knight or pawn so can't block the check!\n");
-	} else {
-	    printf("check given by slider so we can try to block it!\n");
+	uint64_t targets = checkers;
+
+	
+	if (checkpc == PIECE(contra, PAWN)) {
+	    if (pos->enpassant != EP_NONE) {
+		// TODO: check enpassant
+	    }
+	} else if (checkpc != PIECE(contra, KNIGHT)) {
+	    const uint64_t between = between_sqs(checksq, ksq);
+	    targets |= between;
+
+	    pcs = pawns;
+	    posmoves = side == WHITE ? pcs << 8 : pcs >> 8;
+	    posmoves &= between;
+	    while (posmoves) {
+		to = lsb(posmoves);
+		from = side == WHITE ? to - 8 : to + 8;
+		assert(pos->sqtopc[from] == PIECE(side, PAWN));
+		if (to >= A8 || to <= H1) { // promotion
+		    *moves++ = PROMOTION(from, to, KNIGHT);
+		    *moves++ = PROMOTION(from, to, BISHOP);
+		    *moves++ = PROMOTION(from, to, ROOK);
+		    *moves++ = PROMOTION(from, to, QUEEN);
+		} else {
+		    *moves++ = MOVE(from, to);
+		}
+		clear_lsb(posmoves);
+	    }
+
+	    posmoves = pawns & RANK2(side);
+	    posmoves = side == WHITE ? posmoves << 16 : posmoves >> 16;
+	    posmoves &= between;
+	    while (posmoves) {
+		to = lsb(posmoves);
+		from = side == WHITE ? to - 16 : to + 16;
+		assert(pos->sqtopc[from] == PIECE(side, PAWN));
+		// TODO(plesslie): do this with bitmasks?
+		// make sure we aren't jumping over another piece
+		if (pos->sqtopc[side == WHITE ? to - 8 : to + 8] == EMPTY) {
+		    *moves++ = MOVE(from, to);            
+		}
+		clear_lsb(posmoves);
+	    }
 	}
-    } else {
-	printf("More than one checker in position so must move king!\n");
-    }
+
+	pcs = knights;
+	while (pcs) {
+	    from = lsb(pcs);
+	    posmoves = knight_attacks(from) & targets;
+	    while (posmoves) {
+		to = lsb(posmoves);
+		*moves++ = MOVE(from, to);
+		clear_lsb(posmoves);
+	    }
+	    clear_lsb(pcs);
+	}
+
+	pcs = bishops;
+	while (pcs) {
+	    from = lsb(pcs);
+	    posmoves = bishop_attacks(from, occupied) & targets;
+	    while (posmoves) {
+		to = lsb(posmoves);
+		*moves++ = MOVE(from, to);
+		clear_lsb(posmoves);
+	    }
+	    clear_lsb(pcs);
+	}
+
+	pcs = rooks;
+	while (pcs) {
+	    from = lsb(pcs);
+	    posmoves = rook_attacks(from, occupied) & targets;
+	    while (posmoves) {
+		to = lsb(posmoves);
+		*moves++ = MOVE(from, to);
+		clear_lsb(posmoves);
+	    }
+	    clear_lsb(pcs);
+	}
+
+	pcs = queens;
+	while (pcs) {
+	    from = lsb(pcs);
+	    posmoves = queen_attacks(from, occupied) & targets;
+	    while (posmoves) {
+		to = lsb(posmoves);
+		*moves++ = MOVE(from, to);
+		clear_lsb(posmoves);
+	    }
+	    clear_lsb(pcs);
+	}
+
+	// capture left
+	posmoves = pawns & ~A_FILE;
+	posmoves = side == WHITE ? posmoves << 7 : posmoves >> 9;
+	posmoves &= checkers;
+	while (posmoves) {
+	    to = lsb(posmoves);
+	    from = side == WHITE ? to - 7 : to + 9;
+	    if (to >= A8 || to <= H1) { // last rank => promotion
+		*moves++ = PROMOTION(from, to, KNIGHT);
+		*moves++ = PROMOTION(from, to, BISHOP);
+		*moves++ = PROMOTION(from, to, ROOK);
+		*moves++ = PROMOTION(from, to, QUEEN);
+	    } else {
+		*moves++ = MOVE(from, to);
+	    }
+	    clear_lsb(posmoves);
+	}
+
+	// capture right
+	posmoves = pawns & ~H_FILE;
+	posmoves = side == WHITE ? posmoves << 9 : posmoves >> 7;
+	posmoves &= checkers;
+	while (posmoves) {
+	    to = lsb(posmoves);
+	    from = side == WHITE ? to - 9 : to + 7;
+	    if (to >= A8 || to <= H1) { // last rank => promotion
+		*moves++ = PROMOTION(from, to, KNIGHT);
+		*moves++ = PROMOTION(from, to, BISHOP);
+		*moves++ = PROMOTION(from, to, ROOK);
+		*moves++ = PROMOTION(from, to, QUEEN);
+	    } else {
+		*moves++ = MOVE(from, to);
+	    }	    
+	    clear_lsb(posmoves);
+	}
+	
+    } // else more than 1 checker, and can't block or capture to get out of check
     
     return moves;
 }
@@ -409,7 +535,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	    TOSQ_NOT_KING(to);
             *moves++ = MOVE(from, to);            
         }        
-        posmoves &= (posmoves - 1);
+	clear_lsb(posmoves);
     }
     
     // pawn moves - capture left
@@ -431,7 +557,7 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
 	    TOSQ_NOT_KING(to);
             *moves++ = MOVE(from, to);
         }
-        posmoves &= (posmoves - 1);
+	clear_lsb(posmoves);
     }
 
     // pawn moves - capture right
@@ -450,19 +576,10 @@ static move *generate_non_evasions(const struct position *const restrict pos, mo
             *moves++ = PROMOTION(from, to, ROOK);
             *moves++ = PROMOTION(from, to, QUEEN);
         } else {
-
-	    //TOSQ_NOT_KING(to);
+	    TOSQ_NOT_KING(to);
             *moves++ = MOVE(from, to);
-	    //DEBUG
-	    if (pos->sqtopc[to] == PIECE(WHITE, KING) ||
-		pos->sqtopc[to] == PIECE(BLACK, KING)) {
-		position_print(stdout, pos);
-		move_print(*(moves - 1));
-		exit(EXIT_FAILURE);
-	    }
-	    //GUBED	    
         }
-        posmoves &= (posmoves - 1);
+	clear_lsb(posmoves);
     }
 
     // TODO: branch on side earlier?
