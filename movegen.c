@@ -144,7 +144,7 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
 }
 
 // pieces from `side' that are blocking check on `kingcolor's king
-uint64_t pinned_pieces(const struct position *const restrict pos, uint8_t side, uint8_t kingcolor) {
+uint64_t generate_pinned(const struct position *const restrict pos, uint8_t side, uint8_t kingcolor) {
     // REVISIT: make new macros for pseudo attacks that don't need occupied bitboard.
     //          not sure if that will be faster because LUT will be smaller.
     int sq;
@@ -686,7 +686,7 @@ int generate_legal_moves(const struct position *const restrict pos, move *restri
     const uint8_t side = pos->wtm;
     const uint64_t kingbb = pos->brd[PIECE(side, KING)];
     const int ksq = lsb(kingbb);
-    const uint64_t pinned = pinned_pieces(pos, side, side);
+    const uint64_t pinned = generate_pinned(pos, side, side);
     move *restrict cur = moves;
     move *restrict end = checkers ? generate_evasions(pos, checkers, moves) : generate_non_evasions(pos, moves);
 

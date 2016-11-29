@@ -296,7 +296,7 @@ int main(int argc, char **argv) {
     move moves[MAX_MOVES];
     CREATE_POSITION_FROM_FEN(pos, fen);
     position_print(stdout, &pos);
-    const uint64_t pinned = pinned_pieces(&pos, pos.wtm, pos.wtm);
+    const uint64_t pinned = generate_pinned(&pos, pos.wtm, pos.wtm);
     printf("pinned: %" PRIu64 "\n", pinned);
     printf("to move: %s\n", pos.wtm == WHITE ? "WHITE" : "BLACK");
 
