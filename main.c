@@ -5,11 +5,11 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <time.h>
-#include "move.h"
-#include "position.h"
-#include "movegen.h"
-#include "perft.h"
-#include "magic_tables.h"
+#include "move.c"
+#include "position.c"
+#include "movegen.c"
+#include "perft.c"
+#include "magic_tables.c"
 
 struct timespec diff(struct timespec start, struct timespec end){
 	struct timespec temp;
@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 1
+    #if 0
     // verify perft values on some known positions
     printf("checking perft values...\n");
     if (check_perft() != 0) {
@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 0
+    #if 1
     // time starting position perft to given depth
     time_test(7);
     #endif
