@@ -11,6 +11,34 @@
 #define power_of_two(bb) (bb & (bb - 1))
 #define more_than_one_piece(bb) power_of_two(bb)
 
+// return 0 if move is legal.  if castling, always returns 0 because castling legality checked
+// in movegen.
+#if 0
+int check_legality(const struct position *const restrict pos, uint64_t pinnedbb, move m) {
+    const int side = pos->wtm;
+    const int to = TO(m);
+    const int from = FROM(m);
+    const int pc = pos->sqtopc[from];
+    const int flags = FLAGS(m);
+    int ret;
+
+    switch (flags) {
+    case FLG_CASTLE:
+	ret = 0;
+	break;
+    case FLG_EP:
+	break;
+    case FLG_NONE:
+    case FLG_PROMO:
+	break;
+    default:
+	unreachable();
+    }
+
+    return ret;
+}
+#endif
+
 //static int legal_move(const struct position *const restrict pos, move m);
 /*static*/int legal_move(const struct position *const restrict pos, move m) {
     // if enpassant
