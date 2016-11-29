@@ -5,7 +5,7 @@
 #include "move.h"
 #include "position.h"
 
-extern int is_legal_ex(const struct position *const restrict pos, uint64_t pinned, move m);
+extern int is_legal(const struct position *const restrict pos, uint64_t pinned, move m);
 extern uint64_t generate_checkers(const struct position *const restrict pos, uint8_t side);
 extern uint64_t generate_attacked(const struct position *const restrict pos, const uint8_t side);
 extern move *generate_evasions(const struct position *const restrict pos, uint64_t checkers, move *restrict moves);

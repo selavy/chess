@@ -13,7 +13,7 @@
 
 // return 0 if move is legal.  if castling, always returns 0 because castling legality checked
 // in movegen.
-int is_legal_ex(const struct position *const restrict pos, const uint64_t pinned, const move m) {
+int is_legal(const struct position *const restrict pos, const uint64_t pinned, const move m) {
     const int side = pos->wtm;
     const int contra = FLIP(side); // REVISIT(plesslie): does this create a data dependency on `side'?
     const int tosq = TO(m);
@@ -691,7 +691,7 @@ int generate_legal_moves(const struct position *const restrict pos, move *restri
     move *restrict end = checkers ? generate_evasions(pos, checkers, moves) : generate_non_evasions(pos, moves);
 
     while (cur != end) {
-    	if ((FROM(*cur) == ksq || pinned || FLAGS(*cur) == FLG_EP) && !is_legal_ex(pos, pinned, *cur)) {
+    	if ((FROM(*cur) == ksq || pinned || FLAGS(*cur) == FLG_EP) && !is_legal(pos, pinned, *cur)) {
     	    *cur = *(--end);
     	} else {
     	    ++cur;

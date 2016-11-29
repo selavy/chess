@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
     const move *end = generate_non_evasions(&pos, &moves[0]);
     while (cur != end) {
 	move_print_short(*cur); printf("\n");
-	ret = is_legal_ex(&pos, pinned, *cur);
+	ret = is_legal(&pos, pinned, *cur);
 	printf("legal? %s\n", ret ? "Yes" : "No");
 	++cur;
     }
