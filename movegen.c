@@ -15,7 +15,7 @@
 // in movegen.
 int is_legal_ex(const struct position *const restrict pos, const uint64_t pinned, const move m) {
     const int side = pos->wtm;
-    const int contra = FLIP(side);
+    const int contra = FLIP(side); // REVISIT(plesslie): does this create a data dependency on `side'?
     const int tosq = TO(m);
     const int fromsq = FROM(m);
     const uint64_t from = MASK(fromsq);
@@ -36,7 +36,10 @@ int is_legal_ex(const struct position *const restrict pos, const uint64_t pinned
 	    // TODO: make function to just generate attacks to king square?
 	    //const uint64_t attacks = generate_attacked(pos, contra);
 	    //ret = !(from & attacks);
-	    ret = attacks(pos, contra, tosq);
+	    // don't need to remove the king before checking this, because if
+	    // the king was blocking a ray, then he would already be in check...
+	    const uint64_t attacked = attacks(pos, contra, tosq);
+	    ret = !attacked;
 	    break;
 	}
 	// no break;

@@ -290,7 +290,8 @@ int main(int argc, char **argv) {
 
     #if 1
     //const char *fen = "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3";
-    const char *fen = "r1bqkbnr/ppp2ppp/2np4/1B2p3/4P3/3P1N2/PPP2PPP/RNBQK2R b KQkq - 0 4";
+    //const char *fen = "r1bqkbnr/ppp2ppp/2np4/1B2p3/4P3/3P1N2/PPP2PPP/RNBQK2R b KQkq - 0 4";
+    const char *fen = "rn1qkbnr/ppp2ppp/2bp4/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 5 5";
     struct position pos;
     move moves[MAX_MOVES];
     CREATE_POSITION_FROM_FEN(pos, fen);
