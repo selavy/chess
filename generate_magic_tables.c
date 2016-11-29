@@ -410,7 +410,7 @@ int main(int argc, char **argv) {
     fputs("extern const uint64_t line_bb[64][64];\n", hdr);
     fputs("\n", hdr);
     fputs("#define between_sqs(from, to) _between_sqs[from][to]\n", hdr);
-    fputs("#define lined_up(sq1, sq2, sq3) line_bb[sq1][sq2] & sq3\n", hdr);
+    fputs("#define lined_up(sq1, sq2, sq3) line_bb[sq1][sq2] & ((uint64_t)1 << (sq3))\n", hdr);
     fputs("#define knight_attacks(sq) _knight_attacks[sq]\n", hdr);
     fputs("#define king_attacks(sq)   _king_attacks[sq]\n", hdr);
     fputs("#define bishop_attacks(square, occ)                                     \\\n"

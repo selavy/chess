@@ -21,15 +21,22 @@ int is_legal_ex(const struct position *const restrict pos, const uint64_t pinned
     const uint64_t from = MASK(fromsq);
     const int pc = pos->sqtopc[fromsq];
     const int flags = FLAGS(m);
-    const int ksq = lsb(PIECES(*pos, side, KING));    
+    const int ksq = lsb(PIECES(*pos, side, KING));
     int ret;
+
+    // TEMP
+    struct position tmp;
+    struct savepos sp;
 
     switch (flags) {
     case FLG_CASTLE:
 	ret = 1;
 	break;
     case FLG_EP:
-	// TODO: 
+	// FIXME: temp hack of playing the move to check enpassant case for testing purposes
+	memcpy(&tmp, pos, sizeof(tmp)); 
+	make_move(&tmp, &sp, m);
+	ret = in_check(&tmp, pos->wtm) == 0;
 	break;
     case FLG_NONE:
 	if (pc == PIECE(side, KING)) {
@@ -44,8 +51,8 @@ int is_legal_ex(const struct position *const restrict pos, const uint64_t pinned
 	}
 	// no break;
     case FLG_PROMO:
-	// TODO: need to check if we are capturing the pinning piece
-	// e.g. Bishop pins another bishop to king, then can capture the bishop
+	// legal if not pinned or moving on the same ray as the king (i.e. pinned piece
+	// will still be blocking are moving)
 	ret = !pinned || !(pinned & from) || lined_up(fromsq, tosq, ksq);
 	break;
     default:
@@ -677,15 +684,14 @@ move *generate_non_evasions(const struct position *const restrict pos, move *res
 int generate_legal_moves(const struct position *const restrict pos, move *restrict moves) {
     const uint64_t checkers = generate_checkers(pos, pos->wtm);
     const uint8_t side = pos->wtm;
-    const uint8_t contra = FLIP(side);
     const uint64_t kingbb = pos->brd[PIECE(side, KING)];
     const int ksq = lsb(kingbb);
-    const uint64_t pinpcs = pinned_pieces(pos, contra, side);
+    const uint64_t pinned = pinned_pieces(pos, side, side);
     move *restrict cur = moves;
     move *restrict end = checkers ? generate_evasions(pos, checkers, moves) : generate_non_evasions(pos, moves);
 
     while (cur != end) {
-    	if ((FROM(*cur) == ksq || pinpcs || FLAGS(*cur) == FLG_EP) && !legal_move(pos, *cur)) {
+    	if ((FROM(*cur) == ksq || pinned || FLAGS(*cur) == FLG_EP) && !is_legal_ex(pos, pinned, *cur)) {
     	    *cur = *(--end);
     	} else {
     	    ++cur;

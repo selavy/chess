@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 0
+    #if 1
     // time starting position perft to given depth
     time_test(7);
     #endif
@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 1
+    #if 0
     //const char *fen = "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3";
     //const char *fen = "r1bqkbnr/ppp2ppp/2np4/1B2p3/4P3/3P1N2/PPP2PPP/RNBQK2R b KQkq - 0 4";
     const char *fen = "rn1qkbnr/ppp2ppp/2bp4/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 5 5";
