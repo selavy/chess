@@ -18,47 +18,50 @@ int is_legal(const struct position *const restrict pos, const uint64_t pinned, c
     const int contra = FLIP(side); // REVISIT(plesslie): does this create a data dependency on `side'?
     const int tosq = TO(m);
     const int fromsq = FROM(m);
+
     const uint64_t from = MASK(fromsq);
     const int pc = pos->sqtopc[fromsq];
     const int flags = FLAGS(m);
     const int ksq = lsb(PIECES(*pos, side, KING));
     int ret;
-
-    // TEMP
-    struct position tmp;
-    struct savepos sp;
-
-    switch (flags) {
-    case FLG_CASTLE:
+    
+    if (flags == FLG_CASTLE) {
 	ret = 1;
-	break;
-    case FLG_EP:
-	// FIXME: temp hack of playing the move to check enpassant case for testing purposes
-	memcpy(&tmp, pos, sizeof(tmp)); 
+    } else if (flags == FLG_EP) {
+	// The only way en passant can expose check if via uncovering a queen, rook, or bishop
+	// so only need to check sliding pieces
+	#define FAST_VERSION
+	#ifdef FAST_VERSION
+	const uint64_t to = MASK(tosq);
+	const int capsq = side == WHITE ? tosq - 8 : tosq + 8;
+	const uint64_t pieces = pos->side[WHITE] | pos->side[BLACK];
+	const uint64_t queens = PIECES(*pos, contra, QUEEN);
+	const uint64_t rooks = PIECES(*pos, contra, ROOK);
+	const uint64_t bishops = PIECES(*pos, contra, BISHOP);
+	const uint64_t occ = (pieces ^ from ^ MASK(capsq)) | to;
+	ret = !(rook_attacks(ksq, occ) & (queens | rooks)) &&
+              !(bishop_attacks(ksq, occ) & (queens | bishops));
+	#else
+	struct position tmp;
+	struct savepos sp;
+	memcpy(&tmp, pos, sizeof(tmp));
 	make_move(&tmp, &sp, m);
-	ret = in_check(&tmp, pos->wtm) == 0;
-	break;
-    case FLG_NONE:
-	if (pc == PIECE(side, KING)) {
-	    // TODO: make function to just generate attacks to king square?
-	    //const uint64_t attacks = generate_attacked(pos, contra);
-	    //ret = !(from & attacks);
-	    // don't need to remove the king before checking this, because if
-	    // the king was blocking a ray, then he would already be in check...
-	    const uint64_t attacked = attacks(pos, contra, tosq);
-	    ret = !attacked;
-	    break;
-	}
-	// no break;
-    case FLG_PROMO:
+	ret = in_check(&tmp, side) == 0;
+	#endif
+    } else if (pc == PIECE(side, KING)) {
+	assert(flags == FLG_NONE);
+	// don't need to remove the king before checking this, because if
+	// the king was blocking a ray, then he would already be in check...		
+	const uint64_t attacked = attacks(pos, contra, tosq);
+	ret = !attacked;	
+    } else {
+	// TODO(plesslie): need to test that "flags==FLG_PROMO" case is working correctly
+	
 	// legal if not pinned or moving on the same ray as the king (i.e. pinned piece
 	// will still be blocking are moving)
-	ret = !pinned || !(pinned & from) || lined_up(fromsq, tosq, ksq);
-	break;
-    default:
-	unreachable();
+	ret = !pinned || !(pinned & from) || lined_up(fromsq, tosq, ksq);	
     }
-
+    
     return ret;
 }
 
