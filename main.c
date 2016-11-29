@@ -5,11 +5,11 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <time.h>
-#include "move.c"
-#include "position.c"
-#include "movegen.c"
-#include "perft.c"
-#include "magic_tables.c"
+#include "move.h"
+#include "position.h"
+#include "movegen.h"
+#include "perft.h"
+#include "magic_tables.h"
 
 struct timespec diff(struct timespec start, struct timespec end){
 	struct timespec temp;
@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 1
+    #if 0
     // time starting position perft to given depth
     time_test(7);
     #endif
@@ -286,6 +286,29 @@ int main(int argc, char **argv) {
     while (cur != end) {
 	move_print_short(*cur++); printf("\n");
     }
+    #endif
+
+    #if 1
+    //const char *fen = "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3";
+    const char *fen = "r1bqkbnr/ppp2ppp/2np4/1B2p3/4P3/3P1N2/PPP2PPP/RNBQK2R b KQkq - 0 4";
+    struct position pos;
+    move moves[MAX_MOVES];
+    CREATE_POSITION_FROM_FEN(pos, fen);
+    position_print(stdout, &pos);
+    const uint64_t pinned = pinned_pieces(&pos, pos.wtm, pos.wtm);
+    printf("pinned: %" PRIu64 "\n", pinned);
+    printf("to move: %s\n", pos.wtm == WHITE ? "WHITE" : "BLACK");
+
+    int ret;
+    const move *cur = &moves[0];
+    const move *end = generate_non_evasions(&pos, &moves[0]);
+    while (cur != end) {
+	move_print_short(*cur); printf("\n");
+	ret = is_legal_ex(&pos, pinned, *cur);
+	printf("legal? %s\n", ret == 0 ? "Yes" : "No");
+	++cur;
+    }
+    
     #endif
     
     return EXIT_SUCCESS;

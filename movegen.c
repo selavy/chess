@@ -13,13 +13,15 @@
 
 // return 0 if move is legal.  if castling, always returns 0 because castling legality checked
 // in movegen.
-#if 0
-int check_legality(const struct position *const restrict pos, uint64_t pinnedbb, move m) {
+int is_legal_ex(const struct position *const restrict pos, const uint64_t pinned, const move m) {
     const int side = pos->wtm;
-    const int to = TO(m);
-    const int from = FROM(m);
-    const int pc = pos->sqtopc[from];
+    const int contra = FLIP(side);
+    //const int to = TO(m);
+    const int fromsq = FROM(m);
+    const uint64_t from = MASK(fromsq);
+    const int pc = pos->sqtopc[fromsq];
     const int flags = FLAGS(m);
+    const uint64_t attacks = generate_attacked(pos, contra);
     int ret;
 
     switch (flags) {
@@ -27,9 +29,19 @@ int check_legality(const struct position *const restrict pos, uint64_t pinnedbb,
 	ret = 0;
 	break;
     case FLG_EP:
+	// TODO: 
 	break;
     case FLG_NONE:
+	if (pc == PIECE(side, KING)) {
+	    ret = from & attacks;
+	    break;
+	}
+	// no break;
     case FLG_PROMO:
+	// TODO: need to check that we aren't capturing the pinning piece
+	// e.g. Bishop pins another bishop to king, then can capture the bishop
+	// (assuming it isn't double pinned)
+	ret = pinned & from;
 	break;
     default:
 	unreachable();
@@ -37,10 +49,8 @@ int check_legality(const struct position *const restrict pos, uint64_t pinnedbb,
 
     return ret;
 }
-#endif
 
-//static int legal_move(const struct position *const restrict pos, move m);
-/*static*/int legal_move(const struct position *const restrict pos, move m) {
+int legal_move(const struct position *const restrict pos, move m) {
     // if enpassant
 
     // else if king move
@@ -121,40 +131,30 @@ int attacks(const struct position * const restrict pos, uint8_t side, int square
     return 0;
 }
 
-/*static*/ uint64_t pinned_pieces(const struct position *const restrict pos, uint8_t side, uint8_t kingcolor) {
-    // REVISIT: make new macros for pseudo attacks that don't need occupied bitboard.  not sure if that will be faster
-    //          because LUT will be smaller.
+// pieces from `side' that are blocking check on `kingcolor's king
+uint64_t pinned_pieces(const struct position *const restrict pos, uint8_t side, uint8_t kingcolor) {
+    // REVISIT: make new macros for pseudo attacks that don't need occupied bitboard.
+    //          not sure if that will be faster because LUT will be smaller.
     int sq;
     uint64_t bb;
     uint64_t ret = 0;
+    const uint8_t contraking = FLIP(kingcolor);
+    const uint64_t pieces = pos->side[side];
     const uint64_t allpieces = pos->side[WHITE] | pos->side[BLACK];    
     const uint64_t kingbb = pos->brd[PIECE(kingcolor, KING)];
     const uint32_t ksq = lsb(kingbb);
-    const uint64_t rooks = PIECES(*pos, side, ROOK);
-    const uint64_t queens = PIECES(*pos, side, QUEEN);
-    const uint64_t bishops = PIECES(*pos, side, BISHOP);
-    uint64_t pinners = ((rooks | queens) & rook_attacks(ksq, 0)) | ((bishops | queens) & bishop_attacks(ksq, 0));    
+    const uint64_t rooks = PIECES(*pos, contraking, ROOK);
+    const uint64_t queens = PIECES(*pos, contraking, QUEEN);
+    const uint64_t bishops = PIECES(*pos, contraking, BISHOP);
+    uint64_t pinners = ((rooks | queens) & rook_attacks(ksq, 0))
+	| ((bishops | queens) & bishop_attacks(ksq, 0));
     assert(kingbb);
-
-//#define DEBUG
-#ifdef DEBUG
-    printf("pinners = %" PRIu64 "\n", pinners);
-    printf("allpieces = %" PRIu64 "\n", allpieces);
-#endif
-    
-//#define more_than_one_piece_between(b) power_of_two(b)
-#define more_than_one_piece_between(b) more_than_one_piece(b)    
+    #define more_than_one_piece_between(b) more_than_one_piece(b)    
     while (pinners) {
 	sq = lsb(pinners);
 	bb = between_sqs(sq, ksq) & allpieces;
-	#ifdef DEBUG
-	printf("between_sqs(%d, %d) = %" PRIu64 "\n", sq, ksq, between_sqs(sq, ksq));
-	#endif
 	if (!more_than_one_piece_between(bb)) {
-	    ret |= (uint64_t)1 << sq;
-	    #ifdef DEBUG
-	    printf("valid pinner on %d\n", sq);
-	    #endif
+	    ret |= bb & pieces;
 	}
 	clear_lsb(pinners);
     }
@@ -421,7 +421,7 @@ move *generate_evasions(const struct position *const restrict pos, const uint64_
     return moves;
 }
 
-static move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves) {
+move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves) {
     uint64_t posmoves;    
     uint64_t pcs;
     uint32_t from;
