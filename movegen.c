@@ -28,10 +28,12 @@ int is_legal(const struct position *const restrict pos, const uint64_t pinned, c
     if (flags == FLG_CASTLE) {
 	ret = 1;
     } else if (flags == FLG_EP) {
-	// The only way en passant can expose check if via uncovering a queen, rook, or bishop
-	// so only need to check sliding pieces
+	// REVISIT(plesslie): `FAST_VERSION' may not actually be that fast after all...
+	// I'm getting better perft times using the "stupid" method
 	#define FAST_VERSION
 	#ifdef FAST_VERSION
+	// The only way en passant can expose check if via uncovering a queen, rook, or bishop
+	// so only need to check sliding pieces	
 	const uint64_t to = MASK(tosq);
 	const int capsq = side == WHITE ? tosq - 8 : tosq + 8;
 	const uint64_t pieces = pos->side[WHITE] | pos->side[BLACK];
@@ -42,6 +44,7 @@ int is_legal(const struct position *const restrict pos, const uint64_t pinned, c
 	ret = !(rook_attacks(ksq, occ) & (queens | rooks)) &&
               !(bishop_attacks(ksq, occ) & (queens | bishops));
 	#else
+	// just make the move and see if we are in check
 	struct position tmp;
 	struct savepos sp;
 	memcpy(&tmp, pos, sizeof(tmp));
