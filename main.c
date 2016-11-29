@@ -11,6 +11,12 @@
 #include "perft.h"
 #include "magic_tables.h"
 
+#define CREATE_POSITION_FROM_FEN(pos, fen) do {				\
+	if (position_from_fen(&(pos), (fen)) != 0) exit(EXIT_FAILURE);	\
+	if (validate_position(&(pos)) != 0) exit(EXIT_FAILURE);		\
+    } while (0)
+
+
 struct timespec diff(struct timespec start, struct timespec end){
 	struct timespec temp;
 	if ((end.tv_nsec-start.tv_nsec)<0) {
@@ -138,63 +144,7 @@ void time_test(int depth) {
 }
 
 int main(int argc, char **argv) {
-    #if 0
-    // test make_move() and undo_move() on some basic positions
-    int i;    
-    int ret;
-    int nmoves;    
-    struct position pos;
-    struct position tmp;    
-    struct savepos sp;
-    move moves[MAX_MOVES];
-    const char *fen[] = {
-	"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-	"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
-	"rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2",
-	"rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
-	"rnbqkbnr/p1ppp1pp/1p6/4Pp2/8/8/PPPP1PPP/RNBQKBNR w KQkq f6 0 2",
-	"rnbqkbnr/ppp1pppp/8/8/3pP3/P6P/1PPP1PP1/RNBQKBNR b KQkq e3 0 2",
-	"rnbqkb1r/ppp1pppp/5n2/8/3pP3/P2B1N1P/1PPP1PP1/RNBQK2R w KQkq - 1 4",
-	"rnbqkbnr/p1pppppp/8/8/1p6/3P4/PPPKPPPP/RNBQ1BNR w kq - 0 3",
-	0
-    };
-    
-    const char **cur = &fen[0];
-    while (*cur) {
-	ret = position_from_fen(&pos, *cur);
-	if (ret != 0) {
-	    fprintf(stderr, "Unable to read fen for position! Error(%d), FEN = %s\n",
-		    ret, *cur);
-	    exit(EXIT_FAILURE);
-	}
-	position_print(stdout, &pos);
-	printf("\n");
-	
-	ret = validate_position(&pos);
-	if (ret != 0) {
-	    fprintf(stderr, "Position validation failed! Error(%d), FEN = %s\n",
-		    ret, *cur);
-	    exit(EXIT_FAILURE);
-	}
-
-	memset(&moves[0], 0, sizeof(moves[0]) * MAX_MOVES);
-	memcpy(&tmp, &pos, sizeof(tmp));
-	nmoves = generate_legal_moves(&pos, &moves[0]);
-	printf("Legal moves:\n");
-	for (i = 0; i < nmoves; ++i) {
-	    move_print(moves[i]);
-	    make_move(&pos, &sp, moves[i]);
-	    assert(validate_position(&pos) == 0);
-	    undo_move(&pos, &sp, moves[i]);
-	    assert(validate_position(&pos) == 0);
-	    assert(memcmp(&tmp, &pos, sizeof(tmp)) == 0);
-	}
-	printf("\n");
-	++cur;	
-    }
-    #endif
-
-    #if 0
+    #if 1
     // verify perft values on some known positions
     printf("checking perft values...\n");
     if (check_perft() != 0) {
@@ -207,109 +157,6 @@ int main(int argc, char **argv) {
     #if 1
     // time starting position perft to given depth
     time_test(7);
-    #endif
-
-    #if 0
-    // for each of the moves in the position, print number of moves on that branch to `depth'
-    
-    //int depth = 5; const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    //int depth = 4; const char *fen = "rnbqkbnr/pppppppp/8/8/8/2P5/PP1PPPPP/RNBQKBNR b KQkq - 0 1";
-    //int depth = 3; const char *fen = "rnbqkbnr/pppp1ppp/8/4p3/8/2P5/PP1PPPPP/RNBQKBNR w KQkq e6 0 2";
-    //int depth = 2; const char *fen = "rnbqkbnr/pppp1ppp/8/4p3/Q7/2P5/PP1PPPPP/RNB1KBNR b KQkq - 1 2";
-    //int depth = 1; const char *fen = "rnb1kbnr/pppp1ppp/8/4p3/Q6q/2P5/PP1PPPPP/RNB1KBNR w KQkq - 2 3";
-    //int depth = 4; const char *fen = "rnbqkbnr/pppppppp/8/8/8/3P4/PPP1PPPP/RNBQKBNR b KQkq - 0 1";
-    //int depth = 3; const char *fen = "rnbqkb1r/pppppppp/5n2/8/8/3P4/PPP1PPPP/RNBQKBNR w KQkq - 1 2";
-    int depth = 2; const char *fen = "rnbqkb1r/pppppppp/5n2/8/8/3P4/PPPKPPPP/RNBQ1BNR b kq - 2 2";
-    
-    struct position pos;
-    if (position_from_fen(&pos, fen) != 0) {
-	perror("position_from_fen");
-	exit(EXIT_FAILURE);
-    }
-    if (validate_position(&pos) != 0) {
-	perror("position_from_fen");
-	exit(EXIT_FAILURE);	
-    }
-    perft_text_tree(&pos, depth);
-    #endif
-
-#define CREATE_POSITION_FROM_FEN(pos, fen) do {				\
-	if (position_from_fen(&(pos), (fen)) != 0) exit(EXIT_FAILURE);	\
-	if (validate_position(&(pos)) != 0) exit(EXIT_FAILURE);		\
-    } while (0)
-    
-    #if 0
-    // print all legal moves generated for `fen'
-    const char *fen = "rnb1kbnr/pppp1ppp/8/4p3/Q6q/2P5/PP1PPPPP/RNB1KBNR w KQkq - 2 3";
-    struct position pos;
-    move moves[MAX_MOVES];
-
-    CREATE_POSITION_FROM_FEN(pos, fen);
-
-    const int nmoves = generate_legal_moves(&pos, &moves[0]);
-    for (int i = 0; i < nmoves; ++i) {
-	move_print_short(moves[i]); printf("\n");
-    }
-    #endif
-
-    
-    #if 0
-    // Test evasion move generation
-
-    //const char *fen = "rnbqkb1r/pppppppp/8/8/4n3/3P4/PPPKPPPP/RNBQ1BNR w kq - 3 3";
-    //const char *fen = "r1bqkbnr/1pp2pp1/n2p3p/pB2p1B1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
-    //const char *fen = "r1bqkbnr/1pp3pp/n2p4/pB2ppB1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
-    //const char *fen = "r1bqkbnr/1pp3pp/n2p1p2/pB2p1B1/3PP3/5N2/PPP2PPP/RN1QK2R b KQkq - 1 6";
-    //const char *fen = "r1bq1bnr/1p4pp/n1pk1p2/pB2P1B1/4p3/5N2/PPPQ1PPP/RN1R3K b - - 0 11";
-    //const char *fen = "2bq1bnr/rp4pp/n1pk1p1B/pB2P3/4p3/5N2/PPPQ1PPP/RN1R3K b - - 0 12";
-    //const char *fen = "2bq1bnr/rp4pp/n1pk1p1B/pB2p3/1Q1Pp3/5N2/PPP2PPP/RN1R3K b - - 3 12";
-    //const char *fen = "2bq2nr/rp2b1pp/n1pk1p1B/pB2p3/3PN3/8/PPPQ1PPP/RN1R3K b - - 0 13";
-    //const char *fen = "2bq2nr/rp2b1pp/n1p1kp1B/pB1Pp3/4p3/7N/PPPQ1PPP/RN1R3K b - - 0 14";
-    //const char *fen = "rnbqkbnr/1pp2ppp/p2p4/1B2p3/4P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 1 6";
-    //const char *fen = "rnbq1bnr/1ppp1ppp/8/2k1p2P/pP2P3/5N2/P1PPBPP1/RNBQ1RK1 b - b3 0 10";
-    const char *fen = "rnbq1bnr/1p1p1ppp/8/p1k1p2P/1Pp1P3/5NP1/P1PPBP2/RNBQ1RK1 b - b3 0 11";
-    
-    struct position pos;
-    move moves[MAX_MOVES];
-    CREATE_POSITION_FROM_FEN(pos, fen);
-
-    position_print(stdout, &pos);
-
-    const uint64_t checkers = generate_checkers(&pos, pos.wtm);
-    printf("Checkers bb: %" PRIu64 "\n", checkers);
-
-    const uint64_t attacked = generate_attacked(&pos, FLIP(pos.wtm));
-    printf("Attacked bb: %" PRIu64 "\n", attacked);
-    
-    const move *cur = &moves[0];
-    const move *end = generate_evasions(&pos, checkers, &moves[0]);
-    while (cur != end) {
-	move_print_short(*cur++); printf("\n");
-    }
-    #endif
-
-    #if 0
-    //const char *fen = "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3";
-    //const char *fen = "r1bqkbnr/ppp2ppp/2np4/1B2p3/4P3/3P1N2/PPP2PPP/RNBQK2R b KQkq - 0 4";
-    const char *fen = "rn1qkbnr/ppp2ppp/2bp4/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 5 5";
-    struct position pos;
-    move moves[MAX_MOVES];
-    CREATE_POSITION_FROM_FEN(pos, fen);
-    position_print(stdout, &pos);
-    const uint64_t pinned = generate_pinned(&pos, pos.wtm, pos.wtm);
-    printf("pinned: %" PRIu64 "\n", pinned);
-    printf("to move: %s\n", pos.wtm == WHITE ? "WHITE" : "BLACK");
-
-    int ret;
-    const move *cur = &moves[0];
-    const move *end = generate_non_evasions(&pos, &moves[0]);
-    while (cur != end) {
-	move_print_short(*cur); printf("\n");
-	ret = is_legal(&pos, pinned, *cur);
-	printf("legal? %s\n", ret ? "Yes" : "No");
-	++cur;
-    }
-    
     #endif
     
     return EXIT_SUCCESS;
