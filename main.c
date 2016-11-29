@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 0
+    #if 1
     // verify perft values on some known positions
     printf("checking perft values...\n");
     if (check_perft() != 0) {
@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 1
+    #if 0
     // time starting position perft to given depth
     time_test(7);
     #endif
