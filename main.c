@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
 
     #if 1
     // time starting position perft to given depth
-    time_test(8);
+    time_test(7);
     #endif
     
     return EXIT_SUCCESS;

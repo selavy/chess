@@ -44,12 +44,12 @@ int is_legal(const struct position *const restrict pos, const uint64_t pinned, c
 	ret = !(rook_attacks(ksq, occ) & (queens | rooks)) &&
               !(bishop_attacks(ksq, occ) & (queens | bishops));
 	#else
-	// just make the move and see if we are in check
+	// "naive" method: just make the move and see if we are in check
 	struct position tmp;
 	struct savepos sp;
 	memcpy(&tmp, pos, sizeof(tmp));
 	make_move(&tmp, &sp, m);
-	ret = in_check(&tmp, side) == 0;
+	ret = !attacks(&tmp, contra, ksq);
 	#endif
     } else if (pc == PIECE(side, KING)) {
 	assert(flags == FLG_NONE);
@@ -66,36 +66,6 @@ int is_legal(const struct position *const restrict pos, const uint64_t pinned, c
     }
     
     return ret;
-}
-
-int legal_move(const struct position *const restrict pos, move m) {
-    // if enpassant
-
-    // else if king move
-    //   +check if moving into check
-    //   +castling is checked in movegen
-
-    // else
-    //   +legal iff it is not pinned or it is moving along the ray towards
-    //    or away from the king (i.e. it will still be pinned after the move)
-    
-    // TODO: return true if playing move `m' would be legal in position `pos'
-    // REVISIT(plesslie): better implementation possible that doesn't need a copy
-    struct position tmp;
-    struct savepos sp;
-    memcpy(&tmp, pos, sizeof(tmp));
-    make_move(&tmp, &sp, m);
-    const int rval = in_check(&tmp, pos->wtm);
-    return rval == 0;
-}
-
-// TEMP TEMP
-int in_check(const struct position *const restrict pos, uint8_t side) {
-    const uint64_t kings = pos->brd[PIECE(side,KING)];
-    assert(kings != 0);
-    const int kingloc = lsb(kings);
-    assert(kingloc >= A1 && kingloc <= H8);
-    return attacks(pos, FLIP(side), kingloc);
 }
 
 // return bitboard of pieces that attack `side's king
