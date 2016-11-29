@@ -16,32 +16,34 @@
 int is_legal_ex(const struct position *const restrict pos, const uint64_t pinned, const move m) {
     const int side = pos->wtm;
     const int contra = FLIP(side);
-    //const int to = TO(m);
+    const int tosq = TO(m);
     const int fromsq = FROM(m);
     const uint64_t from = MASK(fromsq);
     const int pc = pos->sqtopc[fromsq];
     const int flags = FLAGS(m);
-    const uint64_t attacks = generate_attacked(pos, contra);
+    const int ksq = lsb(PIECES(*pos, side, KING));    
     int ret;
 
     switch (flags) {
     case FLG_CASTLE:
-	ret = 0;
+	ret = 1;
 	break;
     case FLG_EP:
 	// TODO: 
 	break;
     case FLG_NONE:
 	if (pc == PIECE(side, KING)) {
-	    ret = from & attacks;
+	    // TODO: make function to just generate attacks to king square?
+	    //const uint64_t attacks = generate_attacked(pos, contra);
+	    //ret = !(from & attacks);
+	    ret = attacks(pos, contra, tosq);
 	    break;
 	}
 	// no break;
     case FLG_PROMO:
-	// TODO: need to check that we aren't capturing the pinning piece
+	// TODO: need to check if we are capturing the pinning piece
 	// e.g. Bishop pins another bishop to king, then can capture the bishop
-	// (assuming it isn't double pinned)
-	ret = pinned & from;
+	ret = !pinned || !(pinned & from) || lined_up(fromsq, tosq, ksq);
 	break;
     default:
 	unreachable();

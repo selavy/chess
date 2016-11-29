@@ -10,7 +10,7 @@ uint64_t set_mask[65];
 const int lower_n = 16;
 const int lower_b = 1;
 
-#define MASK(x) ((uint64_t)1 << x)
+#define MASK(x) ((uint64_t)1 << (x))
 
 #  define SetMask(a)             (set_mask[a])
 #  define ClearMask(a)           (clear_mask[a])
@@ -407,8 +407,10 @@ int main(int argc, char **argv) {
     fputs("extern const uint64_t wpawn_attacks[64];\n", hdr);
     fputs("extern const uint64_t bpawn_attacks[64];\n", hdr);
     fputs("extern const uint64_t _between_sqs[64][64];\n", hdr);
+    fputs("extern const uint64_t line_bb[64][64];\n", hdr);
     fputs("\n", hdr);
     fputs("#define between_sqs(from, to) _between_sqs[from][to]\n", hdr);
+    fputs("#define lined_up(sq1, sq2, sq3) line_bb[sq1][sq2] & sq3\n", hdr);
     fputs("#define knight_attacks(sq) _knight_attacks[sq]\n", hdr);
     fputs("#define king_attacks(sq)   _king_attacks[sq]\n", hdr);
     fputs("#define bishop_attacks(square, occ)                                     \\\n"
@@ -864,6 +866,100 @@ int main(int argc, char **argv) {
 	fprintf(fp, "},\n");
     }
     fprintf(fp, "};\n");
+
+    uint64_t line_bb[64][64];
+    for (int i = 0; i < 64; ++i) {
+	for (int j = 0; j < 64; ++j) {
+	    uint64_t sqs = 0;
+	    int irank = i / 8;
+	    int ifile = i % 8;
+	    int jrank = j / 8;
+	    int jfile = j % 8;
+	    int drank = abs(irank - jrank);
+	    int dfile = abs(ifile - jfile);
+	    if (i == j) {
+		// nothing
+	    } else if (drank == dfile) { // on same diagonal
+		//printf("%d and %d are on the same diagonal! ", i, j);
+
+		int dsq = abs(i - j);
+		if (dsq % 9 == 0) {
+		    //printf("[up right]: ");
+		    const int f = ifile;
+		    const int r = irank;
+		    for (int i = 0; i < 8; ++i) {
+			const int rank = r + i;
+			const int file = f + i;
+			if (rank > 7 || file > 7) {
+			    break;
+			}
+			const int sq = rank*8 + file;
+			//printf("%d ", sq);
+			sqs |= MASK(sq);
+		    }
+		    for (int i = 0; i < 8; ++i) {
+			const int rank = r - i;
+			const int file = f - i;
+			if (rank < 0 || file < 0) {
+			    break;
+			}
+			const int sq = rank*8 + file;
+			//printf("%d ", sq);
+			sqs |= MASK(sq);
+		    }		    
+		} else if (dsq % 7 == 0) {
+		    //printf("[down right]: ");
+		    const int f = ifile;
+		    const int r = irank;
+		    for (int i = 0; i < 8; ++i) {
+			const int rank = r - i;
+			const int file = f + i;
+			if (rank < 0 || file > 7) {
+			    break;
+			}
+			const int sq = rank*8 + file;
+			//printf("%d ", sq);
+			sqs |= MASK(sq);
+		    }
+		    for (int i = 0; i < 8; ++i) {
+			const int rank = r + i;
+			const int file = f - i;
+			if (rank > 7 || file < 0) {
+			    break;
+			}
+			const int sq = rank*8 + file;
+			//printf("%d ", sq);
+			sqs |= MASK(sq);
+		    }
+		}
+		//printf("\n");
+	    } else if (irank == jrank) { // same rank
+		for (int t = 0; t < 8; ++t) {
+		    sqs |= MASK(irank*8 + t);
+		}
+	    } else if (ifile == jfile) { // same file
+		for (int t = 0; t < 8; ++t) {
+		    sqs |= MASK(t*8 + ifile);
+		}
+	    }
+
+	    line_bb[i][j] = sqs;
+	}
+    }
+    fputs("const uint64_t line_bb[64][64] = {\n", fp);
+    for (int from = 0; from < 64; ++from) {
+	fprintf(fp, "{\n");
+	for (int to = 0; to < 64; to += 4) {
+	    fprintf(fp, "    0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ", 0x%016" PRIX64 ",\n",
+		    line_bb[from][to],
+		    line_bb[from][to+1],
+		    line_bb[from][to+2],
+		    line_bb[from][to+3]);
+	}
+	fprintf(fp, "},\n");
+    }
+    fprintf(fp, "};\n");
+    
     
     fputs("\n\n", hdr);
     fclose(hdr);

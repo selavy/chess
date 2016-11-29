@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
     while (cur != end) {
 	move_print_short(*cur); printf("\n");
 	ret = is_legal_ex(&pos, pinned, *cur);
-	printf("legal? %s\n", ret == 0 ? "Yes" : "No");
+	printf("legal? %s\n", ret ? "Yes" : "No");
 	++cur;
     }
     
