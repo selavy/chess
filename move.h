@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #define unreachable() do { __builtin_unreachable(); assert(0); } while(0)
+#define force_inline __attribute__((always_inline)) inline
 
 #define WHITE 0
 #define BLACK 1

@@ -409,7 +409,7 @@ move *generate_evasions(const struct position *const restrict pos, const uint64_
     return moves;
 }
 
-move *generate_knight_moves(uint64_t knights, const uint64_t targets, move *moves) {
+/*force_inline*/ move *generate_knight_moves(uint64_t knights, const uint64_t targets, move *moves) {
     int from;
     int to;
     uint64_t posmoves;
@@ -426,7 +426,7 @@ move *generate_knight_moves(uint64_t knights, const uint64_t targets, move *move
     return moves;
 }
 
-move *generate_bishop_moves(uint64_t bishops, const uint64_t occupied, const uint64_t targets, move *moves) {
+/*force_inline*/ move *generate_bishop_moves(uint64_t bishops, const uint64_t occupied, const uint64_t targets, move *moves) {
     int from;
     int to;
     uint64_t posmoves;
@@ -443,7 +443,7 @@ move *generate_bishop_moves(uint64_t bishops, const uint64_t occupied, const uin
     return moves;
 }
 
-move *generate_rook_moves(uint64_t rooks, const uint64_t occupied, const uint64_t targets, move *moves) {
+/*force_inline*/ move *generate_rook_moves(uint64_t rooks, const uint64_t occupied, const uint64_t targets, move *moves) {
     int from;
     int to;
     uint64_t posmoves;
@@ -460,7 +460,7 @@ move *generate_rook_moves(uint64_t rooks, const uint64_t occupied, const uint64_
     return moves;
 }
 
-move *generate_king_moves(const uint64_t king, const uint64_t targets, move *moves) {
+/*force_inline*/ move *generate_king_moves(const uint64_t king, const uint64_t targets, move *moves) {
     int to;
     const int ksq = lsb(king);
     uint64_t posmoves = king_attacks(ksq) & targets;
