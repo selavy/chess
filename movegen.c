@@ -462,11 +462,11 @@ move *generate_rook_moves(uint64_t rooks, const uint64_t occupied, const uint64_
 
 move *generate_king_moves(const uint64_t king, const uint64_t targets, move *moves) {
     int to;
-    const int from = lsb(king);
-    uint64_t posmoves = king_attacks(from) & targets;
+    const int ksq = lsb(king);
+    uint64_t posmoves = king_attacks(ksq) & targets;
     while (posmoves) {
 	to = lsb(posmoves);
-	*moves++ = MOVE(from, to);
+	*moves++ = MOVE(ksq, to);
 	clear_lsb(posmoves);
     }
     return moves;
@@ -484,11 +484,12 @@ move *generate_non_evasions(const struct position *const restrict pos, move *res
     const uint64_t occupied = same | contra;
     const uint64_t opp_or_empty = ~same;
     const uint8_t castle = pos->castle;
+    //const uint64_t king = PIECES(*pos, side, KING);    
     const uint64_t knights = PIECES(*pos, side, KNIGHT);
     const uint64_t bishops = PIECES(*pos, side, BISHOP);
     const uint64_t rooks = PIECES(*pos, side, ROOK);
     const uint64_t queens = PIECES(*pos, side, QUEEN);
-    /* const uint64_t king = PIECES(*pos, side, KING); */
+    //const int ksq = lsb(king);
 
 #define TOSQ_NOT_KING(sq)				\
     assert(pos->sqtopc[sq] != PIECE(WHITE, KING));	\
@@ -511,7 +512,7 @@ move *generate_non_evasions(const struct position *const restrict pos, move *res
     	*moves++ = MOVE(from, to);
     	clear_lsb(posmoves);
     }
-    
+
     // castling - `from' still has king position
     if (side == WHITE) {
         if ((castle & CSL_WKSIDE) != 0 &&
