@@ -472,6 +472,72 @@ move *generate_evasions(const struct position *const restrict pos, const uint64_
     return moves;
 }
 
+#if 0
+// REVISIT: maybe instead of generating all attacked squares, make a new
+// "generate_attacked_ex(const struct position*, u8 side, u64 targets)" then
+// get attack mask with targets = E1 | F1 | G1 | D1 | C1
+move *generate_castling(const struct position *const restrict pos, const uint8_t side, const int from, move *moves) {
+    const uint8_t castle = pos->castle;
+    //const uint8_t contraside = FLIP(side);
+    if (side == WHITE) {
+	if ((castle & (CSL_WKSIDE | CSL_WQSIDE)) != 0) {
+	    const uint64_t attacked = generate_attacked(pos, BLACK);		
+	    if ((castle & CSL_WKSIDE) != 0 &&
+		(from == E1)               &&
+		(pos->sqtopc[F1] == EMPTY) &&
+		(pos->sqtopc[G1] == EMPTY) &&
+		(attacked & (MASK(E1) | MASK(F1) | MASK(G1))) == 0) {
+		/* (attacks(pos, contraside, E1) == 0) && */
+		/* (attacks(pos, contraside, F1) == 0) && */
+		/* (attacks(pos, contraside, G1) == 0)) { */
+		assert(pos->sqtopc[H1] == PIECE(WHITE,ROOK));
+		*moves++ = CASTLE(E1, G1);
+	    }
+	    if ((castle & CSL_WQSIDE) != 0 &&
+		(from == E1)               &&
+		(pos->sqtopc[D1] == EMPTY) &&
+		(pos->sqtopc[C1] == EMPTY) &&
+		(pos->sqtopc[B1] == EMPTY) &&
+		(attacked & (MASK(E1) | MASK(D1) | MASK(C1))) == 0) {
+		/* (attacks(pos, contraside, E1) == 0) && */
+		/* (attacks(pos, contraside, D1) == 0) && */
+		/* (attacks(pos, contraside, C1) == 0)) { */
+		assert(pos->sqtopc[A1] == PIECE(WHITE,ROOK));
+		*moves++ = CASTLE(E1, C1);
+	    }
+	}
+    } else {
+	if ((castle & (CSL_WKSIDE | CSL_WQSIDE)) != 0) {
+	    const uint64_t attacked = generate_attacked(pos, WHITE);
+	    if ((castle & CSL_BKSIDE) != 0 &&
+		(from == E8)               &&
+		(pos->sqtopc[F8] == EMPTY) &&
+		(pos->sqtopc[G8] == EMPTY) &&
+		(attacked & (MASK(E8) | MASK(F8) | MASK(G8))) == 0) {
+		/* (attacks(pos, contraside, E8) == 0) && */
+		/* (attacks(pos, contraside, F8) == 0) && */
+		/* (attacks(pos, contraside, G8) == 0)) { */
+		assert(pos->sqtopc[H8] == PIECE(BLACK,ROOK));
+		*moves++ = CASTLE(E8, G8);
+	    }
+	    if ((castle & CSL_BQSIDE) != 0 &&
+		(from == E8)               &&
+		(pos->sqtopc[D8] == EMPTY) &&
+		(pos->sqtopc[C8] == EMPTY) &&
+		(pos->sqtopc[B8] == EMPTY) &&
+		(attacked & (MASK(E8) | MASK(D8) | MASK(C8))) == 0) {
+		/* (attacks(pos, contraside, E8) == 0) && */
+		/* (attacks(pos, contraside, D8) == 0) && */
+		/* (attacks(pos, contraside, C8) == 0)) { */
+		assert(pos->sqtopc[A8] == PIECE(BLACK,ROOK));
+		*moves++ = CASTLE(E8, C8);
+	    }
+	}
+    }
+    return moves;
+}
+#endif
+
 move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves) {
     uint64_t posmoves;    
     uint64_t pcs;
@@ -513,6 +579,8 @@ move *generate_non_evasions(const struct position *const restrict pos, move *res
     	clear_lsb(posmoves);
     }
 
+    // significantly slower
+    //moves = generate_castling(pos, side, from, moves);
     // castling - `from' still has king position
     if (side == WHITE) {
         if ((castle & CSL_WKSIDE) != 0 &&
