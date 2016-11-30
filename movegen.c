@@ -409,6 +409,69 @@ move *generate_evasions(const struct position *const restrict pos, const uint64_
     return moves;
 }
 
+move *generate_knight_moves(uint64_t knights, const uint64_t targets, move *moves) {
+    int from;
+    int to;
+    uint64_t posmoves;
+    while (knights) {
+	from = lsb(knights);
+	posmoves = knight_attacks(from) & targets;
+	while (posmoves) {
+	    to = lsb(posmoves);
+	    *moves++ = MOVE(from, to);
+	    clear_lsb(posmoves);
+	}
+	clear_lsb(knights);
+    }
+    return moves;
+}
+
+move *generate_bishop_moves(uint64_t bishops, const uint64_t occupied, const uint64_t targets, move *moves) {
+    int from;
+    int to;
+    uint64_t posmoves;
+    while (bishops) {
+	from = lsb(bishops);
+	posmoves = bishop_attacks(from, occupied) & targets;
+	while (posmoves) {
+	    to = lsb(posmoves);
+	    *moves++ = MOVE(from, to);
+	    clear_lsb(posmoves);
+	}
+	clear_lsb(bishops);
+    }
+    return moves;
+}
+
+move *generate_rook_moves(uint64_t rooks, const uint64_t occupied, const uint64_t targets, move *moves) {
+    int from;
+    int to;
+    uint64_t posmoves;
+    while (rooks) {
+	from = lsb(rooks);
+	posmoves = rook_attacks(from, occupied) & targets;
+	while (posmoves) {
+	    to = lsb(posmoves);
+	    *moves++ = MOVE(from, to);
+	    clear_lsb(posmoves);
+	}
+	clear_lsb(rooks);
+    }
+    return moves;
+}
+
+move *generate_king_moves(const uint64_t king, const uint64_t targets, move *moves) {
+    int to;
+    const int from = lsb(king);
+    uint64_t posmoves = king_attacks(from) & targets;
+    while (posmoves) {
+	to = lsb(posmoves);
+	*moves++ = MOVE(from, to);
+	clear_lsb(posmoves);
+    }
+    return moves;
+}
+
 move *generate_non_evasions(const struct position *const restrict pos, move *restrict moves) {
     uint64_t posmoves;    
     uint64_t pcs;
@@ -421,66 +484,20 @@ move *generate_non_evasions(const struct position *const restrict pos, move *res
     const uint64_t occupied = same | contra;
     const uint64_t opp_or_empty = ~same;
     const uint8_t castle = pos->castle;
+    const uint64_t knights = PIECES(*pos, side, KNIGHT);
+    const uint64_t bishops = PIECES(*pos, side, BISHOP);
+    const uint64_t rooks = PIECES(*pos, side, ROOK);
+    const uint64_t queens = PIECES(*pos, side, QUEEN);
+    /* const uint64_t king = PIECES(*pos, side, KING); */
 
 #define TOSQ_NOT_KING(sq)				\
     assert(pos->sqtopc[sq] != PIECE(WHITE, KING));	\
     assert(pos->sqtopc[sq] != PIECE(BLACK, KING));
 
-    // knight moves
-    pcs = PIECES(*pos, side, KNIGHT);
-    while (pcs) {
-	from = lsb(pcs);
-	posmoves = knight_attacks(from) & opp_or_empty;
-	while (posmoves) {
-	    to = lsb(posmoves);
-	    TOSQ_NOT_KING(to);
-	    *moves++ = MOVE(from, to);
-	    clear_lsb(posmoves);
-	}
-	clear_lsb(pcs);
-    }
-
-    // bishop moves
-    pcs = PIECES(*pos, side, BISHOP);
-    while (pcs) {
-	from = lsb(pcs);
-	posmoves = bishop_attacks(from, occupied) & opp_or_empty;
-	while (posmoves) {
-	    to = lsb(posmoves);
-	    TOSQ_NOT_KING(to);
-	    *moves++ = MOVE(from, to);
-	    clear_lsb(posmoves);
-	}
-	clear_lsb(pcs);
-    }
-    
-    // rook moves
-    pcs = PIECES(*pos, side, ROOK);
-    while (pcs) {
-	from = lsb(pcs);
-	posmoves = rook_attacks(from, occupied) & opp_or_empty;
-	while (posmoves) {
-	    to = lsb(posmoves);
-	    TOSQ_NOT_KING(to);		
-	    *moves++ = MOVE(from, to);
-	    clear_lsb(posmoves);
-	}
-	clear_lsb(pcs);
-    }
-    
-    // queen moves
-    pcs = PIECES(*pos, side, QUEEN);
-    while (pcs) {
-	from = lsb(pcs);
-	posmoves = queen_attacks(from, occupied) & opp_or_empty;
-	while (posmoves) {
-	    to = lsb(posmoves);
-	    TOSQ_NOT_KING(to);
-	    *moves++ = MOVE(from, to);
-	    clear_lsb(posmoves);
-	}
-	clear_lsb(pcs);
-    }
+    moves = generate_knight_moves(knights, opp_or_empty, moves);
+    moves = generate_bishop_moves(bishops | queens, occupied, opp_or_empty, moves);
+    moves = generate_rook_moves(rooks | queens, occupied, opp_or_empty, moves);
+    /* moves = generate_king_moves(king, opp_or_empty, moves); */
 
     // king moves
     pcs = PIECES(*pos, side, KING);
@@ -489,10 +506,10 @@ move *generate_non_evasions(const struct position *const restrict pos, move *res
     from = lsb(pcs);
     posmoves = king_attacks(from) & opp_or_empty;
     while (posmoves) {
-	to = lsb(posmoves);
-	TOSQ_NOT_KING(to);
-	*moves++ = MOVE(from, to);
-	clear_lsb(posmoves);
+    	to = lsb(posmoves);
+    	TOSQ_NOT_KING(to);
+    	*moves++ = MOVE(from, to);
+    	clear_lsb(posmoves);
     }
     
     // castling - `from' still has king position
