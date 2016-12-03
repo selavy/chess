@@ -4,7 +4,7 @@ DEBUG=-O0 -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fb
 RELEASE=-O3 -fstrict-aliasing -ffast-math -DNDEBUG -flto -msse -march=native -fomit-frame-pointer -fstrict-aliasing
 MODE=$(RELEASE)
 CFLAGS=$(MODE) -Wall -Werror -pedantic -std=c11 $(DEVELOPMENT_FLAGS)
-OBJS=main.o magic_tables.o move.o position.o movegen.o perft.o
+OBJS=main.o magic_tables.o move.o position.o movegen.o perft.o xboard.o
 MT_GENERATOR=generate_magic_tables
 TARGET=chess
 

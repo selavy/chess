@@ -7,11 +7,12 @@
 #include <time.h>
 #include <signal.h>
 #include <sys/types.h>
+#include "magic_tables.h"
 #include "move.h"
 #include "position.h"
 #include "movegen.h"
 #include "perft.h"
-#include "magic_tables.h"
+#include "xboard.h"
 
 #define CREATE_POSITION_FROM_FEN(pos, fen) do {				\
 	if (position_from_fen(&(pos), (fen)) != 0) exit(EXIT_FAILURE);	\
@@ -199,6 +200,8 @@ int main(int argc, char **argv) {
 		depth = atoi(line + strlen("perft") + 1);
 	    }
 	    time_test(depth);
+	} else if (CHECKOPT("xboard")) {
+	    xboard_uci_main();
 	} else if (CHECKOPT("exit")) {
 	    break;
 	} else {
