@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <time.h>
+#include <signal.h>
+#include <sys/types.h>
 #include "move.h"
 #include "position.h"
 #include "movegen.h"
@@ -134,13 +136,19 @@ void time_test(int depth) {
     struct position pos;
     const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     position_from_fen(&pos, fen);
+    printf("Timing perft to depth %d from starting position...\n", depth);
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &begin);
     nodes = perft_speed(&pos, depth);
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     dur = diff(begin, end);
-    printf("Passed depth %d, nodes = %" PRIu64 ", took %ld seconds %ld millis\n",
+    printf("Depth %d, nodes = %" PRIu64 ", took %ld seconds %ld millis\n",
 	   depth, nodes, dur.tv_sec, dur.tv_nsec / 1000000);
+}
+
+static void sighandler(int signum) {
+    // TODO: once pondering is implemented, notify
+    //       engine to stop.
 }
 
 int main(int argc, char **argv) {
@@ -154,10 +162,53 @@ int main(int argc, char **argv) {
     }
     #endif
 
-    #if 1
+    #if 0
     // time starting position perft to given depth
     time_test(7);
     #endif
+
+    FILE *istream;
+    char *line = 0;
+    size_t len = 0;
+    ssize_t read;
+    int nchars;
+    int rval;
+
+    signal(SIGINT, &sighandler);
+    
+    istream = fdopen(STDIN_FILENO, "rb");
+    if (!istream) {
+	perror("fdopen");
+	exit(EXIT_FAILURE);
+    }
+    setbuf(stdout, NULL);
+    setbuf(istream, NULL);
+    
+    // TODO: use readline?
+    while ((read = getline(&line, &len, istream)) > 0) {
+	nchars = (int)read - 1; // remove newline
+	//printf("Received input: '%.*s'\n", nchars, line);
+	#define CHECKOPT(val) strncmp(line, val, strlen(val)) == 0
+	if (CHECKOPT("check-perft")) {
+	    printf("Checking perft...\n");
+	    rval = check_perft();
+	    printf("\n\nResult: %s\n", rval == 0 ? "Success!" : "Failure!");
+	} else if (CHECKOPT("perft")) {
+	    int depth = 7;
+	    if (nchars > strlen("perft") + 1) {
+		depth = atoi(line + strlen("perft") + 1);
+	    }
+	    time_test(depth);
+	} else if (CHECKOPT("exit")) {
+	    break;
+	} else {
+	    printf("Unrecognized command: '%.*s'\n", nchars, line);
+	}
+    }
+
+    printf("Bye.\n");
+    free(line);
+    fclose(istream);
     
     return EXIT_SUCCESS;
 }
