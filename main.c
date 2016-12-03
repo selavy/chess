@@ -201,7 +201,11 @@ int main(int argc, char **argv) {
 	    }
 	    time_test(depth);
 	} else if (CHECKOPT("xboard")) {
-	    xboard_uci_main();
+	    if (xboard_uci_main() != 0) {
+		perror("xboard_uci_main");
+		exit(EXIT_FAILURE);
+	    }
+	    break;
 	} else if (CHECKOPT("exit")) {
 	    break;
 	} else {
