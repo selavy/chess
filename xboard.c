@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include "move.h"
 #include "position.h"
 #include "movegen.h"
@@ -12,7 +13,7 @@ enum {
     XBOARD_PLAYING,
 };
 
-#define DEBUGF(...) do { fprintf(settings->debug_output, __VA_ARGS__); } while(0)
+#define DEBUGF(...) do { fprintf(g_settings->debug_output, __VA_ARGS__); } while(0)
 #define WRITE(...) do { DEBUGF(__VA_ARGS__); printf(__VA_ARGS__); } while(0)
 
 struct xboard_settings {
@@ -22,7 +23,8 @@ struct xboard_settings {
     struct savepos sp;
     move moves[MAX_MOVES];
 };
-
+// TEMP TEMP
+struct xboard_settings *g_settings = 0;
 static int xboard_settings_create(struct xboard_settings *settings) {
     settings->state = XBOARD_SETUP;
     settings->debug_output = fopen("/tmp/xboard_output.txt", "w");
@@ -38,15 +40,20 @@ static int xboard_settings_create(struct xboard_settings *settings) {
     if (position_from_fen(&settings->pos, starting_position) != 0) {
 	return 1;
     }
-    
+    // TEMP TEMP
+    g_settings = settings;
     return 0;
 }
-
 static int xboard_settings_destroy(struct xboard_settings *settings) {
     if (settings->debug_output) {
 	fclose(settings->debug_output);
     }
+    // TEMP TEMP    
+    g_settings = 0;
     return 0;
+}
+static void sigh(int nsig) {
+    DEBUGF("Received signal: %d\n", nsig);
 }
 
 static const char *xboard_move_print(move m) {
@@ -66,6 +73,8 @@ static const char *xboard_move_print(move m) {
 
 static int xboard_handle_input(const char *line, int len, struct xboard_settings *settings) {
     DEBUGF("xboard_handle_input(%.*s)\n", len, line);
+
+    signal(SIGINT, &sigh);
     
     #define STRNCMP(x, y) strncmp(x, y, strlen(y)) == 0
     #define STRCMP(x, y) strcmp(x, y) == 0
@@ -89,13 +98,10 @@ static int xboard_handle_input(const char *line, int len, struct xboard_settings
 	    WRITE("feature done=1\n");
 	} else if (STRCMP(line, "new")) {
 	    // nop?
-	    return 0;
 	} else if (STRCMP(line, "random")) {
 	    // nop?
-	    return 0;
 	} else if (STRNCMP(line, "level")) {
 	    // TODO: parse time control
-	    return 0;
 	} else if (STRCMP(line, "post")) {
             // TODO(plesslie):
             // turn on thinking/pondering output
@@ -104,26 +110,19 @@ static int xboard_handle_input(const char *line, int len, struct xboard_settings
             // "9 ply, score=1.56, time = 10.84 seconds, nodes=48000, PV = "Nf3 Nc6 Nc3 Nf6""
 	} else if (STRNCMP(line, "accepted")) {
 	    // nop?
-	    return 0;
 	} else if (STRCMP(line, "hard")) {
 	    settings->state = XBOARD_PLAYING;
-	    return 0;
 	} else if (STRCMP(line, "white")) {
 	    // TODO: setup side
-	    return 0;
 	} else if (STRCMP(line, "black")) {
 	    // TODO: setup side
-	    return 0;
 	} else if (STRNCMP(line, "time")) {
 	    // nop?
-	    return 0;
 	} else if (STRNCMP(line, "otim")) {
 	    // nop?
-	    return 0;
 	} else if (STRCMP(line, "force")) {
 	    // nop?
 	    // stop thinking about current position
-	    return 0;
 	} else {
 	    //printf("Error (unknown command): %.*s\n", len, line);
 	    WRITE("Error (unknown command): %.*s\n", len, line);
@@ -178,9 +177,10 @@ static int xboard_handle_input(const char *line, int len, struct xboard_settings
     } else {
 	//printf("Error (invalid state): %d", settings->state);
 	WRITE("Error (invalid state): %d", settings->state);
+	return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 /*extern*/ int xboard_uci_main(FILE *istream) {
@@ -194,6 +194,7 @@ static int xboard_handle_input(const char *line, int len, struct xboard_settings
     }
 
     while ((read = getline(&line, &len, istream)) > 0) {
+	line[read - 1] = 0;
 	if (xboard_handle_input(line, read - 1, &settings) != 0) {
 	    break;
 	}

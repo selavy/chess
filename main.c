@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
     int nchars;
     int rval;
 
-    signal(SIGINT, &sighandler);
+    //signal(SIGINT, &sighandler);
     
     istream = fdopen(STDIN_FILENO, "rb");
     if (!istream) {
