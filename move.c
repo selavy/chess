@@ -1,6 +1,8 @@
 #include "move.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 const char *sq_to_str[64] = {
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
@@ -64,5 +66,20 @@ void move_print(move mv) {
 
 void move_print_short(move m) {
     printf("%s%s", sq_to_str[FROM(m)], sq_to_str[TO(m)]);
+}
+
+/*extern*/ const char *xboard_move_print(move m) {
+    // max move length is "e7e8q", most moves are "e7e8"
+    static char buffer[7];
+    const char *pieces = "nbrq";
+    const uint32_t to = TO(m);
+    const uint32_t from = FROM(m);
+    const uint32_t flags = FLAGS(m);
+    memset(&buffer[0], 0, sizeof(buffer));
+    sprintf(&buffer[0], "%s%s", sq_to_str[from], sq_to_str[to]);
+    if (flags == FLG_PROMO) {
+	buffer[5] = pieces[PROMO_PC(m)];
+    }
+    return &buffer[0];    
 }
 

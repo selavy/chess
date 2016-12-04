@@ -58,21 +58,6 @@ static void sigh(int nsig) {
     DEBUGF("Received signal: %d\n", nsig);
 }
 
-static const char *xboard_move_print(move m) {
-    // max move length is "e7e8q", most moves are "e7e8"
-    static char buffer[7];
-    const char *pieces = "nbrq";
-    const uint32_t to = TO(m);
-    const uint32_t from = FROM(m);
-    const uint32_t flags = FLAGS(m);
-    memset(&buffer[0], 0, sizeof(buffer));
-    sprintf(&buffer[0], "%s%s", sq_to_str[from], sq_to_str[to]);
-    if (flags == FLG_PROMO) {
-	buffer[5] = pieces[PROMO_PC(m)];
-    }
-    return &buffer[0];    
-}
-
 static int xboard_handle_input(const char *line, int len, struct xboard_settings *settings) {
     DEBUGF("xboard_handle_input(%.*s)\n", len, line);
 

@@ -98,5 +98,6 @@ extern move CASTLE(int from, int to);
 
 extern void move_print(move m);
 extern void move_print_short(move m);
+extern const char *xboard_move_print(move m);
 
 #endif // MOVE__H_
