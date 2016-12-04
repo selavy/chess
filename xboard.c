@@ -7,6 +7,8 @@
 #include "move.h"
 #include "position.h"
 #include "movegen.h"
+#include "eval.h"
+#include "search.h"
 
 enum {
     XBOARD_SETUP,
@@ -162,18 +164,25 @@ static int xboard_handle_input(const char *line, int len, struct xboard_settings
 	    WRITE("Error (bad move): %.*s\n", len, line);
 	    return 1;
 	}
-	const int nmoves = generate_legal_moves(&settings->pos, &settings->moves[0]);
-	if (nmoves == 0) {
-	    //printf("resign\n");
-	    WRITE("resign\n");
-	    return 1; // REVISIT: exit after resigning?
-	} else {
-	    int r = rand() % nmoves;
-	    make_move(&settings->pos, &settings->sp, settings->moves[r]);
-	    const char *movestr = xboard_move_print(settings->moves[r]);
-	    //printf("move %s\n", movestr);
-	    WRITE("move %s\n", movestr);
-	}
+	
+	/* const int nmoves = generate_legal_moves(&settings->pos, &settings->moves[0]); */
+	/* if (nmoves == 0) { */
+	/*     //printf("resign\n"); */
+	/*     WRITE("resign\n"); */
+	/*     return 1; // REVISIT: exit after resigning? */
+	/* } else { */
+	/*     int r = rand() % nmoves; */
+	/*     make_move(&settings->pos, &settings->sp, settings->moves[r]); */
+	/*     const char *movestr = xboard_move_print(settings->moves[r]); */
+	/*     //printf("move %s\n", movestr); */
+	/*     WRITE("move %s\n", movestr); */
+	/* } */
+
+	// TODO: resign logic? maybe just never resign...
+	move mv = search(&settings->pos);
+	const char *movestr = xboard_move_print(mv);
+	WRITE("move %s\n", movestr);
+	
     } else {
 	//printf("Error (invalid state): %d", settings->state);
 	WRITE("Error (invalid state): %d", settings->state);

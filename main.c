@@ -13,6 +13,7 @@
 #include "movegen.h"
 #include "perft.h"
 #include "xboard.h"
+#include "search.h"
 
 #define CREATE_POSITION_FROM_FEN(pos, fen) do {				\
 	if (position_from_fen(&(pos), (fen)) != 0) exit(EXIT_FAILURE);	\
@@ -147,9 +148,14 @@ void time_test(int depth) {
 	   depth, nodes, dur.tv_sec, dur.tv_nsec / 1000000);
 }
 
-static void sighandler(int signum) {
-    // TODO: once pondering is implemented, notify
-    //       engine to stop.
+void test_search() {
+    struct position pos;
+    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    position_from_fen(&pos, fen);
+    printf("Searching from starting position...\n");
+    move m = search(&pos);
+    move_print(m);
+    printf("Done.\n");
 }
 
 int main(int argc, char **argv) {
@@ -175,8 +181,6 @@ int main(int argc, char **argv) {
     int nchars;
     int rval;
 
-    //signal(SIGINT, &sighandler);
-    
     istream = fdopen(STDIN_FILENO, "rb");
     if (!istream) {
 	perror("fdopen");
@@ -200,6 +204,8 @@ int main(int argc, char **argv) {
 		depth = atoi(line + strlen("perft") + 1);
 	    }
 	    time_test(depth);
+	} else if (CHECKOPT("search")) {
+	    test_search();
 	} else if (CHECKOPT("xboard")) {
 	    if (xboard_uci_main(istream) != 0) {
 		perror("xboard_uci_main");
