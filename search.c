@@ -11,7 +11,7 @@
 
 #define DEBUGF(...) do { fprintf(stderr, __VA_ARGS__); } while(0)
 
-int alphabeta(struct position *restrict pos, int depth, int alpha, int beta, int maximizing) {
+int alphabeta(struct position *restrict pos, int depth, int alpha, int beta, int maximizing, move last_move) {
     int best;
     int nmoves;
     int i;
@@ -20,7 +20,9 @@ int alphabeta(struct position *restrict pos, int depth, int alpha, int beta, int
     struct savepos sp;
     
     if (depth == 0) {
-	return eval(pos);
+	value = eval(pos);
+	DEBUGF("depth == 0, move = %s, value = %d\n", xboard_move_print(last_move), value);
+	return value;
     }
     nmoves = generate_legal_moves(pos, &moves[0]);
     if (nmoves == 0) { // checkmate
@@ -31,7 +33,7 @@ int alphabeta(struct position *restrict pos, int depth, int alpha, int beta, int
 	best = NEG_INFINITI;
 	for (i = 0; i < nmoves; ++i) {
 	    make_move(pos, &sp, moves[i]);
-	    value = alphabeta(pos, depth - 1, alpha, beta, 0);
+	    value = alphabeta(pos, depth - 1, alpha, beta, 0, moves[i]);
 	    undo_move(pos, &sp, moves[i]);
 	    best = MAX(best, value);
 	    alpha = MAX(alpha, best);
@@ -43,7 +45,7 @@ int alphabeta(struct position *restrict pos, int depth, int alpha, int beta, int
 	best = INFINITI;
 	for (i = 0; i < nmoves; ++i) {
 	    make_move(pos, &sp, moves[i]);
-	    value = alphabeta(pos, depth - 1, alpha, beta, 1);
+	    value = alphabeta(pos, depth - 1, alpha, beta, 1, moves[i]);
 	    undo_move(pos, &sp, moves[i]);
 	    best = MIN(best, value);
 	    beta = MIN(beta, best);
@@ -65,6 +67,7 @@ int alphabeta(struct position *restrict pos, int depth, int alpha, int beta, int
     int best = position->wtm == WHITE ? NEG_INFINITI : INFINITI;
     int value;
     move rval;
+    const int depth = 1;
 
     memcpy(&pos, position, sizeof(pos));
     nmoves = generate_legal_moves(&pos, &moves[0]);
@@ -73,7 +76,8 @@ int alphabeta(struct position *restrict pos, int depth, int alpha, int beta, int
     if (pos.wtm == WHITE) {
 	for (i = 0; i < nmoves; ++i) {
 	    make_move(&pos, &sp, moves[i]);
-	    value = alphabeta(&pos, 3, NEG_INFINITI, INFINITI, 1);
+	    DEBUGF("Checking %s\n", xboard_move_print(moves[i]));
+	    value = alphabeta(&pos, depth, NEG_INFINITI, INFINITI, 0, moves[i]);
 	    DEBUGF("value of %s -> %d\n", xboard_move_print(moves[i]), value);
 	    if (value > best) {
 		rval = moves[i];
@@ -84,7 +88,8 @@ int alphabeta(struct position *restrict pos, int depth, int alpha, int beta, int
     } else {
 	for (i = 0; i < nmoves; ++i) {
 	    make_move(&pos, &sp, moves[i]);
-	    value = alphabeta(&pos, 3, NEG_INFINITI, INFINITI, 0);
+	    DEBUGF("Checking %s\n", xboard_move_print(moves[i]));	    
+	    value = alphabeta(&pos, depth, NEG_INFINITI, INFINITI, 1, moves[i]);
 	    DEBUGF("value of %s -> %d\n", xboard_move_print(moves[i]), value);
 	    if (value < best) {
 		rval = moves[i];
