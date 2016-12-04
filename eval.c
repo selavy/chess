@@ -17,7 +17,7 @@
 
     // basic material calculation
     rval += wpawns + (wknights*3) + (wbishops*3) + (wrooks*5) + (wqueens*8);
-    rval += bpawns + (bknights*3) + (bbishops*3) + (brooks*5) + (bqueens*8);
+    rval -= bpawns + (bknights*3) + (bbishops*3) + (brooks*5) + (bqueens*8);
 
     return rval;
 }

@@ -164,7 +164,9 @@ static int xboard_handle_input(const char *line, int len, struct xboard_settings
 	/* } */
 
 	// TODO: resign logic? maybe just never resign...
+	// REVISIT(plesslie): xboard isn't detecting mate.  need to figure out what to send there
 	move mv = search(&settings->pos);
+	make_move(&settings->pos, &settings->sp, mv);
 	const char *movestr = xboard_move_print(mv);
 	WRITE("move %s\n", movestr);
 	

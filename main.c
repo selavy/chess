@@ -150,7 +150,9 @@ void time_test(int depth) {
 
 void test_search() {
     struct position pos;
-    const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    //const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    //const char *fen = "rnbqkb1r/pppppppp/7B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 0 2";
+    const char *fen = "r1bqkbnr/pppppppp/8/8/1n1PP3/2N5/PPP2PPP/R1BQKBNR b KQkq - 2 3";
     position_from_fen(&pos, fen);
     printf("Searching from starting position...\n");
     move m = search(&pos);
