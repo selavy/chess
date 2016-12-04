@@ -12,7 +12,8 @@ enum {
     XBOARD_PLAYING,
 };
 
-#define DEBUG_PRINTF(STR, ...) do { fprintf(settings->debug_output, (STR), __VA_ARGS__); } while(0)
+#define DEBUGF(...) do { fprintf(settings->debug_output, __VA_ARGS__); } while(0)
+#define WRITE(...) do { DEBUGF(__VA_ARGS__); printf(__VA_ARGS__); } while(0)
 
 struct xboard_settings {
     int state;
@@ -28,6 +29,7 @@ static int xboard_settings_create(struct xboard_settings *settings) {
     if (!settings->debug_output) {
 	return 1;
     }
+    setbuf(settings->debug_output, 0);
     memset(&settings->moves[0], 0, sizeof(settings->moves[0]));
     memset(&settings->pos, 0, sizeof(settings->pos));
     memset(&settings->sp, 0, sizeof(settings->sp));
@@ -63,21 +65,28 @@ static const char *xboard_move_print(move m) {
 }
 
 static int xboard_handle_input(const char *line, int len, struct xboard_settings *settings) {
-    DEBUG_PRINTF("xboard_handle_input(%.*s)\n", len, line);
+    DEBUGF("xboard_handle_input(%.*s)\n", len, line);
     
     #define STRNCMP(x, y) strncmp(x, y, strlen(y)) == 0
     #define STRCMP(x, y) strcmp(x, y) == 0
     if (settings->state == XBOARD_SETUP) {
 	if (STRNCMP(line, "protover")) {
 	    if (len < 10 || line[9] != '2') {
-		fprintf(stderr, "Unrecognized protocol version!\n");
+		//fprintf(stderr, "Unrecognized protocol version!\n");
+		DEBUGF("Unrecognized protocol version!");
 		return 1;
 	    }
-	    printf("feature myname=\"experiment\"\n");
-	    printf("feature reuse=0\n");
-	    printf("feature analyze=0\n");
-	    printf("feature time=0\n");
-	    printf("feature done=1\n");
+	    /* printf("feature myname=\"experiment\"\n"); */
+	    /* printf("feature reuse=0\n"); */
+	    /* printf("feature analyze=0\n"); */
+	    /* printf("feature time=0\n"); */
+	    /* printf("feature done=1\n"); */
+
+	    WRITE("feature myname=\"experiment\"\n");
+	    WRITE("feature reuse=0\n");
+	    WRITE("feature analyze=0\n");
+	    WRITE("feature time=0\n");
+	    WRITE("feature done=1\n");
 	} else if (STRCMP(line, "new")) {
 	    // nop?
 	    return 0;
@@ -116,7 +125,8 @@ static int xboard_handle_input(const char *line, int len, struct xboard_settings
 	    // stop thinking about current position
 	    return 0;
 	} else {
-	    printf("Error (unknown command): %.*s\n", len, line);
+	    //printf("Error (unknown command): %.*s\n", len, line);
+	    WRITE("Error (unknown command): %.*s\n", len, line);
 	    return 1;
 	}
     } else if (settings->state == XBOARD_PLAYING) {
@@ -128,8 +138,8 @@ static int xboard_handle_input(const char *line, int len, struct xboard_settings
 	} else if (len == 4 || len == 5) {
 	    const int from = (line[1]-'1')*8 + (line[0]-'a');
 	    const int to   = (line[3]-'1')*8 + (line[2]-'a');
-	    fprintf(stderr, "Parsed move as %u -> %u, %s -> %s\n",
-		    to, from, sq_to_str[from], sq_to_str[to]);
+	    DEBUGF("Parsed move as %u -> %u, %s -> %s\n",
+		   to, from, sq_to_str[from], sq_to_str[to]);
 	    move m;
 	    if (len == 4) {
 		m = MOVE(from, to);
@@ -141,28 +151,33 @@ static int xboard_handle_input(const char *line, int len, struct xboard_settings
 		case 'b': prm = BISHOP; break;
 		case 'n': prm = KNIGHT; break;
 		default:
-		    printf("Invalid move: %.*s\n", len, line);
+		    //printf("Invalid move: %.*s\n", len, line);
+		    WRITE("Invalid move: %.*s\n", len, line);
 		}
 		m = PROMOTION(from, to, prm);
 	    }
 
 	    make_move(&settings->pos, &settings->sp, m);
 	} else {
-	    printf("Error (bad move): %.*s\n", len, line);
+	    //printf("Error (bad move): %.*s\n", len, line);
+	    WRITE("Error (bad move): %.*s\n", len, line);
 	    return 1;
 	}
 	const int nmoves = generate_legal_moves(&settings->pos, &settings->moves[0]);
 	if (nmoves == 0) {
-	    printf("resign\n");
+	    //printf("resign\n");
+	    WRITE("resign\n");
 	    return 1; // REVISIT: exit after resigning?
 	} else {
 	    int r = rand() % nmoves;
 	    make_move(&settings->pos, &settings->sp, settings->moves[r]);
 	    const char *movestr = xboard_move_print(settings->moves[r]);
-	    printf("move %s\n", movestr);
+	    //printf("move %s\n", movestr);
+	    WRITE("move %s\n", movestr);
 	}
     } else {
-	printf("Error (invalid state): %d", settings->state);
+	//printf("Error (invalid state): %d", settings->state);
+	WRITE("Error (invalid state): %d", settings->state);
     }
 
     return 1;

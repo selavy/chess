@@ -182,8 +182,8 @@ int main(int argc, char **argv) {
 	perror("fdopen");
 	exit(EXIT_FAILURE);
     }
-    setbuf(stdout, NULL);
-    setbuf(istream, NULL);
+    setbuf(stdout, 0);
+    setbuf(istream, 0);
     
     // TODO: use readline?
     while ((read = getline(&line, &len, istream)) > 0) {
