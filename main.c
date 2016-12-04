@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
 	    }
 	    time_test(depth);
 	} else if (CHECKOPT("xboard")) {
-	    if (xboard_uci_main() != 0) {
+	    if (xboard_uci_main(istream) != 0) {
 		perror("xboard_uci_main");
 		exit(EXIT_FAILURE);
 	    }
