@@ -71,72 +71,75 @@ static move *generate_king_moves(const int ksq, const uint64_t targets, move *mo
     return moves;
 }
 
-#if 0
 // REVISIT: maybe instead of generating all attacked squares, make a new
 // "generate_attacked_ex(const struct position*, u8 side, u64 targets)" then
 // get attack mask with targets = E1 | F1 | G1 | D1 | C1
-/*force_inline*/
+force_inline
 static move *generate_castling(const struct position *const restrict pos, const uint8_t side, const int from, move *moves) {
     const uint8_t castle = pos->castle;
-    //const uint8_t contraside = FLIP(side);
+    const uint8_t contraside = FLIP(side);
     if (side == WHITE) {
-	if ((castle & (CSL_WKSIDE | CSL_WQSIDE)) != 0) {
-	    const uint64_t attacked = generate_attacked(pos, BLACK);		
-	    if ((castle & CSL_WKSIDE) != 0 &&
-		(from == E1)               &&
-		(pos->sqtopc[F1] == EMPTY) &&
-		(pos->sqtopc[G1] == EMPTY) &&
-		(attacked & (MASK(E1) | MASK(F1) | MASK(G1))) == 0) {
-		/* (attacks(pos, contraside, E1) == 0) && */
-		/* (attacks(pos, contraside, F1) == 0) && */
-		/* (attacks(pos, contraside, G1) == 0)) { */
-		assert(pos->sqtopc[H1] == PIECE(WHITE,ROOK));
-		*moves++ = CASTLE(E1, G1);
-	    }
-	    if ((castle & CSL_WQSIDE) != 0 &&
-		(from == E1)               &&
-		(pos->sqtopc[D1] == EMPTY) &&
-		(pos->sqtopc[C1] == EMPTY) &&
-		(pos->sqtopc[B1] == EMPTY) &&
-		(attacked & (MASK(E1) | MASK(D1) | MASK(C1))) == 0) {
-		/* (attacks(pos, contraside, E1) == 0) && */
-		/* (attacks(pos, contraside, D1) == 0) && */
-		/* (attacks(pos, contraside, C1) == 0)) { */
-		assert(pos->sqtopc[A1] == PIECE(WHITE,ROOK));
-		*moves++ = CASTLE(E1, C1);
-	    }
-	}
-    } else {
-	if ((castle & (CSL_WKSIDE | CSL_WQSIDE)) != 0) {
-	    const uint64_t attacked = generate_attacked(pos, WHITE);
-	    if ((castle & CSL_BKSIDE) != 0 &&
-		(from == E8)               &&
-		(pos->sqtopc[F8] == EMPTY) &&
-		(pos->sqtopc[G8] == EMPTY) &&
-		(attacked & (MASK(E8) | MASK(F8) | MASK(G8))) == 0) {
-		/* (attacks(pos, contraside, E8) == 0) && */
-		/* (attacks(pos, contraside, F8) == 0) && */
-		/* (attacks(pos, contraside, G8) == 0)) { */
-		assert(pos->sqtopc[H8] == PIECE(BLACK,ROOK));
-		*moves++ = CASTLE(E8, G8);
-	    }
-	    if ((castle & CSL_BQSIDE) != 0 &&
-		(from == E8)               &&
-		(pos->sqtopc[D8] == EMPTY) &&
-		(pos->sqtopc[C8] == EMPTY) &&
-		(pos->sqtopc[B8] == EMPTY) &&
-		(attacked & (MASK(E8) | MASK(D8) | MASK(C8))) == 0) {
-		/* (attacks(pos, contraside, E8) == 0) && */
-		/* (attacks(pos, contraside, D8) == 0) && */
-		/* (attacks(pos, contraside, C8) == 0)) { */
-		assert(pos->sqtopc[A8] == PIECE(BLACK,ROOK));
-		*moves++ = CASTLE(E8, C8);
-	    }
-	}
-    }
+        if ((castle & (CSL_WKSIDE | CSL_WQSIDE)) != 0) {
+            //const uint64_t attacked = generate_attacked(pos, BLACK);		
+            if ((castle & CSL_WKSIDE) != 0 &&
+                    (from == E1)               &&
+                    (pos->sqtopc[F1] == EMPTY) &&
+                    (pos->sqtopc[G1] == EMPTY) &&
+                    // (attacked & (MASK(E1) | MASK(F1) | MASK(G1))) == 0)
+                    (attacks(pos, contraside, E1) == 0) && 
+                    (attacks(pos, contraside, F1) == 0) &&
+                    (attacks(pos, contraside, G1) == 0)) 
+                    {
+                assert(pos->sqtopc[H1] == PIECE(WHITE,ROOK));
+                *moves++ = CASTLE(E1, G1);
+            }
+            if ((castle & CSL_WQSIDE) != 0 &&
+                    (from == E1)               &&
+                    (pos->sqtopc[D1] == EMPTY) &&
+                    (pos->sqtopc[C1] == EMPTY) &&
+                    (pos->sqtopc[B1] == EMPTY) &&
+                    // (attacked & (MASK(E1) | MASK(D1) | MASK(C1))) == 0)
+                 (attacks(pos, contraside, E1) == 0) && 
+                 (attacks(pos, contraside, D1) == 0) && 
+                 (attacks(pos, contraside, C1) == 0)) 
+                 { 
+                assert(pos->sqtopc[A1] == PIECE(WHITE,ROOK));
+                *moves++ = CASTLE(E1, C1);
+            }
+        }
+   } else {
+       if ((castle & (CSL_WKSIDE | CSL_WQSIDE)) != 0) {
+           //const uint64_t attacked = generate_attacked(pos, WHITE);
+           if ((castle & CSL_BKSIDE) != 0 &&
+                   (from == E8)               &&
+                   (pos->sqtopc[F8] == EMPTY) &&
+                   (pos->sqtopc[G8] == EMPTY) &&
+                   // (attacked & (MASK(E8) | MASK(F8) | MASK(G8))) == 0)
+                (attacks(pos, contraside, E8) == 0) && 
+                (attacks(pos, contraside, F8) == 0) && 
+                (attacks(pos, contraside, G8) == 0)) 
+                { 
+               assert(pos->sqtopc[H8] == PIECE(BLACK,ROOK));
+               *moves++ = CASTLE(E8, G8);
+           }
+           if ((castle & CSL_BQSIDE) != 0 &&
+                   (from == E8)               &&
+                   (pos->sqtopc[D8] == EMPTY) &&
+                   (pos->sqtopc[C8] == EMPTY) &&
+                   (pos->sqtopc[B8] == EMPTY) &&
+                   // (attacked & (MASK(E8) | MASK(D8) | MASK(C8))) == 0) 
+                (attacks(pos, contraside, E8) == 0) && 
+                (attacks(pos, contraside, D8) == 0) && 
+                (attacks(pos, contraside, C8) == 0)) 
+                { 
+               assert(pos->sqtopc[A8] == PIECE(BLACK,ROOK));
+               *moves++ = CASTLE(E8, C8);
+           }
+       }
+   }
+
     return moves;
 }
-#endif
 
 /*extern*/ int is_legal(const struct position *const restrict pos, const uint64_t pinned, const move m) {
     const int side = pos->wtm;
@@ -479,7 +482,7 @@ static move *generate_castling(const struct position *const restrict pos, const 
     const uint64_t contra = pos->side[contraside];
     const uint64_t occupied = same | contra;
     const uint64_t opp_or_empty = ~same;
-    const uint8_t castle = pos->castle;
+    //const uint8_t castle = pos->castle;
     const uint64_t king = PIECES(*pos, side, KING);    
     const uint64_t knights = PIECES(*pos, side, KNIGHT);
     const uint64_t bishops = PIECES(*pos, side, BISHOP);
@@ -499,55 +502,7 @@ static move *generate_castling(const struct position *const restrict pos, const 
     moves = generate_bishop_moves(bishops | queens, occupied, opp_or_empty, moves);
     moves = generate_rook_moves(rooks | queens, occupied, opp_or_empty, moves);
     moves = generate_king_moves(ksq, opp_or_empty, moves);
-
-    // significantly slower
-    //moves = generate_castling(pos, side, from, moves);
-    // castling - `from' still has king position
-    if (side == WHITE) {
-        if ((castle & CSL_WKSIDE) != 0 &&
-            (ksq == E1)               &&
-            (pos->sqtopc[F1] == EMPTY) &&
-            (pos->sqtopc[G1] == EMPTY) &&
-            (attacks(pos, contraside, E1) == 0) &&
-            (attacks(pos, contraside, F1) == 0) &&
-            (attacks(pos, contraside, G1) == 0)) {
-            assert(pos->sqtopc[H1] == PIECE(WHITE,ROOK));
-            *moves++ = CASTLE(E1, G1);
-        }
-        if ((castle & CSL_WQSIDE) != 0 &&
-            (ksq == E1)               &&
-            (pos->sqtopc[D1] == EMPTY) &&
-            (pos->sqtopc[C1] == EMPTY) &&
-            (pos->sqtopc[B1] == EMPTY) &&
-            (attacks(pos, contraside, E1) == 0) &&
-            (attacks(pos, contraside, D1) == 0) &&
-            (attacks(pos, contraside, C1) == 0)) {
-            assert(pos->sqtopc[A1] == PIECE(WHITE,ROOK));
-            *moves++ = CASTLE(E1, C1);
-        }
-    } else {
-        if ((castle & CSL_BKSIDE) != 0 &&
-            (ksq == E8)               &&
-            (pos->sqtopc[F8] == EMPTY) &&
-            (pos->sqtopc[G8] == EMPTY) &&
-            (attacks(pos, contraside, E8) == 0) &&
-            (attacks(pos, contraside, F8) == 0) &&
-            (attacks(pos, contraside, G8) == 0)) {
-            assert(pos->sqtopc[H8] == PIECE(BLACK,ROOK));
-            *moves++ = CASTLE(E8, G8);
-        }
-        if ((castle & CSL_BQSIDE) != 0 &&
-            (ksq == E8)               &&
-            (pos->sqtopc[D8] == EMPTY) &&
-            (pos->sqtopc[C8] == EMPTY) &&
-            (pos->sqtopc[B8] == EMPTY) &&
-            (attacks(pos, contraside, E8) == 0) &&
-            (attacks(pos, contraside, D8) == 0) &&
-            (attacks(pos, contraside, C8) == 0)) {
-            assert(pos->sqtopc[A8] == PIECE(BLACK,ROOK));
-            *moves++ = CASTLE(E8, C8);
-        }
-    }
+    moves = generate_castling(pos, side, ksq, moves);
 
     pcs = PIECES(*pos, side, PAWN);
     // pawn moves - 1 square
