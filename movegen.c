@@ -60,9 +60,8 @@ static move *generate_rook_moves(uint64_t rooks, const uint64_t occupied, const 
 }
 
 /*force_inline*/
-static move *generate_king_moves(const uint64_t king, const uint64_t targets, move *moves) {
+static move *generate_king_moves(const int ksq, const uint64_t targets, move *moves) {
     int to;
-    const int ksq = lsb(king);
     uint64_t posmoves = king_attacks(ksq) & targets;
     while (posmoves) {
 	to = lsb(posmoves);
@@ -555,7 +554,7 @@ static move *generate_castling(const struct position *const restrict pos, const 
     moves = generate_knight_moves(knights, opp_or_empty, moves);
     moves = generate_bishop_moves(bishops | queens, occupied, opp_or_empty, moves);
     moves = generate_rook_moves(rooks | queens, occupied, opp_or_empty, moves);
-    moves = generate_king_moves(king, opp_or_empty, moves);
+    moves = generate_king_moves(ksq, opp_or_empty, moves);
 
     // significantly slower
     //moves = generate_castling(pos, side, from, moves);
