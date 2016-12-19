@@ -11,14 +11,14 @@ static move *generate_knight_moves(uint64_t knights, const uint64_t targets, mov
     int to;
     uint64_t posmoves;
     while (knights) {
-	from = lsb(knights);
-	posmoves = knight_attacks(from) & targets;
-	while (posmoves) {
-	    to = lsb(posmoves);
-	    *moves++ = MOVE(from, to);
-	    clear_lsb(posmoves);
-	}
-	clear_lsb(knights);
+        from = lsb(knights);
+        posmoves = knight_attacks(from) & targets;
+        while (posmoves) {
+            to = lsb(posmoves);
+            *moves++ = MOVE(from, to);
+            clear_lsb(posmoves);
+        }
+        clear_lsb(knights);
     }
     return moves;
 }
@@ -29,14 +29,14 @@ static move *generate_bishop_moves(uint64_t bishops, const uint64_t occupied, co
     int to;
     uint64_t posmoves;
     while (bishops) {
-	from = lsb(bishops);
-	posmoves = bishop_attacks(from, occupied) & targets;
-	while (posmoves) {
-	    to = lsb(posmoves);
-	    *moves++ = MOVE(from, to);
-	    clear_lsb(posmoves);
-	}
-	clear_lsb(bishops);
+        from = lsb(bishops);
+        posmoves = bishop_attacks(from, occupied) & targets;
+        while (posmoves) {
+            to = lsb(posmoves);
+            *moves++ = MOVE(from, to);
+            clear_lsb(posmoves);
+        }
+        clear_lsb(bishops);
     }
     return moves;
 }
@@ -47,14 +47,14 @@ static move *generate_rook_moves(uint64_t rooks, const uint64_t occupied, const 
     int to;
     uint64_t posmoves;
     while (rooks) {
-	from = lsb(rooks);
-	posmoves = rook_attacks(from, occupied) & targets;
-	while (posmoves) {
-	    to = lsb(posmoves);
-	    *moves++ = MOVE(from, to);
-	    clear_lsb(posmoves);
-	}
-	clear_lsb(rooks);
+        from = lsb(rooks);
+        posmoves = rook_attacks(from, occupied) & targets;
+        while (posmoves) {
+            to = lsb(posmoves);
+            *moves++ = MOVE(from, to);
+            clear_lsb(posmoves);
+        }
+        clear_lsb(rooks);
     }
     return moves;
 }
@@ -64,9 +64,9 @@ static move *generate_king_moves(const int ksq, const uint64_t targets, move *mo
     int to;
     uint64_t posmoves = king_attacks(ksq) & targets;
     while (posmoves) {
-	to = lsb(posmoves);
-	*moves++ = MOVE(ksq, to);
-	clear_lsb(posmoves);
+        to = lsb(posmoves);
+        *moves++ = MOVE(ksq, to);
+        clear_lsb(posmoves);
     }
     return moves;
 }
@@ -77,66 +77,107 @@ static move *generate_king_moves(const int ksq, const uint64_t targets, move *mo
 force_inline
 static move *generate_castling(const struct position *const restrict pos, const uint8_t side, const int from, move *moves) {
     const uint8_t castle = pos->castle;
-    const uint8_t contraside = FLIP(side);
+
+#if 0
     if (side == WHITE) {
         if ((castle & (CSL_WKSIDE | CSL_WQSIDE)) != 0) {
-            //const uint64_t attacked = generate_attacked(pos, BLACK);		
-            if ((castle & CSL_WKSIDE) != 0 &&
-                    (from == E1)               &&
-                    (pos->sqtopc[F1] == EMPTY) &&
-                    (pos->sqtopc[G1] == EMPTY) &&
-                    // (attacked & (MASK(E1) | MASK(F1) | MASK(G1))) == 0)
-                    (attacks(pos, contraside, E1) == 0) && 
-                    (attacks(pos, contraside, F1) == 0) &&
-                    (attacks(pos, contraside, G1) == 0)) 
-                    {
-                assert(pos->sqtopc[H1] == PIECE(WHITE,ROOK));
-                *moves++ = CASTLE(E1, G1);
-            }
-            if ((castle & CSL_WQSIDE) != 0 &&
-                    (from == E1)               &&
-                    (pos->sqtopc[D1] == EMPTY) &&
-                    (pos->sqtopc[C1] == EMPTY) &&
-                    (pos->sqtopc[B1] == EMPTY) &&
-                    // (attacked & (MASK(E1) | MASK(D1) | MASK(C1))) == 0)
-                 (attacks(pos, contraside, E1) == 0) && 
-                 (attacks(pos, contraside, D1) == 0) && 
-                 (attacks(pos, contraside, C1) == 0)) 
-                 { 
-                assert(pos->sqtopc[A1] == PIECE(WHITE,ROOK));
-                *moves++ = CASTLE(E1, C1);
+            if (from == E1) {
+                const uint64_t attacked = generate_attacked(pos, BLACK);		
+                const uint64_t kside = MASK(E1) | MASK(F1) | MASK(G1);
+                const uint64_t qside = MASK(E1) | MASK(D1) | MASK(C1);
+                if ((castle & CSL_WKSIDE) != 0 &&
+                        (pos->sqtopc[F1] == EMPTY) &&
+                        (pos->sqtopc[G1] == EMPTY) &&
+                        (attacked & kside) == 0) {
+                    assert(pos->sqtopc[H1] == PIECE(WHITE,ROOK));
+                    *moves++ = CASTLE(E1, G1);
+                }
+                if ((castle & CSL_WQSIDE) != 0 &&
+                        (pos->sqtopc[D1] == EMPTY) &&
+                        (pos->sqtopc[C1] == EMPTY) &&
+                        (pos->sqtopc[B1] == EMPTY) &&
+                        (attacked & qside) == 0) { 
+                    assert(pos->sqtopc[A1] == PIECE(WHITE,ROOK));
+                    *moves++ = CASTLE(E1, C1);
+                }
             }
         }
-   } else {
-       if ((castle & (CSL_WKSIDE | CSL_WQSIDE)) != 0) {
-           //const uint64_t attacked = generate_attacked(pos, WHITE);
-           if ((castle & CSL_BKSIDE) != 0 &&
-                   (from == E8)               &&
-                   (pos->sqtopc[F8] == EMPTY) &&
-                   (pos->sqtopc[G8] == EMPTY) &&
-                   // (attacked & (MASK(E8) | MASK(F8) | MASK(G8))) == 0)
+    } else {
+        if ((castle & (CSL_BKSIDE | CSL_BQSIDE)) != 0) {
+            if (from == E8) {
+                const uint64_t attacked = generate_attacked(pos, WHITE);
+                const uint64_t kside = MASK(E8) | MASK(F8) | MASK(G8);
+                const uint64_t qside = MASK(E8) | MASK(D8) | MASK(C8);
+                if ((castle & CSL_BKSIDE) != 0 &&
+                        (pos->sqtopc[F8] == EMPTY) &&
+                        (pos->sqtopc[G8] == EMPTY) &&
+                        (attacked & kside) == 0) { 
+                    assert(pos->sqtopc[H8] == PIECE(BLACK,ROOK));
+                    *moves++ = CASTLE(E8, G8);
+                }
+                if ((castle & CSL_BQSIDE) != 0 &&
+                        (from == E8)               &&
+                        (pos->sqtopc[D8] == EMPTY) &&
+                        (pos->sqtopc[C8] == EMPTY) &&
+                        (pos->sqtopc[B8] == EMPTY) &&
+                        (attacked & qside) == 0) { 
+                    assert(pos->sqtopc[A8] == PIECE(BLACK,ROOK));
+                    *moves++ = CASTLE(E8, C8);
+                }
+            }
+        }
+    }
+#endif
+
+#if 1 
+    const uint8_t contraside = FLIP(side);
+    if (side == WHITE) {
+        if ((castle & CSL_WKSIDE) != 0 &&
+                (from == E1)               &&
+                (pos->sqtopc[F1] == EMPTY) &&
+                (pos->sqtopc[G1] == EMPTY) &&
+                (attacks(pos, contraside, E1) == 0) && 
+                (attacks(pos, contraside, F1) == 0) &&
+                (attacks(pos, contraside, G1) == 0)) {
+            assert(pos->sqtopc[H1] == PIECE(WHITE,ROOK));
+            *moves++ = CASTLE(E1, G1);
+        }
+        if ((castle & CSL_WQSIDE) != 0 &&
+                (from == E1)               &&
+                (pos->sqtopc[D1] == EMPTY) &&
+                (pos->sqtopc[C1] == EMPTY) &&
+                (pos->sqtopc[B1] == EMPTY) &&
+                (attacks(pos, contraside, E1) == 0) && 
+                (attacks(pos, contraside, D1) == 0) && 
+                (attacks(pos, contraside, C1) == 0)) { 
+            assert(pos->sqtopc[A1] == PIECE(WHITE,ROOK));
+            *moves++ = CASTLE(E1, C1);
+        }
+    } else {
+        if ((castle & CSL_BKSIDE) != 0 &&
+                (from == E8)               &&
+                (pos->sqtopc[F8] == EMPTY) &&
+                (pos->sqtopc[G8] == EMPTY) &&
                 (attacks(pos, contraside, E8) == 0) && 
                 (attacks(pos, contraside, F8) == 0) && 
-                (attacks(pos, contraside, G8) == 0)) 
-                { 
-               assert(pos->sqtopc[H8] == PIECE(BLACK,ROOK));
-               *moves++ = CASTLE(E8, G8);
-           }
-           if ((castle & CSL_BQSIDE) != 0 &&
-                   (from == E8)               &&
-                   (pos->sqtopc[D8] == EMPTY) &&
-                   (pos->sqtopc[C8] == EMPTY) &&
-                   (pos->sqtopc[B8] == EMPTY) &&
-                   // (attacked & (MASK(E8) | MASK(D8) | MASK(C8))) == 0) 
+                (attacks(pos, contraside, G8) == 0)) { 
+            assert(pos->sqtopc[H8] == PIECE(BLACK,ROOK));
+            *moves++ = CASTLE(E8, G8);
+        }
+        if ((castle & CSL_BQSIDE) != 0 &&
+                (from == E8)               &&
+                (pos->sqtopc[D8] == EMPTY) &&
+                (pos->sqtopc[C8] == EMPTY) &&
+                (pos->sqtopc[B8] == EMPTY) &&
                 (attacks(pos, contraside, E8) == 0) && 
                 (attacks(pos, contraside, D8) == 0) && 
-                (attacks(pos, contraside, C8) == 0)) 
-                { 
-               assert(pos->sqtopc[A8] == PIECE(BLACK,ROOK));
-               *moves++ = CASTLE(E8, C8);
-           }
-       }
-   }
+                (attacks(pos, contraside, C8) == 0)) { 
+            assert(pos->sqtopc[A8] == PIECE(BLACK,ROOK));
+            *moves++ = CASTLE(E8, C8);
+        }
+    }
+#endif
+
 
     return moves;
 }
