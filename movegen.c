@@ -5,7 +5,7 @@
 #include <inttypes.h>
 #include "magic_tables.h"
 
-/*force_inline*/
+force_inline
 static move *generate_knight_moves(uint64_t knights, const uint64_t targets, move *moves) {
     int from;
     int to;
@@ -23,7 +23,7 @@ static move *generate_knight_moves(uint64_t knights, const uint64_t targets, mov
     return moves;
 }
 
-/*force_inline*/
+force_inline
 static move *generate_bishop_moves(uint64_t bishops, const uint64_t occupied, const uint64_t targets, move *moves) {
     int from;
     int to;
@@ -41,7 +41,7 @@ static move *generate_bishop_moves(uint64_t bishops, const uint64_t occupied, co
     return moves;
 }
 
-/*force_inline*/
+force_inline
 static move *generate_rook_moves(uint64_t rooks, const uint64_t occupied, const uint64_t targets, move *moves) {
     int from;
     int to;
@@ -59,7 +59,7 @@ static move *generate_rook_moves(uint64_t rooks, const uint64_t occupied, const 
     return moves;
 }
 
-/*force_inline*/
+force_inline
 static move *generate_king_moves(const int ksq, const uint64_t targets, move *moves) {
     int to;
     uint64_t posmoves = king_attacks(ksq) & targets;

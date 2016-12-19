@@ -159,11 +159,12 @@ void test_search() {
 }
 
 int main(int argc, char **argv) {
-#if 1
+#if 0
     // verify perft values on some known positions
     printf("checking perft values...\n");
     if (check_perft() != 0) {
         printf("check perft failed!\n");
+        exit(EXIT_FAILURE);
     } else {
         printf("passed.\n");
     }
