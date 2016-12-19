@@ -150,8 +150,6 @@ void time_test(int depth) {
 
 void test_search() {
     struct position pos;
-    //const char *fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    //const char *fen = "rnbqkb1r/pppppppp/7B/8/3P4/8/PPP1PPPP/RN1QKBNR b KQkq - 0 2";
     const char *fen = "r1bqkbnr/pppppppp/8/8/1n1PP3/2N5/PPP2PPP/R1BQKBNR b KQkq - 2 3";
     position_from_fen(&pos, fen);
     printf("Searching from starting position...\n");
@@ -161,21 +159,23 @@ void test_search() {
 }
 
 int main(int argc, char **argv) {
-    #if 0
+#if 1
     // verify perft values on some known positions
     printf("checking perft values...\n");
     if (check_perft() != 0) {
-	printf("check perft failed!\n");
+        printf("check perft failed!\n");
     } else {
-	printf("passed.\n");
+        printf("passed.\n");
     }
-    #endif
+#endif
 
-    #if 0
+#if 1
     // time starting position perft to given depth
-    time_test(7);
-    #endif
+    int depth = argc == 2 ? atoi(argv[1]) : 7;
+    time_test(depth);
+#endif
 
+#if 0
     FILE *istream;
     char *line = 0;
     size_t len = 0;
@@ -191,10 +191,8 @@ int main(int argc, char **argv) {
     setbuf(stdout, 0);
     setbuf(istream, 0);
     
-    // TODO: use readline?
     while ((read = getline(&line, &len, istream)) > 0) {
-	nchars = (int)read - 1; // remove newline
-	//printf("Received input: '%.*s'\n", nchars, line);
+	nchars = (int)read - 1;
 	#define CHECKOPT(val) strncmp(line, val, strlen(val)) == 0
 	if (CHECKOPT("check-perft")) {
 	    printf("Checking perft...\n");
@@ -224,6 +222,7 @@ int main(int argc, char **argv) {
     printf("Bye.\n");
     free(line);
     fclose(istream);
+#endif
     
     return EXIT_SUCCESS;
 }
