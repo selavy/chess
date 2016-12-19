@@ -361,12 +361,7 @@ static move *generate_castling(const struct position *const restrict pos, const 
     // 3. en passant could remove the attacker
 
     // generate king moves to squares that are not under attack
-    posmoves = king_attacks(ksq) & safe;
-    while (posmoves) {
-	to = lsb(posmoves);
-	*moves++ = MOVE(ksq, to);
-	clear_lsb(posmoves);
-    }
+    moves = generate_king_moves(ksq, safe, moves);
 
     if (!more_than_one_piece(checkers)) {
 	uint64_t targets = checkers;
