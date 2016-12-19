@@ -147,10 +147,9 @@ static move *generate_castling(const struct position *const restrict pos, const 
     const int pc = pos->sqtopc[fromsq];
     const int flags = FLAGS(m);
     const int ksq = lsb(PIECES(*pos, side, KING));
-    int ret;
 
     if (flags == FLG_CASTLE) {
-        ret = 1;
+        return 1;
     } else if (flags == FLG_EP) {
         // REVISIT(plesslie): `FAST_VERSION' may not actually be that fast after all...
         // I'm getting better perft times using the "stupid" method
@@ -165,7 +164,7 @@ static move *generate_castling(const struct position *const restrict pos, const 
         const uint64_t rooks = PIECES(*pos, contra, ROOK);
         const uint64_t bishops = PIECES(*pos, contra, BISHOP);
         const uint64_t occ = (pieces ^ from ^ MASK(capsq)) | to;
-        ret = !(rook_attacks(ksq, occ) & (queens | rooks)) &&
+        return !(rook_attacks(ksq, occ) & (queens | rooks)) &&
             !(bishop_attacks(ksq, occ) & (queens | bishops));
 #else
         // "naive" method: just make the move and see if we are in check
@@ -173,23 +172,21 @@ static move *generate_castling(const struct position *const restrict pos, const 
         struct savepos sp;
         memcpy(&tmp, pos, sizeof(tmp));
         make_move(&tmp, &sp, m);
-        ret = !attacks(&tmp, contra, ksq);
+        return = !attacks(&tmp, contra, ksq);
 #endif
     } else if (pc == PIECE(side, KING)) {
         assert(flags == FLG_NONE);
         // don't need to remove the king before checking this, because if
         // the king was blocking a ray, then he would already be in check...		
         const uint64_t attacked = attacks(pos, contra, tosq);
-        ret = !attacked;	
+        return !attacked;	
     } else {
         // TODO(plesslie): need to test that "flags==FLG_PROMO" case is working correctly
 
         // legal if not pinned or moving on the same ray as the king (i.e. pinned piece
         // will still be blocking are moving)
-        ret = !pinned || !(pinned & from) || lined_up(fromsq, tosq, ksq);	
+        return !pinned || !(pinned & from) || lined_up(fromsq, tosq, ksq);	
     }
-
-    return ret;
 }
 
 /*extern*/ uint64_t generate_checkers(const struct position *const restrict pos, uint8_t side) {
@@ -228,8 +225,6 @@ static move *generate_castling(const struct position *const restrict pos, const 
     const uint64_t queens = PIECES(*pos, side, QUEEN);
     const uint64_t king = PIECES(*pos, side, KING);
     const uint64_t pawns = PIECES(*pos, side, PAWN);
-
-    //printf("occupied: %" PRIu64 "\n", occupied);
 
     pcs = knights;
     while (pcs) {
