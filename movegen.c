@@ -233,23 +233,23 @@ static move *generate_castling(const struct position *const restrict pos, const 
 
     pcs = knights;
     while (pcs) {
-	from = lsb(pcs);
-	rval |= knight_attacks(from);
-	clear_lsb(pcs);
+        from = lsb(pcs);
+        rval |= knight_attacks(from);
+        clear_lsb(pcs);
     }
 
     pcs = bishops | queens;
     while (pcs) {
-	from = lsb(pcs);
-	rval |= bishop_attacks(from, occupied);
-	clear_lsb(pcs);
+        from = lsb(pcs);
+        rval |= bishop_attacks(from, occupied);
+        clear_lsb(pcs);
     }
 
     pcs = rooks | queens;
     while (pcs) {
-	from = lsb(pcs);
-	rval |= rook_attacks(from, occupied);
-	clear_lsb(pcs);
+        from = lsb(pcs);
+        rval |= rook_attacks(from, occupied);
+        clear_lsb(pcs);
     }
 
     assert(king);
@@ -329,8 +329,6 @@ static move *generate_castling(const struct position *const restrict pos, const 
     return ret;
 }
 
-// REVISIT: consolidate common move generation code into: generate_normal_moves(targets) and
-//          generate_pawn_moves(targets) and generate_castling()?
 /*extern*/ move *generate_evasions(const struct position *const restrict pos, const uint64_t checkers, move *restrict moves) {
     uint32_t to;
     uint32_t from;
@@ -364,161 +362,117 @@ static move *generate_castling(const struct position *const restrict pos, const 
     moves = generate_king_moves(ksq, safe, moves);
 
     if (!more_than_one_piece(checkers)) {
-	uint64_t targets = checkers;
-	if (checkpc == PIECE(contra, PAWN)) {
-	    if (pos->enpassant != EP_NONE) {
-		to = pos->enpassant;
-		int epsq = side == WHITE ? to - 8 : to + 8;
-		if (epsq == checksq) {
-		    assert(pos->sqtopc[epsq] == PIECE(contra, PAWN));
-		    assert((side == WHITE && to >= A6 && to <= H6) ||
-			   (side == BLACK && to >= A3 && to <= H3));
-		    assert(pos->sqtopc[to] == EMPTY);
-		    // capture left
-		    if (to != H6 && to != H3) {
-			from = side == WHITE ? to - 7 : to + 9;
-			assert((side == WHITE && from >= A5 && from <= H5) ||
-			       (side == BLACK && from >= A4 && from <= H4));
-			if (pos->sqtopc[from] == PIECE(side, PAWN)) {
-			    *moves++ = EP_CAPTURE(from, to);
-			}
-		    }
-	
-		    // capture right
-		    if (to != A6 && to != A3) {
-			from = side == WHITE ? to - 9 : to + 7;
-			assert((side == WHITE && from >= A5 && from <= H5) ||
-			       (side == BLACK && from >= A4 && from <= H4));
-			if (pos->sqtopc[from] == PIECE(side, PAWN)) {
-			    *moves++ = EP_CAPTURE(from, to);
-			}
-		    }
-		}
-	    }
-	} else if (checkpc != PIECE(contra, KNIGHT)) {
-	    const uint64_t between = between_sqs(checksq, ksq);
-	    targets |= between;
+        uint64_t targets = checkers;
+        if (checkpc == PIECE(contra, PAWN)) {
+            if (pos->enpassant != EP_NONE) {
+                to = pos->enpassant;
+                int epsq = side == WHITE ? to - 8 : to + 8;
+                if (epsq == checksq) {
+                    assert(pos->sqtopc[epsq] == PIECE(contra, PAWN));
+                    assert((side == WHITE && to >= A6 && to <= H6) ||
+                            (side == BLACK && to >= A3 && to <= H3));
+                    assert(pos->sqtopc[to] == EMPTY);
+                    // capture left
+                    if (to != H6 && to != H3) {
+                        from = side == WHITE ? to - 7 : to + 9;
+                        assert((side == WHITE && from >= A5 && from <= H5) ||
+                                (side == BLACK && from >= A4 && from <= H4));
+                        if (pos->sqtopc[from] == PIECE(side, PAWN)) {
+                            *moves++ = EP_CAPTURE(from, to);
+                        }
+                    }
 
-	    pcs = pawns;
-	    posmoves = side == WHITE ? pcs << 8 : pcs >> 8;
-	    posmoves &= between;
-	    while (posmoves) {
-		to = lsb(posmoves);
-		from = side == WHITE ? to - 8 : to + 8;
-		assert(pos->sqtopc[from] == PIECE(side, PAWN));
-		if (to >= A8 || to <= H1) { // promotion
-		    *moves++ = PROMOTION(from, to, KNIGHT);
-		    *moves++ = PROMOTION(from, to, BISHOP);
-		    *moves++ = PROMOTION(from, to, ROOK);
-		    *moves++ = PROMOTION(from, to, QUEEN);
-		} else {
-		    *moves++ = MOVE(from, to);
-		}
-		clear_lsb(posmoves);
-	    }
+                    // capture right
+                    if (to != A6 && to != A3) {
+                        from = side == WHITE ? to - 9 : to + 7;
+                        assert((side == WHITE && from >= A5 && from <= H5) ||
+                                (side == BLACK && from >= A4 && from <= H4));
+                        if (pos->sqtopc[from] == PIECE(side, PAWN)) {
+                            *moves++ = EP_CAPTURE(from, to);
+                        }
+                    }
+                }
+            }
+        } else if (checkpc != PIECE(contra, KNIGHT)) {
+            const uint64_t between = between_sqs(checksq, ksq);
+            targets |= between;
 
-	    posmoves = pawns & RANK2(side);
-	    posmoves = side == WHITE ? posmoves << 16 : posmoves >> 16;
-	    posmoves &= between;
-	    while (posmoves) {
-		to = lsb(posmoves);
-		from = side == WHITE ? to - 16 : to + 16;
-		assert(pos->sqtopc[from] == PIECE(side, PAWN));
-		// TODO(plesslie): do this with bitmasks?
-		// make sure we aren't jumping over another piece
-		if (pos->sqtopc[side == WHITE ? to - 8 : to + 8] == EMPTY) {
-		    *moves++ = MOVE(from, to);            
-		}
-		clear_lsb(posmoves);
-	    }
-	}
+            pcs = pawns;
+            posmoves = side == WHITE ? pcs << 8 : pcs >> 8;
+            posmoves &= between;
+            while (posmoves) {
+                to = lsb(posmoves);
+                from = side == WHITE ? to - 8 : to + 8;
+                assert(pos->sqtopc[from] == PIECE(side, PAWN));
+                if (to >= A8 || to <= H1) { // promotion
+                    *moves++ = PROMOTION(from, to, KNIGHT);
+                    *moves++ = PROMOTION(from, to, BISHOP);
+                    *moves++ = PROMOTION(from, to, ROOK);
+                    *moves++ = PROMOTION(from, to, QUEEN);
+                } else {
+                    *moves++ = MOVE(from, to);
+                }
+                clear_lsb(posmoves);
+            }
 
-	pcs = knights;
-	while (pcs) {
-	    from = lsb(pcs);
-	    posmoves = knight_attacks(from) & targets;
-	    while (posmoves) {
-		to = lsb(posmoves);
-		*moves++ = MOVE(from, to);
-		clear_lsb(posmoves);
-	    }
-	    clear_lsb(pcs);
-	}
+            posmoves = pawns & RANK2(side);
+            posmoves = side == WHITE ? posmoves << 16 : posmoves >> 16;
+            posmoves &= between;
+            while (posmoves) {
+                to = lsb(posmoves);
+                from = side == WHITE ? to - 16 : to + 16;
+                assert(pos->sqtopc[from] == PIECE(side, PAWN));
+                // TODO(plesslie): do this with bitmasks?
+                // make sure we aren't jumping over another piece
+                if (pos->sqtopc[side == WHITE ? to - 8 : to + 8] == EMPTY) {
+                    *moves++ = MOVE(from, to);            
+                }
+                clear_lsb(posmoves);
+            }
+        }
 
-	pcs = bishops;
-	while (pcs) {
-	    from = lsb(pcs);
-	    posmoves = bishop_attacks(from, occupied) & targets;
-	    while (posmoves) {
-		to = lsb(posmoves);
-		*moves++ = MOVE(from, to);
-		clear_lsb(posmoves);
-	    }
-	    clear_lsb(pcs);
-	}
+        moves = generate_knight_moves(knights, targets, moves);
+        moves = generate_bishop_moves(bishops | queens, occupied, targets, moves);
+        moves = generate_rook_moves(rooks | queens, occupied, targets, moves);
 
-	pcs = rooks;
-	while (pcs) {
-	    from = lsb(pcs);
-	    posmoves = rook_attacks(from, occupied) & targets;
-	    while (posmoves) {
-		to = lsb(posmoves);
-		*moves++ = MOVE(from, to);
-		clear_lsb(posmoves);
-	    }
-	    clear_lsb(pcs);
-	}
+        // capture left
+        posmoves = pawns & ~A_FILE;
+        posmoves = side == WHITE ? posmoves << 7 : posmoves >> 9;
+        posmoves &= checkers;
+        while (posmoves) {
+            to = lsb(posmoves);
+            from = side == WHITE ? to - 7 : to + 9;
+            if (to >= A8 || to <= H1) { // last rank => promotion
+                *moves++ = PROMOTION(from, to, KNIGHT);
+                *moves++ = PROMOTION(from, to, BISHOP);
+                *moves++ = PROMOTION(from, to, ROOK);
+                *moves++ = PROMOTION(from, to, QUEEN);
+            } else {
+                *moves++ = MOVE(from, to);
+            }
+            clear_lsb(posmoves);
+        }
 
-	pcs = queens;
-	while (pcs) {
-	    from = lsb(pcs);
-	    posmoves = queen_attacks(from, occupied) & targets;
-	    while (posmoves) {
-		to = lsb(posmoves);
-		*moves++ = MOVE(from, to);
-		clear_lsb(posmoves);
-	    }
-	    clear_lsb(pcs);
-	}
+        // capture right
+        posmoves = pawns & ~H_FILE;
+        posmoves = side == WHITE ? posmoves << 9 : posmoves >> 7;
+        posmoves &= checkers;
+        while (posmoves) {
+            to = lsb(posmoves);
+            from = side == WHITE ? to - 9 : to + 7;
+            if (to >= A8 || to <= H1) { // last rank => promotion
+                *moves++ = PROMOTION(from, to, KNIGHT);
+                *moves++ = PROMOTION(from, to, BISHOP);
+                *moves++ = PROMOTION(from, to, ROOK);
+                *moves++ = PROMOTION(from, to, QUEEN);
+            } else {
+                *moves++ = MOVE(from, to);
+            }	    
+            clear_lsb(posmoves);
+        }
 
-	// capture left
-	posmoves = pawns & ~A_FILE;
-	posmoves = side == WHITE ? posmoves << 7 : posmoves >> 9;
-	posmoves &= checkers;
-	while (posmoves) {
-	    to = lsb(posmoves);
-	    from = side == WHITE ? to - 7 : to + 9;
-	    if (to >= A8 || to <= H1) { // last rank => promotion
-		*moves++ = PROMOTION(from, to, KNIGHT);
-		*moves++ = PROMOTION(from, to, BISHOP);
-		*moves++ = PROMOTION(from, to, ROOK);
-		*moves++ = PROMOTION(from, to, QUEEN);
-	    } else {
-		*moves++ = MOVE(from, to);
-	    }
-	    clear_lsb(posmoves);
-	}
-
-	// capture right
-	posmoves = pawns & ~H_FILE;
-	posmoves = side == WHITE ? posmoves << 9 : posmoves >> 7;
-	posmoves &= checkers;
-	while (posmoves) {
-	    to = lsb(posmoves);
-	    from = side == WHITE ? to - 9 : to + 7;
-	    if (to >= A8 || to <= H1) { // last rank => promotion
-		*moves++ = PROMOTION(from, to, KNIGHT);
-		*moves++ = PROMOTION(from, to, BISHOP);
-		*moves++ = PROMOTION(from, to, ROOK);
-		*moves++ = PROMOTION(from, to, QUEEN);
-	    } else {
-		*moves++ = MOVE(from, to);
-	    }	    
-	    clear_lsb(posmoves);
-	}
-	
     } // else more than 1 checker, and can't block or capture to get out of check
-    
+
     return moves;
 }
 
